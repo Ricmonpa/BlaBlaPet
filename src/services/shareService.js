@@ -1,3 +1,5 @@
+import videoShareService from './videoShareService.js';
+
 /**
  * Servicio de Compartir para Redes Sociales
  * Implementa Web Share API nativa + deep links para cada plataforma
@@ -6,6 +8,11 @@ class ShareService {
   constructor() {
     this.isWebShareSupported = 'share' in navigator;
     this.isMobile = this.detectMobile();
+    
+    // Limpiar videos antiguos cada hora
+    setInterval(() => {
+      videoShareService.cleanupOldVideos();
+    }, 60 * 60 * 1000); // 1 hora
   }
 
   /**
@@ -13,6 +20,7 @@ class ShareService {
    * @returns {boolean}
    */
   detectMobile() {
+    if (typeof navigator === 'undefined') return false;
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
 
@@ -46,7 +54,10 @@ class ShareService {
    * @returns {string}
    */
   generateTikTokShareUrl(post) {
-    const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas`;
+    // Generar URL única del video
+    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    
+    const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas\n\nVer video: ${videoUrl}`;
     const encodedText = encodeURIComponent(text);
     
     // Deep link para TikTok (si está instalada)
@@ -55,7 +66,7 @@ class ShareService {
     // Fallback web
     const webUrl = `https://www.tiktok.com/upload?text=${encodedText}`;
     
-    return { deepLink, webUrl };
+    return { deepLink, webUrl, videoUrl };
   }
 
   /**
@@ -64,7 +75,10 @@ class ShareService {
    * @returns {string}
    */
   generateInstagramShareUrl(post) {
-    const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas`;
+    // Generar URL única del video
+    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    
+    const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas\n\nVer video: ${videoUrl}`;
     const encodedText = encodeURIComponent(text);
     
     // Deep link para Instagram (si está instalada)
@@ -73,7 +87,7 @@ class ShareService {
     // Fallback web
     const webUrl = `https://www.instagram.com/create/reel/?text=${encodedText}`;
     
-    return { deepLink, webUrl };
+    return { deepLink, webUrl, videoUrl };
   }
 
   /**
@@ -82,16 +96,19 @@ class ShareService {
    * @returns {string}
    */
   generateFacebookShareUrl(post) {
+    // Generar URL única del video
+    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    
     const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas`;
     const encodedText = encodeURIComponent(text);
     
     // Deep link para Facebook (si está instalada)
     const deepLink = `fb://create?text=${encodedText}`;
     
-    // Fallback web
-    const webUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodedText}`;
+    // Fallback web - usar la URL del video para el preview
+    const webUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(videoUrl)}&quote=${encodedText}`;
     
-    return { deepLink, webUrl };
+    return { deepLink, webUrl, videoUrl };
   }
 
   /**
@@ -100,8 +117,12 @@ class ShareService {
    * @returns {string}
    */
   generateWhatsAppShareUrl(post) {
-    const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas`;
-    const encodedText = encodeURIComponent(text);
+    // Generar URL única del video
+    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    
+    // Generar texto optimizado para WhatsApp
+    const shareText = videoShareService.generateShareText(post);
+    const encodedText = encodeURIComponent(shareText);
     
     // Deep link para WhatsApp (si está instalada)
     const deepLink = `whatsapp://send?text=${encodedText}`;
@@ -109,7 +130,7 @@ class ShareService {
     // Fallback web
     const webUrl = `https://wa.me/?text=${encodedText}`;
     
-    return { deepLink, webUrl };
+    return { deepLink, webUrl, videoUrl };
   }
 
   /**
@@ -197,10 +218,13 @@ class ShareService {
    * @returns {Promise<boolean>}
    */
   async shareWithNativeAPI(post) {
+    // Generar URL única del video
+    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    
     const shareData = {
-      title: 'Yo Pett - Traducción de mi perro',
+      title: `¡Mira lo que dice ${post.petName || 'mi perro'}! 🐕`,
       text: `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}"`,
-      url: window.location.href
+      url: videoUrl
     };
 
     return await this.shareWithWebAPI(shareData);

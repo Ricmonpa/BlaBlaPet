@@ -6,6 +6,7 @@ import Profile from './pages/Profile';
 import GeminiTestPage from './pages/GeminiTestPage';
 import SignalMatrixTestPage from './pages/SignalMatrixTestPage';
 import EmotionalDubbingTestPage from './pages/EmotionalDubbingTestPage';
+import VideoPreview from './pages/VideoPreview';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/gemini-test" element={<GeminiTestPage />} />
           <Route path="/signal-matrix-test" element={<SignalMatrixTestPage />} />
           <Route path="/emotional-dubbing-test" element={<EmotionalDubbingTestPage />} />
+          <Route path="/video/:videoId" element={<VideoPreview />} />
         </Routes>
       </div>
     </Router>
