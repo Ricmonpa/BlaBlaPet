@@ -1,7 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import BottomNavigation from '../components/BottomNavigation';
+import PetCard from '../components/PetCard';
+import videoShareService from '../services/videoShareService.js';
 
 const Profile = () => {
+  const [userVideos, setUserVideos] = useState([]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+
+  useEffect(() => {
+    // Cargar videos del usuario
+    const videos = videoShareService.getUserVideos();
+    setUserVideos(videos);
+  }, []);
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#DC195C' }}>
       {/* Header */}
@@ -23,9 +34,70 @@ const Profile = () => {
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Usuario</h2>
               <p className="text-gray-500">usuario@ejemplo.com</p>
+              <p className="text-sm text-gray-400">{userVideos.length} videos analizados</p>
             </div>
           </div>
         </div>
+
+        {/* User Videos Section */}
+        {userVideos.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Mis Videos</h3>
+              <p className="text-sm text-gray-500">Videos que has analizado con Yo Pett</p>
+            </div>
+            
+            <div className="relative h-96 overflow-hidden">
+              {userVideos.map((video, index) => (
+                <div
+                  key={video.id}
+                  className={`absolute inset-0 transition-transform duration-300 ${
+                    index === currentVideoIndex ? 'translate-y-0' : 
+                    index < currentVideoIndex ? '-translate-y-full' : 'translate-y-full'
+                  }`}
+                >
+                  <PetCard post={video} />
+                </div>
+              ))}
+              
+              {/* Navigation arrows */}
+              {userVideos.length > 1 && (
+                <>
+                  {currentVideoIndex > 0 && (
+                    <button
+                      onClick={() => setCurrentVideoIndex(currentVideoIndex - 1)}
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                  )}
+                  
+                  {currentVideoIndex < userVideos.length - 1 && (
+                    <button
+                      onClick={() => setCurrentVideoIndex(currentVideoIndex + 1)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+            
+            {/* Video counter */}
+            {userVideos.length > 1 && (
+              <div className="px-6 py-3 bg-gray-50 text-center">
+                <span className="text-sm text-gray-600">
+                  {currentVideoIndex + 1} de {userVideos.length}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Settings Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">

@@ -114,11 +114,11 @@ class ShareService {
   /**
    * Generar URL de compartir para WhatsApp
    * @param {Object} post - Datos del post
-   * @returns {string}
+   * @returns {Promise<Object>}
    */
-  generateWhatsAppShareUrl(post) {
+  async generateWhatsAppShareUrl(post) {
     // Generar URL única del video
-    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
     
     // Generar texto optimizado para WhatsApp
     const shareText = videoShareService.generateShareText(post);
@@ -151,13 +151,17 @@ class ShareService {
       const timeout = setTimeout(() => {
         // Si no se abrió la app, usar fallback web
         window.open(webUrl, '_blank');
-        document.body.removeChild(iframe);
+        if (iframe && iframe.parentNode) {
+          document.body.removeChild(iframe);
+        }
       }, 2000);
 
       // Si la app se abrió, limpiar
       const cleanup = () => {
         clearTimeout(timeout);
-        document.body.removeChild(iframe);
+        if (iframe && iframe.parentNode) {
+          document.body.removeChild(iframe);
+        }
       };
 
       // Detectar si la app se abrió (evento de blur)
@@ -208,8 +212,16 @@ class ShareService {
    * @returns {Promise<boolean>}
    */
   async shareToWhatsApp(post) {
-    const { deepLink, webUrl } = this.generateWhatsAppShareUrl(post);
-    return await this.openDeepLinkWithFallback(deepLink, webUrl);
+    const { webUrl } = this.generateWhatsAppShareUrl(post);
+    
+    // Para WhatsApp, usar directamente la URL web ya que el deep link no funciona bien
+    try {
+      window.open(webUrl, '_blank');
+      return true;
+    } catch (error) {
+      console.error('❌ Error abriendo WhatsApp:', error);
+      return false;
+    }
   }
 
   /**

@@ -2,13 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import BottomNavigation from '../components/BottomNavigation';
 import PetCard from '../components/PetCard';
+import videoShareService from '../services/videoShareService.js';
 
 const Home = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const location = useLocation();
 
-  // Datos simulados para el feed
-  const [petPosts, setPetPosts] = useState([
+  // Cargar posts desde localStorage al inicializar
+  const [petPosts, setPetPosts] = useState(() => {
+    try {
+      const savedPosts = localStorage.getItem('yo_pett_feed_posts');
+      if (savedPosts) {
+        return JSON.parse(savedPosts);
+      }
+    } catch (error) {
+      console.error('Error cargando posts desde localStorage:', error);
+    }
+    
+    // Datos simulados por defecto
+    return [
     {
       id: 1,
       username: '@golden_max',
@@ -63,7 +75,8 @@ const Home = () => {
       comments: 67,
       timestamp: '6h ago'
     }
-  ]);
+    ];
+  });
 
   // Verificar si hay nueva traducción desde la cámara
   useEffect(() => {
@@ -100,7 +113,12 @@ const Home = () => {
           timestamp: 'Ahora'
         };
         
-        setPetPosts(prev => [newPost, ...prev]);
+        setPetPosts(prev => {
+          const updatedPosts = [newPost, ...prev];
+          // Guardar en localStorage
+          localStorage.setItem('yo_pett_feed_posts', JSON.stringify(updatedPosts));
+          return updatedPosts;
+        });
         setCurrentIndex(0);
       } else if (location.state.output_tecnico && location.state.output_emocional) {
       // Si tenemos análisis dual, usar esos datos directamente
@@ -130,7 +148,12 @@ const Home = () => {
           timestamp: 'Ahora'
         };
         
-        setPetPosts(prev => [newPost, ...prev]);
+        setPetPosts(prev => {
+          const updatedPosts = [newPost, ...prev];
+          // Guardar en localStorage
+          localStorage.setItem('yo_pett_feed_posts', JSON.stringify(updatedPosts));
+          return updatedPosts;
+        });
         setCurrentIndex(0);
       } else {
         // Fallback: sistema anterior (generar doblaje emocional)
@@ -186,7 +209,12 @@ const Home = () => {
           timestamp: 'Ahora'
         };
         
-        setPetPosts(prev => [newPost, ...prev]);
+        setPetPosts(prev => {
+          const updatedPosts = [newPost, ...prev];
+          // Guardar en localStorage
+          localStorage.setItem('yo_pett_feed_posts', JSON.stringify(updatedPosts));
+          return updatedPosts;
+        });
         setCurrentIndex(0);
       }
       

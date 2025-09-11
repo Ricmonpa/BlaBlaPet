@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Metadatos estáticos que WhatsApp puede leer -->
+    <title>¡Mira lo que dice mi mascota! 🐕 - Yo Pett</title>
+    <meta property="og:title" content="¡Mira lo que dice mi mascota! 🐕" />
+    <meta property="og:description" content="Análisis de comportamiento de mascota con Yo Pett - Traductor de mascotas" />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop" />
+    <meta property="og:url" content="https://blabla-pet-web.vercel.app/video.html" />
+    <meta property="og:type" content="video.other" />
+    <meta property="og:site_name" content="Yo Pett" />
+    <meta property="og:locale" content="es_ES" />
+    
+    <!-- Metadatos Twitter -->
+    <meta name="twitter:card" content="player" />
+    <meta name="twitter:title" content="¡Mira lo que dice mi mascota! 🐕" />
+    <meta name="twitter:description" content="Análisis de comportamiento de mascota con Yo Pett - Traductor de mascotas" />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop" />
+    <meta name="twitter:player" content="https://blabla-pet-web.vercel.app/video.html" />
+    <meta name="twitter:player:width" content="400" />
+    <meta name="twitter:player:height" content="600" />
+    
+    <!-- Metadatos adicionales para WhatsApp -->
+    <meta property="og:image:width" content="400" />
+    <meta property="og:image:height" content="600" />
+    <meta property="og:image:type" content="image/jpeg" />
+    
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        text-align: center;
+      }
+      .container {
+        max-width: 600px;
+        padding: 40px 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      .logo {
+        font-size: 48px;
+        margin-bottom: 20px;
+      }
+      .title {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #4ecdc4;
+      }
+      .description {
+        font-size: 18px;
+        margin-bottom: 30px;
+        line-height: 1.6;
+        opacity: 0.9;
+      }
+      .cta-button {
+        background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        color: white;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 50px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: transform 0.3s ease;
+      }
+      .cta-button:hover {
+        transform: translateY(-2px);
+      }
+      .loading {
+        font-size: 16px;
+        opacity: 0.7;
+        margin-top: 20px;
+      }
+      .video-preview {
+        margin: 20px 0;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      .video-preview img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">🐕</div>
+      <h1 class="title">¡Mira lo que dice mi mascota! 🐕</h1>
+      <p class="description">"Análisis de comportamiento de mascota con Yo Pett - Traductor de mascotas"</p>
+      
+      <div class="video-preview">
+        <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop" alt="Video de mascota" />
+      </div>
+      
+      <a href="/" class="cta-button">Ver en Yo Pett</a>
+      <div class="loading">Redirigiendo a la aplicación...</div>
+      <!-- Debug info solo visible en desarrollo -->
+      <div id="debug-info" style="margin-top: 20px; font-size: 12px; opacity: 0.7; display: none;">
+        <p>ID del video: <span id="video-id">-</span></p>
+        <p>Estado: <span id="video-status">Verificando...</span></p>
+        <p><button onclick="debugVideoStorage()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Debug en Consola</button></p>
+      </div>
+    </div>
+
+    <script>
+      // Detectar si estamos en producción
+      const isProduction = window.location.hostname.includes('vercel.app') || 
+                          window.location.hostname.includes('blabla-pet-web') ||
+                          window.location.hostname !== 'localhost';
+      
+      // Logs solo en desarrollo
+      if (!isProduction) {
+        console.log(`🌐 Video page running in DEVELOPMENT mode`);
+        console.log(`🔗 Current URL: ${window.location.href}`);
+      }
+      
+      // Mostrar debug info solo en desarrollo
+      if (!isProduction) {
+        document.getElementById('debug-info').style.display = 'block';
+      }
+      
+      // Debug functions
+      function debugVideoStorage() {
+        console.log('🔍 Debugging video storage...');
+        try {
+          const storedVideos = localStorage.getItem('yo_pett_videos');
+          console.log('📦 Raw localStorage data:', storedVideos);
+          
+          if (storedVideos) {
+            const videos = JSON.parse(storedVideos);
+            console.log('📹 Parsed videos:', videos);
+            console.log('📊 Total videos stored:', Object.keys(videos).length);
+            
+            const targetVideoId = '1757608052329';
+            const matchingVideos = Object.keys(videos).filter(id => id.includes(targetVideoId));
+            console.log('🔍 Matching video IDs:', matchingVideos);
+            
+            if (matchingVideos.length > 0) {
+              const video = videos[matchingVideos[0]];
+              console.log('✅ Found video:', video);
+            } else {
+              console.log('❌ No video found with ID containing', targetVideoId);
+              console.log('📋 Available video IDs:', Object.keys(videos));
+            }
+          } else {
+            console.log('❌ No videos found in localStorage');
+          }
+        } catch (error) {
+          console.error('💥 Error debugging video storage:', error);
+        }
+      }
+      
+      // Make debug function available globally
+      window.debugVideoStorage = debugVideoStorage;
+      
+      // Obtener ID del video desde la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const videoId = urlParams.get('id');
+      
+      // Mostrar información de debug
+      document.getElementById('video-id').textContent = videoId || 'No encontrado';
+      
+      if (videoId) {
+        // Intentar obtener datos del video desde localStorage
+        try {
+          const storedVideos = localStorage.getItem('yo_pett_videos');
+          if (storedVideos) {
+            const videos = JSON.parse(storedVideos);
+            const video = videos[videoId];
+            
+            if (video) {
+              // Actualizar contenido con datos del video
+              document.title = `¡Mira lo que dice ${video.petName || 'mi mascota'}! 🐕 - Yo Pett`;
+              document.querySelector('.title').textContent = `¡Mira lo que dice ${video.petName || 'mi mascota'}! 🐕`;
+              document.querySelector('.description').textContent = `"${video.translation || video.emotionalDubbing || 'Análisis de comportamiento de mascota'}"`;
+              
+              // Actualizar metadatos Open Graph
+              document.querySelector('meta[property="og:title"]').setAttribute('content', `¡Mira lo que dice ${video.petName || 'mi mascota'}! 🐕`);
+              document.querySelector('meta[property="og:description"]').setAttribute('content', video.translation || video.emotionalDubbing || 'Análisis de comportamiento de mascota');
+              document.querySelector('meta[name="twitter:title"]').setAttribute('content', `¡Mira lo que dice ${video.petName || 'mi mascota'}! 🐕`);
+              document.querySelector('meta[name="twitter:description"]').setAttribute('content', video.translation || video.emotionalDubbing || 'Análisis de comportamiento de mascota');
+              
+              // Si hay imagen del video, usarla
+              if (video.mediaUrl) {
+                document.querySelector('.video-preview img').src = video.mediaUrl;
+                document.querySelector('meta[property="og:image"]').setAttribute('content', video.mediaUrl);
+                document.querySelector('meta[name="twitter:image"]').setAttribute('content', video.mediaUrl);
+              }
+              
+              if (!isProduction) {
+                console.log('✅ Video encontrado y contenido actualizado');
+              }
+              document.getElementById('video-status').textContent = '✅ Video encontrado';
+            } else {
+              if (!isProduction) {
+                console.log('❌ Video no encontrado en localStorage');
+              }
+              document.getElementById('video-status').textContent = '❌ Video no encontrado';
+            }
+          }
+        } catch (error) {
+          if (!isProduction) {
+            console.error('Error cargando video:', error);
+          }
+          document.getElementById('video-status').textContent = '❌ Error cargando video';
+        }
+      } else {
+        document.getElementById('video-status').textContent = '❌ No se proporcionó ID de video';
+      }
+      
+      // Redireccionar a la app principal después de 3 segundos
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
+    </script>
+  </body>
+</html>

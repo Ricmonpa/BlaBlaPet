@@ -4,8 +4,39 @@
  */
 class VideoShareService {
   constructor() {
-    this.baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-    this.videoStorage = new Map(); // Almacenamiento temporal de videos
+    // Detectar si estamos en producción o desarrollo
+    const isProduction = typeof window !== 'undefined' && 
+      (window.location.hostname.includes('vercel.app') || 
+       window.location.hostname.includes('blabla-pet-web') ||
+       window.location.hostname !== 'localhost');
+    
+    this.baseUrl = isProduction 
+      ? 'https://blabla-pet-web.vercel.app'
+      : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173');
+    
+    // Usar variable de entorno si está disponible
+    if (typeof process !== 'undefined' && process.env && process.env.VITE_APP_URL) {
+      this.baseUrl = process.env.VITE_APP_URL;
+    }
+    
+    this.storageKey = 'yo_pett_videos';
+    this.isProduction = isProduction;
+    
+    // Asegurar que siempre use el puerto correcto en desarrollo
+    if (!isProduction) {
+      if (this.baseUrl.includes('5175')) {
+        this.baseUrl = this.baseUrl.replace('5175', '5173');
+      }
+      if (this.baseUrl.includes('5177')) {
+        this.baseUrl = this.baseUrl.replace('5177', '5173');
+      }
+    }
+    
+    // Logs solo en desarrollo
+    if (!isProduction) {
+      console.log(`🌐 VideoShareService initialized for DEVELOPMENT`);
+      console.log(`🔗 Base URL: ${this.baseUrl}`);
+    }
   }
 
   /**
@@ -20,26 +51,32 @@ class VideoShareService {
   }
 
   /**
-   * Almacenar video temporalmente y generar URL única
+   * Almacenar video persistentemente y generar URL única
    * @param {Object} post - Datos del post con video
-   * @returns {string} URL única del video
+   * @returns {Promise<string>} URL única del video
    */
-  storeVideoAndGenerateUrl(post) {
+  async storeVideoAndGenerateUrl(post) {
     const videoId = this.generateVideoId(post);
     
-    // Almacenar datos del video
-    this.videoStorage.set(videoId, {
+    // Crear objeto de video con metadatos
+    const videoData = {
       ...post,
       id: videoId,
       createdAt: new Date().toISOString(),
       shareCount: 0
-    });
-
-    // Generar URL única
-    const videoUrl = `${this.baseUrl}/video/${videoId}`;
+    };
     
-    console.log(`📹 Video almacenado con ID: ${videoId}`);
-    console.log(`🔗 URL generada: ${videoUrl}`);
+    // Guardar en almacenamiento
+    await this.saveVideoToStorage(videoId, videoData);
+
+    // Generar URL única con parámetros para el preview
+    const videoUrl = `${this.baseUrl}/video.html?id=${videoId}`;
+    
+    // Logs solo en desarrollo
+    if (!this.isProduction) {
+      console.log(`📹 Video almacenado persistentemente con ID: ${videoId}`);
+      console.log(`🔗 URL generada: ${videoUrl}`);
+    }
     
     return videoUrl;
   }
@@ -47,21 +84,21 @@ class VideoShareService {
   /**
    * Obtener datos de video por ID
    * @param {string} videoId - ID del video
-   * @returns {Object|null} Datos del video o null si no existe
+   * @returns {Promise<Object|null>} Datos del video o null si no existe
    */
-  getVideoById(videoId) {
-    return this.videoStorage.get(videoId) || null;
+  async getVideoById(videoId) {
+    return await this.getVideoFromStorage(videoId);
   }
 
   /**
    * Incrementar contador de compartidos
    * @param {string} videoId - ID del video
    */
-  incrementShareCount(videoId) {
-    const video = this.videoStorage.get(videoId);
+  async incrementShareCount(videoId) {
+    const video = await this.getVideoFromStorage(videoId);
     if (video) {
       video.shareCount += 1;
-      this.videoStorage.set(videoId, video);
+      await this.saveVideoToStorage(videoId, video);
     }
   }
 
@@ -79,7 +116,7 @@ class VideoShareService {
       title: title,
       description: description,
       image: thumbnail,
-      url: `${this.baseUrl}/video/${video.id}`,
+      url: `${this.baseUrl}/video.html?id=${video.id}`,
       type: 'video.other',
       site_name: 'Yo Pett',
       locale: 'es_ES'
@@ -164,19 +201,26 @@ class VideoShareService {
   }
 
   /**
-   * Limpiar videos antiguos (más de 24 horas)
+   * Limpiar videos antiguos (más de 7 días)
    */
   cleanupOldVideos() {
     const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
-    for (const [videoId, video] of this.videoStorage.entries()) {
+    const allVideos = this.getAllVideosFromStorage();
+    const videosToKeep = {};
+    
+    for (const [videoId, video] of Object.entries(allVideos)) {
       const createdAt = new Date(video.createdAt);
-      if (createdAt < oneDayAgo) {
-        this.videoStorage.delete(videoId);
+      if (createdAt >= oneWeekAgo) {
+        videosToKeep[videoId] = video;
+      } else {
         console.log(`🗑️ Video ${videoId} eliminado por antigüedad`);
       }
     }
+    
+    // Guardar solo los videos que no han expirado
+    localStorage.setItem(this.storageKey, JSON.stringify(videosToKeep));
   }
 
   /**
@@ -184,7 +228,7 @@ class VideoShareService {
    * @returns {Object} Estadísticas
    */
   getStats() {
-    const videos = Array.from(this.videoStorage.values());
+    const videos = Object.values(this.getAllVideosFromStorage());
     const totalShares = videos.reduce((sum, video) => sum + video.shareCount, 0);
     
     return {
@@ -192,6 +236,145 @@ class VideoShareService {
       totalShares: totalShares,
       averageShares: videos.length > 0 ? (totalShares / videos.length).toFixed(1) : 0
     };
+  }
+
+  /**
+   * Guardar video en almacenamiento (localStorage + IndexedDB en producción)
+   * @param {string} videoId - ID del video
+   * @param {Object} videoData - Datos del video
+   */
+  async saveVideoToStorage(videoId, videoData) {
+    try {
+      // Siempre guardar en localStorage para compatibilidad
+      const allVideos = this.getAllVideosFromStorage();
+      allVideos[videoId] = videoData;
+      localStorage.setItem(this.storageKey, JSON.stringify(allVideos));
+      
+      // En producción, también guardar en IndexedDB para mayor capacidad
+      if (this.isProduction && 'indexedDB' in window) {
+        await this.saveToIndexedDB(videoId, videoData);
+      }
+      
+      // Logs solo en desarrollo
+      if (!this.isProduction) {
+        console.log(`💾 Video ${videoId} guardado en localStorage`);
+      }
+    } catch (error) {
+      console.error('Error guardando video:', error);
+    }
+  }
+
+  /**
+   * Obtener video específico desde almacenamiento
+   * @param {string} videoId - ID del video
+   * @returns {Object|null} Datos del video
+   */
+  async getVideoFromStorage(videoId) {
+    try {
+      // Primero intentar desde localStorage
+      const allVideos = this.getAllVideosFromStorage();
+      if (allVideos[videoId]) {
+        return allVideos[videoId];
+      }
+      
+      // En producción, también buscar en IndexedDB
+      if (this.isProduction && 'indexedDB' in window) {
+        const indexedVideo = await this.getFromIndexedDB(videoId);
+        if (indexedVideo) {
+          return indexedVideo;
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error obteniendo video:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Obtener todos los videos desde localStorage
+   * @returns {Object} Todos los videos almacenados
+   */
+  getAllVideosFromStorage() {
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.error('Error obteniendo videos desde localStorage:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Obtener todos los videos del usuario para el perfil
+   * @returns {Array} Array de videos del usuario
+   */
+  getUserVideos() {
+    const allVideos = this.getAllVideosFromStorage();
+    return Object.values(allVideos).sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
+  }
+
+  /**
+   * Guardar video en IndexedDB (para producción)
+   * @param {string} videoId - ID del video
+   * @param {Object} videoData - Datos del video
+   */
+  async saveToIndexedDB(videoId, videoData) {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('YoPettVideos', 1);
+      
+      request.onerror = () => reject(request.error);
+      
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction(['videos'], 'readwrite');
+        const store = transaction.objectStore('videos');
+        const putRequest = store.put(videoData, videoId);
+        
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = () => reject(putRequest.error);
+      };
+      
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains('videos')) {
+          db.createObjectStore('videos');
+        }
+      };
+    });
+  }
+
+  /**
+   * Obtener video desde IndexedDB (para producción)
+   * @param {string} videoId - ID del video
+   * @returns {Object|null} Datos del video
+   */
+  async getFromIndexedDB(videoId) {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('YoPettVideos', 1);
+      
+      request.onerror = () => reject(request.error);
+      
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction(['videos'], 'readonly');
+        const store = transaction.objectStore('videos');
+        const getRequest = store.get(videoId);
+        
+        getRequest.onsuccess = () => resolve(getRequest.result || null);
+        getRequest.onerror = () => reject(getRequest.error);
+      };
+      
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains('videos')) {
+          db.createObjectStore('videos');
+        }
+      };
+    });
   }
 }
 
