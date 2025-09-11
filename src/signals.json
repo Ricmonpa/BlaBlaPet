@@ -1,0 +1,1042 @@
+[
+    {
+      "numero": 1,
+      "senal": "Play bow",
+      "descripcion": "Pecho en el suelo, trasero arriba",
+      "emocion_probable": "Alegría, juego",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Invitación clara a jugar"
+    },
+    {
+      "numero": 2,
+      "senal": "Cola agitada alta",
+      "descripcion": "Movimiento rápido arriba",
+      "emocion_probable": "Excitación positiva",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Entusiasmo, energía"
+    },
+    {
+      "numero": 3,
+      "senal": "Cola baja moviéndose lento",
+      "descripcion": "Movimiento suave",
+      "emocion_probable": "Relajación",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Tranquilidad"
+    },
+    {
+      "numero": 4,
+      "senal": "Cola rígida en alto",
+      "descripcion": "Inmóvil, erguida",
+      "emocion_probable": "Alerta",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Tensión, vigilancia"
+    },
+    {
+      "numero": 5,
+      "senal": "Cola entre piernas",
+      "descripcion": "Oculta, pegada al cuerpo",
+      "emocion_probable": "Miedo",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Inseguridad"
+    },
+    {
+      "numero": 6,
+      "senal": "Orejas erguidas al frente",
+      "descripcion": "Mirada fija",
+      "emocion_probable": "Alerta, curiosidad",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Atención concentrada"
+    },
+    {
+      "numero": 7,
+      "senal": "Orejas hacia atrás",
+      "descripcion": "Pegadas a la cabeza",
+      "emocion_probable": "Incomodidad",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Sumisión o miedo"
+    },
+    {
+      "numero": 8,
+      "senal": "Orejas relajadas",
+      "descripcion": "Sueltas, móviles",
+      "emocion_probable": "Neutralidad",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Estado relajado"
+    },
+    {
+      "numero": 9,
+      "senal": "Lamerse el hocico",
+      "descripcion": "Movimientos rápidos de lengua",
+      "emocion_probable": "Ansiedad",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Estrés leve"
+    },
+    {
+      "numero": 10,
+      "senal": "Bostezo",
+      "descripcion": "Boca abierta larga",
+      "emocion_probable": "Estrés o calma",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Señal de apaciguamiento"
+    },
+    {
+      "numero": 11,
+      "senal": "Ladrido agudo repetitivo",
+      "descripcion": "Corto y rápido",
+      "emocion_probable": "Excitación",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Querer atención/juego"
+    },
+    {
+      "numero": 12,
+      "senal": "Ladrido grave prolongado",
+      "descripcion": "Fuerte y sostenido",
+      "emocion_probable": "Advertencia",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Agresividad defensiva"
+    },
+    {
+      "numero": 13,
+      "senal": "Gruñido bajo",
+      "descripcion": "Ronco y constante",
+      "emocion_probable": "Defensa",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Señal de amenaza"
+    },
+    {
+      "numero": 14,
+      "senal": "Gemido suave",
+      "descripcion": "Sonido nasal",
+      "emocion_probable": "Ansiedad/atención",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Búsqueda de contacto"
+    },
+    {
+      "numero": 15,
+      "senal": "Jadeo acelerado",
+      "descripcion": "Respiración rápida",
+      "emocion_probable": "Estrés o calor",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Incomodidad"
+    },
+    {
+      "numero": 16,
+      "senal": "Jadeo tranquilo",
+      "descripcion": "Boca abierta ligera",
+      "emocion_probable": "Relajación",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Bienestar"
+    },
+    {
+      "numero": 17,
+      "senal": "Mostrar dientes (labios retraídos)",
+      "descripcion": "Hocico arrugado",
+      "emocion_probable": "Agresión",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Intimidación"
+    },
+    {
+      "numero": 18,
+      "senal": "Hocico relajado",
+      "descripcion": "Boca cerrada suave",
+      "emocion_probable": "Neutral",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Tranquilo"
+    },
+    {
+      "numero": 19,
+      "senal": "Hocico semiabierto con lengua afuera",
+      "descripcion": "Relajado",
+      "emocion_probable": "Felicidad",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Contento"
+    },
+    {
+      "numero": 20,
+      "senal": "Cabeza ladeada",
+      "descripcion": "Giro lateral curioso",
+      "emocion_probable": "Interés",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Atención a estímulo"
+    },
+    {
+      "numero": 21,
+      "senal": "Evitar contacto visual",
+      "descripcion": "Mirada desviada",
+      "emocion_probable": "Sumisión",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Evadir conflicto"
+    },
+    {
+      "numero": 22,
+      "senal": "Mirada fija intensa",
+      "descripcion": "Ojos clavados",
+      "emocion_probable": "Dominancia/amenaza",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Advertencia seria"
+    },
+    {
+      "numero": 23,
+      "senal": "Ojos semicerrados",
+      "descripcion": "Párpados caídos",
+      "emocion_probable": "Relajación",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Confort"
+    },
+    {
+      "numero": 24,
+      "senal": "Ojos muy abiertos",
+      "descripcion": "Pupilas dilatadas",
+      "emocion_probable": "Alerta",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Miedo o excitación"
+    },
+    {
+      "numero": 25,
+      "senal": "Movimiento de orejas constante",
+      "descripcion": "Adelante y atrás",
+      "emocion_probable": "Indecisión",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Evaluando situación"
+    },
+    {
+      "numero": 26,
+      "senal": "Postura encogida",
+      "descripcion": "Cuerpo bajo al suelo",
+      "emocion_probable": "Miedo",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Evitación"
+    },
+    {
+      "numero": 27,
+      "senal": "Postura erguida rígida",
+      "descripcion": "Cuerpo firme, inflado",
+      "emocion_probable": "Confianza/agresión",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Dominancia"
+    },
+    {
+      "numero": 28,
+      "senal": "Rodar panza arriba",
+      "descripcion": "Mostrar vientre",
+      "emocion_probable": "Sumisión/juego",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Confianza o rendición"
+    },
+    {
+      "numero": 29,
+      "senal": "Pata levantada",
+      "descripcion": "Una pata delantera arriba",
+      "emocion_probable": "Ansiedad o expectativa",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Espera de estímulo"
+    },
+    {
+      "numero": 30,
+      "senal": "Saltos repetidos",
+      "descripcion": "Rebotar con patas delanteras",
+      "emocion_probable": "Juego",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Emoción alta"
+    },
+    {
+      "numero": 31,
+      "senal": "Empujar con la pata",
+      "descripcion": "Tocar humano o perro",
+      "emocion_probable": "Atención",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Solicitar contacto"
+    },
+    {
+      "numero": 32,
+      "senal": "Montar",
+      "descripcion": "Subirse sobre otro",
+      "emocion_probable": "Dominancia/estrés",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Control o ansiedad"
+    },
+    {
+      "numero": 33,
+      "senal": "Círculos antes de acostarse",
+      "descripcion": "Dar vueltas",
+      "emocion_probable": "Comodidad",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Rutina instintiva"
+    },
+    {
+      "numero": 34,
+      "senal": "Rascar el suelo",
+      "descripcion": "Con patas delanteras",
+      "emocion_probable": "Marcaje",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Liberar energía"
+    },
+    {
+      "numero": 35,
+      "senal": "Escarbar obsesivamente",
+      "descripcion": "Cavando",
+      "emocion_probable": "Estrés/juego",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Ansiedad o instinto"
+    },
+    {
+      "numero": 36,
+      "senal": "Frotarse contra persona",
+      "descripcion": "Cuerpo al contacto",
+      "emocion_probable": "Afecto",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Búsqueda de cariño"
+    },
+    {
+      "numero": 37,
+      "senal": "Apoyar cabeza en alguien",
+      "descripcion": "Peso suave",
+      "emocion_probable": "Confianza",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Apego"
+    },
+    {
+      "numero": 38,
+      "senal": "Lamer cara de persona",
+      "descripcion": "Contacto directo",
+      "emocion_probable": "Afecto/sumisión",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Cariño o respeto"
+    },
+    {
+      "numero": 39,
+      "senal": "Lamer patas propias",
+      "descripcion": "Lengua insistente",
+      "emocion_probable": "Ansiedad/dolor",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Estrés o molestia"
+    },
+    {
+      "numero": 40,
+      "senal": "Morder objetos suaves",
+      "descripcion": "Juego",
+      "emocion_probable": "Juego/exploración",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Redirigir energía"
+    },
+    {
+      "numero": 41,
+      "senal": "Morder fuerte",
+      "descripcion": "Presión excesiva",
+      "emocion_probable": "Estrés/agresión",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Descontrol"
+    },
+    {
+      "numero": 42,
+      "senal": "Sacudirse el cuerpo",
+      "descripcion": "Como al secarse",
+      "emocion_probable": "Estrés liberado",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Reset emocional"
+    },
+    {
+      "numero": 43,
+      "senal": "Erizar pelo del lomo",
+      "descripcion": "Pelaje levantado",
+      "emocion_probable": "Alerta",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Defensa/agresión"
+    },
+    {
+      "numero": 44,
+      "senal": "Caminar en círculos insistente",
+      "descripcion": "Girar sin parar",
+      "emocion_probable": "Estrés",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Ansiedad"
+    },
+    {
+      "numero": 45,
+      "senal": "Movimiento rápido adelante y atrás",
+      "descripcion": "Inquietud",
+      "emocion_probable": "Excitación",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Nerviosismo"
+    },
+    {
+      "numero": 46,
+      "senal": "Escaparse al rincón",
+      "descripcion": "Alejarse",
+      "emocion_probable": "Miedo",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Evitar interacción"
+    },
+    {
+      "numero": 47,
+      "senal": "Seguir al humano",
+      "descripcion": "Acompañar cerca",
+      "emocion_probable": "Apego",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Necesidad de compañía"
+    },
+    {
+      "numero": 48,
+      "senal": "Esconder juguetes",
+      "descripcion": "Guardar objetos",
+      "emocion_probable": "Instinto/ansiedad",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Protección"
+    },
+    {
+      "numero": 49,
+      "senal": "Traer objetos al humano",
+      "descripcion": "Llevar en la boca",
+      "emocion_probable": "Juego/afecto",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Cooperación"
+    },
+    {
+      "numero": 50,
+      "senal": "Negarse a moverse",
+      "descripcion": "Quieto",
+      "emocion_probable": "Miedo/incomodidad",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Resistencia"
+    },
+    {
+      "numero": 51,
+      "senal": "Cola en forma de “S”",
+      "descripcion": "Movimiento ondulante",
+      "emocion_probable": "Curiosidad",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Exploración"
+    },
+    {
+      "numero": 52,
+      "senal": "Cola inmóvil recta",
+      "descripcion": "Sin movimiento",
+      "emocion_probable": "Atención máxima",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Observación"
+    },
+    {
+      "numero": 53,
+      "senal": "Cola movida solo en la punta",
+      "descripcion": "Mov. pequeño",
+      "emocion_probable": "Incertidumbre",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Duda"
+    },
+    {
+      "numero": 54,
+      "senal": "Cola golpeando fuerte",
+      "descripcion": "Contra superficies",
+      "emocion_probable": "Alegría intensa",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Entusiasmo"
+    },
+    {
+      "numero": 55,
+      "senal": "Orejas asimétricas",
+      "descripcion": "Una adelante otra atrás",
+      "emocion_probable": "Confusión",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Ambivalencia"
+    },
+    {
+      "numero": 56,
+      "senal": "Sonido de “chirrido”",
+      "descripcion": "Agudo nasal",
+      "emocion_probable": "Dolor",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Incomodidad"
+    },
+    {
+      "numero": 57,
+      "senal": "Gruñido corto con cola moviéndose",
+      "descripcion": "Confusión",
+      "emocion_probable": "Jugar/agresión leve",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Juego rudo"
+    },
+    {
+      "numero": 58,
+      "senal": "Gemido con orejas atrás",
+      "descripcion": "Sonido suave",
+      "emocion_probable": "Ansiedad",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Malestar"
+    },
+    {
+      "numero": 59,
+      "senal": "Salto sobre persona",
+      "descripcion": "Rebotar encima",
+      "emocion_probable": "Excitación",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Solicitud de atención"
+    },
+    {
+      "numero": 60,
+      "senal": "Apoyo de patas delanteras en persona",
+      "descripcion": "Cuerpo erguido",
+      "emocion_probable": "Apego/exigencia",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Buscar contacto"
+    },
+    {
+      "numero": 61,
+      "senal": "Morder ropa suavemente",
+      "descripcion": "Juguetear",
+      "emocion_probable": "Juego",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Interacción"
+    },
+    {
+      "numero": 62,
+      "senal": "Morder con presión fuerte",
+      "descripcion": "Dañar ropa",
+      "emocion_probable": "Estrés",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Control agresivo"
+    },
+    {
+      "numero": 63,
+      "senal": "Perseguir cola",
+      "descripcion": "Girar rápido",
+      "emocion_probable": "Juego/ansiedad",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Instinto o estrés"
+    },
+    {
+      "numero": 64,
+      "senal": "Empujar con hocico",
+      "descripcion": "Toque suave",
+      "emocion_probable": "Afecto/solicitud",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Atención"
+    },
+    {
+      "numero": 65,
+      "senal": "Frotarse en el suelo",
+      "descripcion": "Lomo al piso",
+      "emocion_probable": "Juego/placer",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Bienestar"
+    },
+    {
+      "numero": 66,
+      "senal": "Pararse en dos patas",
+      "descripcion": "Erguido sobre traseras",
+      "emocion_probable": "Juego o atención",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Solicitud"
+    },
+    {
+      "numero": 67,
+      "senal": "Dar la pata",
+      "descripcion": "Levantar para contacto",
+      "emocion_probable": "Cooperación",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Señal aprendida"
+    },
+    {
+      "numero": 68,
+      "senal": "Morderse la cola",
+      "descripcion": "Autolesión",
+      "emocion_probable": "Estrés",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Ansiedad severa"
+    },
+    {
+      "numero": 69,
+      "senal": "Girar cabeza rápido",
+      "descripcion": "Evadir contacto",
+      "emocion_probable": "Incomodidad",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Señal de calma"
+    },
+    {
+      "numero": 70,
+      "senal": "Olfatear suelo insistentemente",
+      "descripcion": "Nariz pegada",
+      "emocion_probable": "Nerviosismo",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Evadir conflicto"
+    },
+    {
+      "numero": 71,
+      "senal": "Ladrido entrecortado",
+      "descripcion": "Pausado",
+      "emocion_probable": "Inseguridad",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Advertencia cauta"
+    },
+    {
+      "numero": 72,
+      "senal": "Aullar prolongado",
+      "descripcion": "Sonido largo",
+      "emocion_probable": "Soledad",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Llamado a grupo"
+    },
+    {
+      "numero": 73,
+      "senal": "Aullido corto repetido",
+      "descripcion": "Seguido",
+      "emocion_probable": "Ansiedad separación",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Angustia"
+    },
+    {
+      "numero": 74,
+      "senal": "Ronroneo bajo (pocos lo hacen)",
+      "descripcion": "Vibración leve",
+      "emocion_probable": "Placer",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Relajación"
+    },
+    {
+      "numero": 75,
+      "senal": "Hocico arrugado sin dientes",
+      "descripcion": "Arruga leve",
+      "emocion_probable": "Molestia",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Advertencia"
+    },
+    {
+      "numero": 76,
+      "senal": "Caminar lento con cabeza baja",
+      "descripcion": "Paso pesado",
+      "emocion_probable": "Sumisión",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Inseguridad"
+    },
+    {
+      "numero": 77,
+      "senal": "Balanceo de cuerpo",
+      "descripcion": "Mover lado a lado",
+      "emocion_probable": "Inquietud",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Nerviosismo"
+    },
+    {
+      "numero": 78,
+      "senal": "Dormir sobre espalda",
+      "descripcion": "Exponer vientre",
+      "emocion_probable": "Confianza total",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Seguridad"
+    },
+    {
+      "numero": 79,
+      "senal": "Dormir encogido",
+      "descripcion": "Enroscado",
+      "emocion_probable": "Frío/seguridad",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Autoprotección"
+    },
+    {
+      "numero": 80,
+      "senal": "Dormir sobre costado",
+      "descripcion": "Relajado",
+      "emocion_probable": "Tranquilidad",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Bienestar"
+    },
+    {
+      "numero": 81,
+      "senal": "Párpadeo lento",
+      "descripcion": "Cerrar y abrir suave",
+      "emocion_probable": "Confianza",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Señal de calma"
+    },
+    {
+      "numero": 82,
+      "senal": "Relamer aire",
+      "descripcion": "Lengua fuera sin contacto",
+      "emocion_probable": "Ansiedad",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Estrés"
+    },
+    {
+      "numero": 83,
+      "senal": "Respiración muy acelerada sin calor",
+      "descripcion": "Hiperventilar",
+      "emocion_probable": "Estrés fuerte",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Pánico"
+    },
+    {
+      "numero": 84,
+      "senal": "Chasquido de dientes",
+      "descripcion": "Ruido rápido",
+      "emocion_probable": "Estrés",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Advertencia"
+    },
+    {
+      "numero": 85,
+      "senal": "Olfatear aire con cabeza alta",
+      "descripcion": "Nariz arriba",
+      "emocion_probable": "Alerta",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Exploración"
+    },
+    {
+      "numero": 86,
+      "senal": "Orejas rotando hacia sonidos",
+      "descripcion": "Movimiento rápido",
+      "emocion_probable": "Atención",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Seguimiento auditivo"
+    },
+    {
+      "numero": 87,
+      "senal": "Evitar contacto físico",
+      "descripcion": "Apartarse",
+      "emocion_probable": "Incomodidad",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Rechazo"
+    },
+    {
+      "numero": 88,
+      "senal": "Buscar regazo",
+      "descripcion": "Subirse encima",
+      "emocion_probable": "Apego",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Cariño"
+    },
+    {
+      "numero": 89,
+      "senal": "Cabeza sobre objeto",
+      "descripcion": "Dejar peso",
+      "emocion_probable": "Relajación",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Descanso"
+    },
+    {
+      "numero": 90,
+      "senal": "Cola enrollada sobre lomo (raza nórdica)",
+      "descripcion": "En curva arriba",
+      "emocion_probable": "Neutral/feliz",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Normalidad"
+    },
+    {
+      "numero": 91,
+      "senal": "Cola rígida enrollada",
+      "descripcion": "Muy dura",
+      "emocion_probable": "Alerta",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Tensión"
+    },
+    {
+      "numero": 92,
+      "senal": "Oídos vibrando",
+      "descripcion": "Movimiento fino",
+      "emocion_probable": "Estrés",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Nerviosismo"
+    },
+    {
+      "numero": 93,
+      "senal": "Respiración pausada profunda",
+      "descripcion": "Suspiro",
+      "emocion_probable": "Relajación",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Tranquilidad"
+    },
+    {
+      "numero": 94,
+      "senal": "Evadir juego tras invitación",
+      "descripcion": "Ignorar",
+      "emocion_probable": "Cansancio",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "No interés"
+    },
+    {
+      "numero": 95,
+      "senal": "Responder play bow con otro",
+      "descripcion": "Imita postura",
+      "emocion_probable": "Juego compartido",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Aceptar juego"
+    },
+    {
+      "numero": 96,
+      "senal": "Seguir con mirada humano",
+      "descripcion": "Ojos atentos",
+      "emocion_probable": "Apego",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Vínculo"
+    },
+    {
+      "numero": 97,
+      "senal": "Mirada desviada al recibir caricia",
+      "descripcion": "Evadir ojos",
+      "emocion_probable": "Incomodidad leve",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Ambivalencia"
+    },
+    {
+      "numero": 98,
+      "senal": "Movimientos torpes de cachorro",
+      "descripcion": "Descoordinación",
+      "emocion_probable": "Juego",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Inmadurez"
+    },
+    {
+      "numero": 99,
+      "senal": "Cuerpo rígido previo a ataque",
+      "descripcion": "Tenso total",
+      "emocion_probable": "Agresión inminente",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Advertencia crítica"
+    },
+    {
+      "numero": 100,
+      "senal": "Relajación total post-juego",
+      "descripcion": "Cuerpo tirado",
+      "emocion_probable": "Cansancio",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Bienestar"
+    },
+    {
+      "numero": 101,
+      "senal": "Play bow (pecho al piso, cadera arriba, cola moviendo)",
+      "descripcion": "Pecho en el suelo, trasero arriba, cola moviéndose",
+      "emocion_probable": "Invitación a jugar",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Invitación clara a jugar"
+    },
+    {
+      "numero": 102,
+      "senal": "Cola moviéndose en círculos amplios",
+      "descripcion": "Movimiento circular amplio de la cola",
+      "emocion_probable": "Excitación positiva",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "¡Estoy feliz de verte!"
+    },
+    {
+      "numero": 103,
+      "senal": "Cola rígida y alta",
+      "descripcion": "Cola completamente rígida y erguida",
+      "emocion_probable": "Alerta, dominancia",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "¿Quién anda ahí?"
+    },
+    {
+      "numero": 104,
+      "senal": "Cola baja pero moviéndose",
+      "descripcion": "Cola baja pero con movimiento suave",
+      "emocion_probable": "Nerviosismo amigable",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Hola… ¿amigos?"
+    },
+    {
+      "numero": 105,
+      "senal": "Cola entre piernas",
+      "descripcion": "Cola completamente oculta entre las patas traseras",
+      "emocion_probable": "Miedo",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Tengo miedo"
+    },
+    {
+      "numero": 106,
+      "senal": "Orejas erguidas hacia adelante",
+      "descripcion": "Orejas completamente erectas apuntando al frente",
+      "emocion_probable": "Atención, alerta",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "¿Qué es eso?"
+    },
+    {
+      "numero": 107,
+      "senal": "Orejas hacia atrás",
+      "descripcion": "Orejas completamente pegadas hacia atrás",
+      "emocion_probable": "Incomodidad",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "No quiero problemas"
+    },
+    {
+      "numero": 108,
+      "senal": "Lamerse el hocico rápidamente",
+      "descripcion": "Lengua moviéndose rápidamente sobre el hocico",
+      "emocion_probable": "Señal de calma",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Estoy un poco incómoda"
+    },
+    {
+      "numero": 109,
+      "senal": "Bostezo",
+      "descripcion": "Boca abierta ampliamente",
+      "emocion_probable": "Estrés leve o calma",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Necesito relajarme"
+    },
+    {
+      "numero": 110,
+      "senal": "Voltearse mostrando vientre",
+      "descripcion": "Rodar completamente mostrando el vientre",
+      "emocion_probable": "Confianza / sumisión",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Confío en ti"
+    },
+    {
+      "numero": 111,
+      "senal": "Saltar hacia persona con juguete",
+      "descripcion": "Salto hacia el humano llevando un juguete",
+      "emocion_probable": "Invitación a jugar",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "¡Juega conmigo ya!"
+    },
+    {
+      "numero": 112,
+      "senal": "Traer objeto y soltarlo",
+      "descripcion": "Llevar objeto en la boca y soltarlo cerca",
+      "emocion_probable": "Juego compartido",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Toma, te toca"
+    },
+    {
+      "numero": 113,
+      "senal": "Morder suave (boca abierta, sin presión)",
+      "descripcion": "Mordida suave sin aplicar presión",
+      "emocion_probable": "Juego",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Juego contigo"
+    },
+    {
+      "numero": 114,
+      "senal": "Morder fuerte con gruñido",
+      "descripcion": "Mordida fuerte acompañada de gruñido",
+      "emocion_probable": "Defensa",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "¡Aléjate!"
+    },
+    {
+      "numero": 115,
+      "senal": "Cabeza ladeada",
+      "descripcion": "Giro lateral de la cabeza",
+      "emocion_probable": "Curiosidad, atención",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "¿Qué dijiste?"
+    },
+    {
+      "numero": 116,
+      "senal": "Olfatear el suelo repentinamente",
+      "descripcion": "Cambio brusco para olfatear el suelo",
+      "emocion_probable": "Calma / evitar conflicto",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Tranquilo, no quiero pelea"
+    },
+    {
+      "numero": 117,
+      "senal": "Sacudir cuerpo como si saliera del agua",
+      "descripcion": "Sacudida completa del cuerpo",
+      "emocion_probable": "Liberar tensión",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Ok, reseteo"
+    },
+    {
+      "numero": 118,
+      "senal": "Caminar en círculos antes de echarse",
+      "descripcion": "Dar vueltas circulares antes de acostarse",
+      "emocion_probable": "Instinto de acomodo",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Me preparo para descansar"
+    },
+    {
+      "numero": 119,
+      "senal": "Gruñido grave sostenido",
+      "descripcion": "Gruñido profundo y continuo",
+      "emocion_probable": "Amenaza",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Respeta mi espacio"
+    },
+    {
+      "numero": 120,
+      "senal": "Gruñido corto con cola moviendo",
+      "descripcion": "Gruñido breve con cola en movimiento",
+      "emocion_probable": "Juego vocal",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "¡Qué divertido!"
+    },
+    {
+      "numero": 121,
+      "senal": "Ladrido agudo y repetido",
+      "descripcion": "Ladrido de tono alto y repetitivo",
+      "emocion_probable": "Excitación",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "¡Ven, mira esto!"
+    },
+    {
+      "numero": 122,
+      "senal": "Ladrido grave y espaciado",
+      "descripcion": "Ladrido profundo con pausas",
+      "emocion_probable": "Alerta defensiva",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Aléjate"
+    },
+    {
+      "numero": 123,
+      "senal": "Aullido",
+      "descripcion": "Sonido largo y melancólico",
+      "emocion_probable": "Comunicación a distancia",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "¿Dónde están todos?"
+    },
+    {
+      "numero": 124,
+      "senal": "Gemidos cortos",
+      "descripcion": "Gemidos de duración breve",
+      "emocion_probable": "Ansiedad leve",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Hazme caso"
+    },
+    {
+      "numero": 125,
+      "senal": "Gemidos largos",
+      "descripcion": "Gemidos prolongados y sostenidos",
+      "emocion_probable": "Dolor, angustia",
+      "intensidad_1-5": 4,
+      "interpretacion_priorizada": "Me siento mal"
+    },
+    {
+      "numero": 126,
+      "senal": "Dar la pata suavemente",
+      "descripcion": "Levantar la pata de forma suave",
+      "emocion_probable": "Búsqueda de contacto",
+      "intensidad_1-5": 1,
+      "interpretacion_priorizada": "Quiero tu atención"
+    },
+    {
+      "numero": 127,
+      "senal": "Empujar con hocico",
+      "descripcion": "Empujón suave con la nariz",
+      "emocion_probable": "Juego, petición",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Sígueme"
+    },
+    {
+      "numero": 128,
+      "senal": "Rascar el piso después de orinar",
+      "descripcion": "Rascar el suelo post-micción",
+      "emocion_probable": "Marcaje",
+      "intensidad_1-5": 2,
+      "interpretacion_priorizada": "Esto es mío"
+    },
+    {
+      "numero": 129,
+      "senal": "Montar sin intención sexual",
+      "descripcion": "Montar sobre otro sin contexto sexual",
+      "emocion_probable": "Dominancia",
+      "intensidad_1-5": 3,
+      "interpretacion_priorizada": "Quiero controlar/jugar"
+    },
+    {
+      "numero": 130,
+      "senal": "Postura rígida, mirada fija",
+      "descripcion": "Cuerpo tenso con mirada intensa",
+      "emocion_probable": "Amenaza",
+      "intensidad_1-5": 5,
+      "interpretacion_priorizada": "Te estoy evaluando"
+    }
+  ]
