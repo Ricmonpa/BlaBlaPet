@@ -1,0 +1,23 @@
+{
+  "id": "test_video_1757632000",
+  "petName": "Luna",
+  "translation": "¡Quiero salir a pasear! 🐕",
+  "emotionalDubbing": "El perro está expresando ganas de salir y hacer ejercicio",
+  "mediaUrl": "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop",
+  "mediaType": "video",
+  "thumbnailUrl": "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop",
+  "userId": "user_test",
+  "createdAt": "2024-01-15T10:30:00.000Z",
+  "updatedAt": "2024-01-15T10:30:00.000Z",
+  "shareCount": 0,
+  "likeCount": 0,
+  "commentCount": 0,
+  "isPublic": true,
+  "tags": ["perro", "pasear", "ejercicio"],
+  "metadata": {
+    "duration": 25,
+    "fileSize": 1500000,
+    "resolution": "400x600",
+    "format": "mp4"
+  }
+}

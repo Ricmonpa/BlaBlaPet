@@ -1,7 +1,10 @@
 /**
  * Servicio para generar URLs únicas de videos analizados
  * Permite compartir videos con preview como TikTok
+ * Ahora usa base de datos real en lugar de localStorage
  */
+
+import videoApiService from './videoApiService.js';
 class VideoShareService {
   constructor() {
     // Detectar si estamos en producción o desarrollo
@@ -58,27 +61,76 @@ class VideoShareService {
   async storeVideoAndGenerateUrl(post) {
     const videoId = this.generateVideoId(post);
     
-    // Crear objeto de video con metadatos
+    // Crear objeto de video con metadatos para la base de datos
     const videoData = {
-      ...post,
       id: videoId,
+      petName: post.petName || 'Mi mascota',
+      translation: post.translation || post.emotionalDubbing || 'Análisis de comportamiento',
+      emotionalDubbing: post.emotionalDubbing || '',
+      mediaUrl: post.mediaUrl || '',
+      mediaType: post.mediaType || 'video',
+      thumbnailUrl: post.mediaUrl || '', // Usar la misma URL del video real
+      userId: post.userId || 'default_user',
       createdAt: new Date().toISOString(),
-      shareCount: 0
+      updatedAt: new Date().toISOString(),
+      shareCount: 0,
+      likeCount: 0,
+      commentCount: 0,
+      isPublic: true,
+      tags: post.tags || [],
+      // Incluir propiedades de subtítulos secuenciales
+      isSequentialSubtitles: post.isSequentialSubtitles || false,
+      subtitles: post.subtitles || null,
+      totalDuration: post.totalDuration || post.duration || 30,
+      metadata: {
+        duration: post.duration || 30,
+        fileSize: post.fileSize || 0,
+        resolution: post.resolution || '400x600',
+        format: post.format || 'mp4'
+      }
     };
     
-    // Guardar en almacenamiento
-    await this.saveVideoToStorage(videoId, videoData);
+    try {
+      // Guardar en base de datos real
+      await videoApiService.saveVideo(videoData);
+      
+      // NO guardar en localStorage para videos (son demasiado grandes)
+      // Solo guardar metadatos básicos si es necesario
+      if (videoData.mediaType !== 'video') {
+        await this.saveVideoToStorage(videoId, videoData);
+      }
 
-    // Generar URL única con parámetros para el preview
-    const videoUrl = `${this.baseUrl}/video.html?id=${videoId}`;
-    
-    // Logs solo en desarrollo
-    if (!this.isProduction) {
-      console.log(`📹 Video almacenado persistentemente con ID: ${videoId}`);
-      console.log(`🔗 URL generada: ${videoUrl}`);
+      // Generar URL del video real si tiene filePath
+      let videoUrl;
+      if (videoData.filePath) {
+        videoUrl = `${this.baseUrl}/videos/${videoData.filePath}`;
+      } else {
+        videoUrl = `${this.baseUrl}/api/video-preview/${videoId}`;
+      }
+      
+      // Logs solo en desarrollo
+      if (!this.isProduction) {
+        console.log(`📹 Video almacenado en base de datos con ID: ${videoId}`);
+        console.log(`🔗 URL generada: ${videoUrl}`);
+      }
+      
+      return videoUrl;
+    } catch (error) {
+      console.error('❌ Error guardando video en base de datos:', error);
+      
+      // Para videos, no usar localStorage como fallback (muy grande)
+      if (videoData.mediaType === 'video') {
+        console.log('❌ No se puede usar localStorage para videos (muy grandes)');
+        throw error;
+      }
+      
+      // Solo para imágenes, usar localStorage como fallback
+      console.log('🔄 Usando fallback a localStorage para imagen...');
+      await this.saveVideoToStorage(videoId, videoData);
+      
+      const videoUrl = `${this.baseUrl}/api/video-preview/${videoId}`;
+      return videoUrl;
     }
-    
-    return videoUrl;
   }
 
   /**
@@ -87,7 +139,21 @@ class VideoShareService {
    * @returns {Promise<Object|null>} Datos del video o null si no existe
    */
   async getVideoById(videoId) {
-    return await this.getVideoFromStorage(videoId);
+    try {
+      // Intentar obtener desde la base de datos primero
+      const video = await videoApiService.getVideoById(videoId);
+      if (video) {
+        return video;
+      }
+      
+      // Fallback a localStorage si no se encuentra en la base de datos
+      console.log('🔄 Video no encontrado en base de datos, buscando en localStorage...');
+      return await this.getVideoFromStorage(videoId);
+    } catch (error) {
+      console.error('❌ Error obteniendo video:', error);
+      // Fallback a localStorage
+      return await this.getVideoFromStorage(videoId);
+    }
   }
 
   /**
@@ -95,10 +161,24 @@ class VideoShareService {
    * @param {string} videoId - ID del video
    */
   async incrementShareCount(videoId) {
-    const video = await this.getVideoFromStorage(videoId);
-    if (video) {
-      video.shareCount += 1;
-      await this.saveVideoToStorage(videoId, video);
+    try {
+      // Incrementar en la base de datos
+      await videoApiService.incrementShareCount(videoId);
+      
+      // También actualizar en localStorage como backup
+      const video = await this.getVideoFromStorage(videoId);
+      if (video) {
+        video.shareCount += 1;
+        await this.saveVideoToStorage(videoId, video);
+      }
+    } catch (error) {
+      console.error('❌ Error incrementando contador de compartidos:', error);
+      // Fallback a localStorage
+      const video = await this.getVideoFromStorage(videoId);
+      if (video) {
+        video.shareCount += 1;
+        await this.saveVideoToStorage(videoId, video);
+      }
     }
   }
 
@@ -116,7 +196,7 @@ class VideoShareService {
       title: title,
       description: description,
       image: thumbnail,
-      url: `${this.baseUrl}/video.html?id=${video.id}`,
+      url: `${this.baseUrl}/api/video-preview/${video.id}`,
       type: 'video.other',
       site_name: 'Yo Pett',
       locale: 'es_ES'
@@ -196,8 +276,9 @@ class VideoShareService {
   generateShareText(video) {
     const petName = video.petName || 'mi mascota';
     const translation = video.translation || video.emotionalDubbing || 'análisis de comportamiento';
+    const videoUrl = `${this.baseUrl}/api/video-preview/${video.id}`;
     
-    return `¡Mira lo que dice ${petName}! 🐕\n\n"${translation}"\n\n#YoPett #Perros #Mascotas\n\nVer video completo: ${this.baseUrl}/video/${video.id}`;
+    return `¡Mira lo que dice ${petName}! 🐕\n\n"${translation}"\n\n#YoPett #Perros #Mascotas\n\nVer video completo:\n${videoUrl}`;
   }
 
   /**
@@ -315,6 +396,26 @@ class VideoShareService {
     return Object.values(allVideos).sort((a, b) => 
       new Date(b.createdAt) - new Date(a.createdAt)
     );
+  }
+
+  /**
+   * Obtener feed de videos públicos (desde base de datos)
+   * @returns {Promise<Array>} Array de videos públicos
+   */
+  async getPublicFeed() {
+    try {
+      const videos = await videoApiService.getAllVideos();
+      return videos
+        .filter(video => video.isPublic)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } catch (error) {
+      console.error('❌ Error obteniendo feed público:', error);
+      // Fallback a localStorage
+      const allVideos = this.getAllVideosFromStorage();
+      return Object.values(allVideos)
+        .filter(video => video.isPublic !== false)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
   }
 
   /**

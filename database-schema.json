@@ -1,0 +1,49 @@
+{
+  "videos": [
+    {
+      "id": "example_video_123",
+      "petName": "Max",
+      "translation": "¡Hola! Quiero jugar contigo 🐕",
+      "emotionalDubbing": "El perro está expresando alegría y ganas de jugar",
+      "mediaUrl": "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop",
+      "mediaType": "video",
+      "thumbnailUrl": "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop",
+      "userId": "user_123",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z",
+      "shareCount": 0,
+      "likeCount": 0,
+      "commentCount": 0,
+      "isPublic": true,
+      "tags": ["perro", "jugar", "alegría"],
+      "metadata": {
+        "duration": 30,
+        "fileSize": 2048000,
+        "resolution": "400x600",
+        "format": "mp4"
+      }
+    }
+  ],
+  "users": [
+    {
+      "id": "user_123",
+      "name": "Usuario Demo",
+      "email": "demo@example.com",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "lastActive": "2024-01-15T10:30:00.000Z",
+      "videoCount": 1,
+      "totalShares": 0
+    }
+  ],
+  "shares": [
+    {
+      "id": "share_123",
+      "videoId": "example_video_123",
+      "userId": "user_123",
+      "platform": "whatsapp",
+      "sharedAt": "2024-01-15T10:35:00.000Z",
+      "shareUrl": "https://wa.me/?text=...",
+      "success": true
+    }
+  ]
+}

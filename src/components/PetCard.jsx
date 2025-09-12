@@ -4,9 +4,21 @@ import ShareModal from './ShareModal.jsx';
 
 const PetCard = ({ post }) => {
   const [isLiked, setIsLiked] = useState(false);
-  const [showTranslation, setShowTranslation] = useState(true);
+  const [showTranslation, setShowTranslation] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const videoRef = useRef(null);
+
+  // Debug logging para subtítulos secuenciales
+  if (post.isSequentialSubtitles) {
+    console.log('🎬 PetCard recibió video con subtítulos secuenciales:', {
+      id: post.id,
+      petName: post.petName,
+      isSequentialSubtitles: post.isSequentialSubtitles,
+      subtitlesCount: post.subtitles?.length,
+      totalDuration: post.totalDuration,
+      mediaType: post.mediaType
+    });
+  }
 
   const formatNumber = (num) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -33,6 +45,11 @@ const PetCard = ({ post }) => {
             loop
             muted
             playsInline
+            onError={(e) => {
+              console.warn('Error cargando video:', e);
+              // Mostrar mensaje de error si el video no se puede cargar
+              e.target.style.display = 'none';
+            }}
           />
         ) : (
           <img
@@ -138,7 +155,7 @@ const PetCard = ({ post }) => {
               <p className="text-gray-300 text-sm">{post.timestamp}</p>
             </div>
             
-            {!showTranslation && !post.isSequentialSubtitles && (
+            {!showTranslation && !post.isSequentialSubtitles && (post.translation || post.emotionalDubbing) && (
               <button
                 onClick={() => setShowTranslation(true)}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"

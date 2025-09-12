@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import SignalAnalysisService from './signalAnalysisService.js';
+import thoughtModelService from './thoughtModelService.js';
 
 class GeminiService {
   constructor() {
@@ -7,8 +7,8 @@ class GeminiService {
     this.genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
     this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    // Inicializar servicio de análisis con matriz de señales
-    this.signalAnalysisService = new SignalAnalysisService();
+    // Usar el modelo de pensamiento actual
+    this.thoughtModelService = thoughtModelService;
   }
 
   // Analizar imagen/video y generar traducción (método original)
@@ -59,32 +59,22 @@ class GeminiService {
     }
   }
 
-  // Analizar imagen/video usando matriz de señales (nuevo método)
-  async analyzePetMediaWithSignalMatrix(mediaData, mediaType = 'image', useSimpleAnalysis = true) {
+  // Analizar imagen/video usando modelo de pensamiento (método actual)
+  async analyzePetMediaWithThoughtModel(mediaData, mediaType = 'image', useSimpleAnalysis = true) {
     try {
-      console.log('🔍 Analizando media con matriz de señales...');
+      console.log('🧠 Analizando media con modelo de pensamiento...');
       
-      // Timeout general para todo el análisis
-      const analysisTimeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout in signal matrix analysis')), 45000)
+      // Usar el servicio de modelo de pensamiento
+      const analysis = await this.thoughtModelService.analyzePetMediaWithThoughtModel(
+        mediaData, 
+        mediaType
       );
       
-      const analysisPromise = (async () => {
-        // Usar el servicio de análisis con matriz de señales
-        const analysis = await this.signalAnalysisService.analyzeWithSignalMatrix(
-          mediaData, 
-          mediaType, 
-          this
-        );
-        
-        console.log('✅ Análisis con matriz completado:', analysis);
-        return analysis;
-      })();
-      
-      return await Promise.race([analysisPromise, analysisTimeout]);
+      console.log('✅ Análisis con modelo de pensamiento completado:', analysis);
+      return analysis;
       
     } catch (error) {
-      console.error('❌ Error en análisis con matriz de señales:', error);
+      console.error('❌ Error en análisis con modelo de pensamiento:', error);
       throw error;
     }
   }

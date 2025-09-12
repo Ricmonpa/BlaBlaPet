@@ -21,6 +21,13 @@ const VideoPreview = () => {
       return;
     }
 
+    console.log('🎬 Video data:', {
+      id: videoData.id,
+      isSequentialSubtitles: videoData.isSequentialSubtitles,
+      subtitles: videoData.subtitles?.length,
+      mediaType: videoData.mediaType
+    });
+
     setVideo(videoData);
     setLoading(false);
 
@@ -161,6 +168,9 @@ const VideoPreview = () => {
             muted
             playsInline
             controls
+            onLoadedData={() => console.log('🎬 Video loaded:', videoRef.current)}
+            onPlay={() => console.log('▶️ Video playing')}
+            onPause={() => console.log('⏸️ Video paused')}
           />
         ) : (
           <img
@@ -195,29 +205,6 @@ const VideoPreview = () => {
           )}
         </div>
 
-        {/* Translation */}
-        {(video.translation || video.emotionalDubbing) && (
-          <div className="mb-4">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <p className="text-lg font-medium mb-2">🐕 Lo que dice:</p>
-              <p className="text-white/90">
-                "{video.translation || video.emotionalDubbing}"
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Technical Analysis */}
-        {video.output_tecnico && (
-          <div className="mb-4">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <p className="text-lg font-medium mb-2">🔬 Análisis técnico:</p>
-              <p className="text-white/90 text-sm">
-                {video.output_tecnico}
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Confidence */}
         {video.confidence && (

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Metadatos Dinámicos - WhatsApp Preview</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1ea952;
+        }
+        .result {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .url {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test de Metadatos Dinámicos para WhatsApp</h1>
+        
+        <h2>1. Crear Video de Prueba</h2>
+        <button onclick="createTestVideo()">Crear Video de Prueba</button>
+        <div id="video-result" class="result" style="display: none;"></div>
+        
+        <h2>2. Generar URL de Preview</h2>
+        <button onclick="generatePreviewUrl()">Generar URL de Preview</button>
+        <div id="url-result" class="url" style="display: none;"></div>
+        
+        <h2>3. Abrir Preview</h2>
+        <button onclick="openPreview()">Abrir Preview en Nueva Pestaña</button>
+        
+        <h2>4. Verificar Metadatos</h2>
+        <button onclick="verifyMetadata()">Verificar Metadatos en Consola</button>
+        <div id="metadata-result" class="result" style="display: none;"></div>
+        
+        <h2>5. Probar en WhatsApp</h2>
+        <button onclick="testWhatsApp()">Probar en WhatsApp</button>
+        <div id="whatsapp-result" class="result" style="display: none;"></div>
+        
+        <h2>Instrucciones:</h2>
+        <ol>
+            <li>Haz clic en "Crear Video de Prueba"</li>
+            <li>Haz clic en "Generar URL de Preview"</li>
+            <li>Haz clic en "Abrir Preview en Nueva Pestaña"</li>
+            <li>En la nueva pestaña, abre las herramientas de desarrollador (F12)</li>
+            <li>Ve a la pestaña "Elements" y busca los meta tags og:title, og:description, og:image</li>
+            <li>Deberían mostrar los datos reales del video</li>
+            <li>Para probar en WhatsApp, copia la URL y pégala en un chat</li>
+        </ol>
+    </div>
+
+    <script>
+        let currentVideoId = null;
+        let currentPreviewUrl = null;
+
+        function createTestVideo() {
+            // Crear un video de prueba con datos reales
+            const testVideo = {
+                id: 'test_metadata_' + Date.now(),
+                petName: 'Luna',
+                translation: '¡Quiero salir a pasear! 🐕',
+                emotionalDubbing: 'El perro está expresando ganas de salir y hacer ejercicio',
+                mediaUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop',
+                mediaType: 'video',
+                createdAt: new Date().toISOString(),
+                shareCount: 0
+            };
+            
+            // Guardar en localStorage
+            const storedVideos = JSON.parse(localStorage.getItem('yo_pett_videos') || '{}');
+            storedVideos[testVideo.id] = testVideo;
+            localStorage.setItem('yo_pett_videos', JSON.stringify(storedVideos));
+            
+            currentVideoId = testVideo.id;
+            
+            document.getElementById('video-result').style.display = 'block';
+            document.getElementById('video-result').innerHTML = `
+                ✅ Video de prueba creado:<br>
+                - ID: ${testVideo.id}<br>
+                - Pet Name: ${testVideo.petName}<br>
+                - Translation: ${testVideo.translation}<br>
+                - Media URL: ${testVideo.mediaUrl}
+            `;
+        }
+
+        function generatePreviewUrl() {
+            if (!currentVideoId) {
+                alert('Primero crea un video de prueba');
+                return;
+            }
+            
+            const baseUrl = window.location.origin;
+            currentPreviewUrl = `${baseUrl}/api/video-preview/${currentVideoId}`;
+            
+            document.getElementById('url-result').style.display = 'block';
+            document.getElementById('url-result').innerHTML = currentPreviewUrl;
+        }
+
+        function openPreview() {
+            if (!currentPreviewUrl) {
+                alert('Primero genera la URL de preview');
+                return;
+            }
+            
+            window.open(currentPreviewUrl, '_blank');
+        }
+
+        function verifyMetadata() {
+            if (!currentPreviewUrl) {
+                alert('Primero genera la URL de preview');
+                return;
+            }
+            
+            // Abrir la URL y verificar metadatos
+            const newWindow = window.open(currentPreviewUrl, '_blank');
+            
+            // Esperar un poco para que cargue
+            setTimeout(() => {
+                try {
+                    // Intentar acceder a los metadatos (esto puede fallar por CORS)
+                    const ogTitle = newWindow.document.querySelector('meta[property="og:title"]');
+                    const ogDescription = newWindow.document.querySelector('meta[property="og:description"]');
+                    const ogImage = newWindow.document.querySelector('meta[property="og:image"]');
+                    
+                    document.getElementById('metadata-result').style.display = 'block';
+                    document.getElementById('metadata-result').innerHTML = `
+                        🔍 Verificación de metadatos:<br>
+                        - og:title: ${ogTitle ? ogTitle.getAttribute('content') : 'No encontrado'}<br>
+                        - og:description: ${ogDescription ? ogDescription.getAttribute('content') : 'No encontrado'}<br>
+                        - og:image: ${ogImage ? ogImage.getAttribute('content') : 'No encontrado'}<br><br>
+                        <strong>Nota:</strong> Si no se pueden leer los metadatos, es normal por CORS. 
+                        Abre las herramientas de desarrollador en la nueva pestaña para verlos.
+                    `;
+                } catch (error) {
+                    document.getElementById('metadata-result').style.display = 'block';
+                    document.getElementById('metadata-result').innerHTML = `
+                        ⚠️ No se pueden leer los metadatos por CORS.<br>
+                        Abre las herramientas de desarrollador en la nueva pestaña para verlos manualmente.
+                    `;
+                }
+            }, 2000);
+        }
+
+        function testWhatsApp() {
+            if (!currentPreviewUrl) {
+                alert('Primero genera la URL de preview');
+                return;
+            }
+            
+            const shareText = `¡Mira lo que dice Luna! 🐕\n\n"¡Quiero salir a pasear! 🐕"\n\n#YoPett #Perros #Mascotas\n\nVer video completo:\n${currentPreviewUrl}`;
+            const encodedText = encodeURIComponent(shareText);
+            const whatsappUrl = `https://wa.me/?text=${encodedText}`;
+            
+            document.getElementById('whatsapp-result').style.display = 'block';
+            document.getElementById('whatsapp-result').innerHTML = `
+                📱 Abriendo WhatsApp Web...<br>
+                <strong>URL de WhatsApp:</strong> ${whatsappUrl}<br><br>
+                <strong>Texto que se enviará:</strong><br>
+                ${shareText}
+            `;
+            
+            window.open(whatsappUrl, '_blank');
+        }
+    </script>
+</body>
+</html>

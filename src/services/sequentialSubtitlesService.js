@@ -122,7 +122,15 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
       
       // Intentar parsear la respuesta como JSON
       try {
-        const jsonMatch = text.match(/\[[\s\S]*\]/);
+        // Limpiar markdown si existe
+        let cleanText = text.trim();
+        if (cleanText.startsWith('```json')) {
+          cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        } else if (cleanText.startsWith('```')) {
+          cleanText = cleanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        }
+        
+        const jsonMatch = cleanText.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
           const subtitles = JSON.parse(jsonMatch[0]);
           

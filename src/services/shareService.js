@@ -24,6 +24,7 @@ class ShareService {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
 
+
   /**
    * Compartir usando Web Share API nativa (móviles)
    * @param {Object} shareData - Datos a compartir
@@ -51,11 +52,11 @@ class ShareService {
   /**
    * Generar URL de compartir para TikTok
    * @param {Object} post - Datos del post
-   * @returns {string}
+   * @returns {Promise<Object>}
    */
-  generateTikTokShareUrl(post) {
+  async generateTikTokShareUrl(post) {
     // Generar URL única del video
-    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
     
     const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas\n\nVer video: ${videoUrl}`;
     const encodedText = encodeURIComponent(text);
@@ -72,11 +73,11 @@ class ShareService {
   /**
    * Generar URL de compartir para Instagram Reels
    * @param {Object} post - Datos del post
-   * @returns {string}
+   * @returns {Promise<Object>}
    */
-  generateInstagramShareUrl(post) {
+  async generateInstagramShareUrl(post) {
     // Generar URL única del video
-    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
     
     const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas\n\nVer video: ${videoUrl}`;
     const encodedText = encodeURIComponent(text);
@@ -93,11 +94,11 @@ class ShareService {
   /**
    * Generar URL de compartir para Facebook Shorts
    * @param {Object} post - Datos del post
-   * @returns {string}
+   * @returns {Promise<Object>}
    */
-  generateFacebookShareUrl(post) {
+  async generateFacebookShareUrl(post) {
     // Generar URL única del video
-    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
     
     const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas`;
     const encodedText = encodeURIComponent(text);
@@ -141,7 +142,12 @@ class ShareService {
    */
   async openDeepLinkWithFallback(deepLink, webUrl) {
     try {
-      // Crear iframe oculto para intentar deep link
+      // Para WhatsApp, usar método más directo
+      if (deepLink.startsWith('whatsapp://')) {
+        return await this.openWhatsAppDeepLink(deepLink, webUrl);
+      }
+      
+      // Para otras apps, usar el método original con iframe
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
       iframe.src = deepLink;
@@ -177,12 +183,50 @@ class ShareService {
   }
 
   /**
+   * Abrir WhatsApp con deep link optimizado
+   * @param {string} deepLink - Deep link de WhatsApp
+   * @param {string} webUrl - URL web de fallback
+   * @returns {Promise<boolean>}
+   */
+  async openWhatsAppDeepLink(deepLink, webUrl) {
+    try {
+      // Intentar abrir directamente el deep link
+      window.location.href = deepLink;
+      
+      // Timeout para detectar si WhatsApp se abrió
+      let appOpened = false;
+      const timeout = setTimeout(() => {
+        if (!appOpened) {
+          // Si no se abrió WhatsApp, usar fallback web
+          window.open(webUrl, '_blank');
+        }
+      }, 1500);
+
+      // Detectar si la app se abrió
+      const handleBlur = () => {
+        appOpened = true;
+        clearTimeout(timeout);
+        window.removeEventListener('blur', handleBlur);
+      };
+
+      window.addEventListener('blur', handleBlur);
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Error abriendo WhatsApp:', error);
+      // Fallback a web
+      window.open(webUrl, '_blank');
+      return false;
+    }
+  }
+
+  /**
    * Compartir en TikTok
    * @param {Object} post - Datos del post
    * @returns {Promise<boolean>}
    */
   async shareToTikTok(post) {
-    const { deepLink, webUrl } = this.generateTikTokShareUrl(post);
+    const { deepLink, webUrl } = await this.generateTikTokShareUrl(post);
     return await this.openDeepLinkWithFallback(deepLink, webUrl);
   }
 
@@ -192,7 +236,7 @@ class ShareService {
    * @returns {Promise<boolean>}
    */
   async shareToInstagram(post) {
-    const { deepLink, webUrl } = this.generateInstagramShareUrl(post);
+    const { deepLink, webUrl } = await this.generateInstagramShareUrl(post);
     return await this.openDeepLinkWithFallback(deepLink, webUrl);
   }
 
@@ -202,7 +246,7 @@ class ShareService {
    * @returns {Promise<boolean>}
    */
   async shareToFacebook(post) {
-    const { deepLink, webUrl } = this.generateFacebookShareUrl(post);
+    const { deepLink, webUrl } = await this.generateFacebookShareUrl(post);
     return await this.openDeepLinkWithFallback(deepLink, webUrl);
   }
 
@@ -212,15 +256,24 @@ class ShareService {
    * @returns {Promise<boolean>}
    */
   async shareToWhatsApp(post) {
-    const { webUrl } = this.generateWhatsAppShareUrl(post);
+    // Generar URL única del video
+    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
     
-    // Para WhatsApp, usar directamente la URL web ya que el deep link no funciona bien
-    try {
+    // Generar texto optimizado para WhatsApp
+    const shareText = videoShareService.generateShareText(post);
+    const encodedText = encodeURIComponent(shareText);
+    
+    if (this.isMobile) {
+      // En móviles: intentar deep link de WhatsApp primero, fallback a web
+      const deepLink = `whatsapp://send?text=${encodedText}`;
+      const webUrl = `https://wa.me/?text=${encodedText}`;
+      
+      return await this.openDeepLinkWithFallback(deepLink, webUrl);
+    } else {
+      // En desktop: abrir directamente WhatsApp Web
+      const webUrl = `https://wa.me/?text=${encodedText}`;
       window.open(webUrl, '_blank');
       return true;
-    } catch (error) {
-      console.error('❌ Error abriendo WhatsApp:', error);
-      return false;
     }
   }
 
@@ -231,7 +284,7 @@ class ShareService {
    */
   async shareWithNativeAPI(post) {
     // Generar URL única del video
-    const videoUrl = videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
     
     const shareData = {
       title: `¡Mira lo que dice ${post.petName || 'mi perro'}! 🐕`,

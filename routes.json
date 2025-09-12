@@ -1,0 +1,8 @@
+{
+  "/api/videos": "/videos",
+  "/api/videos/:id": "/videos/:id",
+  "/api/users": "/users",
+  "/api/users/:id": "/users/:id",
+  "/api/shares": "/shares",
+  "/api/shares/:id": "/shares/:id"
+}

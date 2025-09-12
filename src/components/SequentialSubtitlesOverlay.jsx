@@ -6,6 +6,14 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
   const [showTechnical, setShowTechnical] = useState(true);
   const [showEmotional, setShowEmotional] = useState(true);
 
+  // Debug logs
+  console.log('🎬 SequentialSubtitlesOverlay props:', {
+    subtitles: subtitles?.length,
+    videoRef: !!videoRef?.current,
+    totalDuration,
+    subtitlesData: subtitles?.slice(0, 2) // Mostrar primeros 2 subtítulos para debug
+  });
+
   // Parsear timestamp a segundos
   const parseTimestamp = (timestamp) => {
     const match = timestamp.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
@@ -49,10 +57,16 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
   // Escuchar cambios de tiempo del video
   useEffect(() => {
     const video = videoRef?.current;
-    if (!video) return;
+    console.log('🎬 Video ref:', video);
+    if (!video) {
+      console.log('❌ No hay video ref');
+      return;
+    }
 
     const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
+      const time = video.currentTime;
+      console.log('⏰ Video time:', time);
+      setCurrentTime(time);
     };
 
     video.addEventListener('timeupdate', handleTimeUpdate);

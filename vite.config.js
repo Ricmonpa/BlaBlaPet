@@ -4,7 +4,7 @@ import { videoPreviewPlugin } from './vite-plugin-video-preview.js'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()], // videoPreviewPlugin() temporalmente deshabilitado
+  plugins: [react(), videoPreviewPlugin()],
   json: {
     stringify: true
   },

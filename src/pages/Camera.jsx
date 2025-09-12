@@ -17,6 +17,7 @@ const Camera = () => {
   const [capturedMedia, setCapturedMedia] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef(null);
 
   // Configuración de video
@@ -205,9 +206,11 @@ const Camera = () => {
         errorMessage = 'La traducción tardó demasiado. Inténtalo de nuevo con un video más corto.';
       } else if (error.message.includes('API')) {
         errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+      } else if (error.message.includes('503') || error.message.includes('overloaded')) {
+        errorMessage = 'El servicio está sobrecargado. Inténtalo de nuevo en unos minutos.';
       } else if (error.message.includes('resultado inválido')) {
         errorMessage = 'No se pudo procesar el análisis. Inténtalo de nuevo.';
-      } else if (error.message.includes('matriz de señales')) {
+      } else if (error.message.includes('análisis')) {
         errorMessage = 'Error en el análisis de comportamiento. Inténtalo de nuevo.';
       }
       
