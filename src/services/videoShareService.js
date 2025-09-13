@@ -58,37 +58,65 @@ class VideoShareService {
    * @param {Object} post - Datos del post con video
    * @returns {Promise<string>} URL única del video
    */
-  async storeVideoAndGenerateUrl(post) {
-    const videoId = this.generateVideoId(post);
+ /**
+ * Almacenar video persistentemente y generar URL única
+ * @param {Object} post - Datos del post con video
+ * @returns {Promise<string>} URL única del video
+ */
+async storeVideoAndGenerateUrl(post) {
+  const videoId = this.generateVideoId(post);
+  
+  // Crear objeto de video con metadatos para la base de datos
+  const videoData = {
+    id: videoId,
+    petName: post.petName || 'Mi mascota',
+    translation: post.translation || post.emotionalDubbing || 'Análisis de comportamiento',
+    emotionalDubbing: post.emotionalDubbing || '',
+    mediaUrl: post.mediaUrl || '',
+    mediaType: post.mediaType || 'video',
+    thumbnailUrl: post.mediaUrl || '', // Usar la misma URL del video real
+    userId: post.userId || 'default_user',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    shareCount: 0,
+    likeCount: 0,
+    commentCount: 0,
+    isPublic: true,
+    tags: post.tags || [],
+    // Incluir propiedades de subtítulos secuenciales
+    isSequentialSubtitles: post.isSequentialSubtitles || false,
+    subtitles: post.subtitles || null,
+    totalDuration: post.totalDuration || post.duration || 30,
+    metadata: {
+      duration: post.duration || 30,
+      fileSize: post.fileSize || 0,
+      resolution: post.resolution || '400x600',
+      format: post.format || 'mp4'
+    }
+  };
+
+  try {
+    // GUARDAR en la base de datos
+    const response = await fetch('/api/videos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(videoData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+
+    console.log('✅ Video guardado con ID:', videoId);
     
-    // Crear objeto de video con metadatos para la base de datos
-    const videoData = {
-      id: videoId,
-      petName: post.petName || 'Mi mascota',
-      translation: post.translation || post.emotionalDubbing || 'Análisis de comportamiento',
-      emotionalDubbing: post.emotionalDubbing || '',
-      mediaUrl: post.mediaUrl || '',
-      mediaType: post.mediaType || 'video',
-      thumbnailUrl: post.mediaUrl || '', // Usar la misma URL del video real
-      userId: post.userId || 'default_user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      shareCount: 0,
-      likeCount: 0,
-      commentCount: 0,
-      isPublic: true,
-      tags: post.tags || [],
-      // Incluir propiedades de subtítulos secuenciales
-      isSequentialSubtitles: post.isSequentialSubtitles || false,
-      subtitles: post.subtitles || null,
-      totalDuration: post.totalDuration || post.duration || 30,
-      metadata: {
-        duration: post.duration || 30,
-        fileSize: post.fileSize || 0,
-        resolution: post.resolution || '400x600',
-        format: post.format || 'mp4'
-      }
-    };
+    // RETORNAR la URL del video
+    return `/video/${videoId}`;
+    
+  } catch (error) {
+    console.error('❌ Error guardando video:', error);
+    throw error;
+  }
+}
     
     try {
       // Guardar en base de datos real
