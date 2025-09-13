@@ -30,7 +30,13 @@ export default function handler(req, res) {
   if (req.method === 'GET') {
     res.json(db.videos || []);
   } else if (req.method === 'POST') {
-    const newVideo = { ...req.body, id: `video_${Date.now()}` };
+    // NO sobrescribir el ID si ya viene en el body
+    const newVideo = { 
+      ...req.body, 
+      id: req.body.id || `video_${Date.now()}`,
+      createdAt: req.body.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
     db.videos = db.videos || [];
     db.videos.push(newVideo);
     writeDB(db);

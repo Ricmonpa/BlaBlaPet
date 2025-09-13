@@ -15,9 +15,10 @@ class VideoApiService {
       ? (typeof window !== 'undefined' ? window.location.origin : 'https://blabla-pet-web.vercel.app')
       : 'http://localhost:3002';
     
-    this.videosEndpoint = isProduction ? `${this.baseUrl}/api/videos` : `${this.baseUrl}/videos`;
-    this.usersEndpoint = isProduction ? `${this.baseUrl}/api/users` : `${this.baseUrl}/users`;
-    this.sharesEndpoint = isProduction ? `${this.baseUrl}/api/shares` : `${this.baseUrl}/shares`;
+    // Usar siempre /api/videos para consistencia
+    this.videosEndpoint = `${this.baseUrl}/api/videos`;
+    this.usersEndpoint = `${this.baseUrl}/api/users`;
+    this.sharesEndpoint = `${this.baseUrl}/api/shares`;
   }
 
   /**
