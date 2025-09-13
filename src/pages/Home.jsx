@@ -27,7 +27,17 @@ const convertBlobToFile = async (blobData, mediaType) => {
     formData.append('file', file);
     formData.append('type', mediaType);
 
-    const uploadResponse = await fetch('http://localhost:3003/api/upload-video', {
+    // Detectar si estamos en producción
+    const isProduction = typeof window !== 'undefined' && 
+      (window.location.hostname.includes('vercel.app') || 
+       window.location.hostname.includes('blabla-pet-web') ||
+       window.location.hostname !== 'localhost');
+    
+    const uploadUrl = isProduction 
+      ? `${window.location.origin}/api/upload-video`
+      : 'http://localhost:3003/api/upload-video';
+
+    const uploadResponse = await fetch(uploadUrl, {
       method: 'POST',
       body: formData
     });

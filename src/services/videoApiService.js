@@ -5,11 +5,19 @@
 
 class VideoApiService {
   constructor() {
-    // URL de la base de datos JSON Server
-    this.baseUrl = 'http://localhost:3002';
-    this.videosEndpoint = `${this.baseUrl}/videos`;
-    this.usersEndpoint = `${this.baseUrl}/users`;
-    this.sharesEndpoint = `${this.baseUrl}/shares`;
+    // Detectar si estamos en producción o desarrollo
+    const isProduction = typeof window !== 'undefined' && 
+      (window.location.hostname.includes('vercel.app') || 
+       window.location.hostname.includes('blabla-pet-web') ||
+       window.location.hostname !== 'localhost');
+    
+    this.baseUrl = isProduction 
+      ? (typeof window !== 'undefined' ? window.location.origin : 'https://blabla-pet-web.vercel.app')
+      : 'http://localhost:3002';
+    
+    this.videosEndpoint = isProduction ? `${this.baseUrl}/api/videos` : `${this.baseUrl}/videos`;
+    this.usersEndpoint = isProduction ? `${this.baseUrl}/api/users` : `${this.baseUrl}/users`;
+    this.sharesEndpoint = isProduction ? `${this.baseUrl}/api/shares` : `${this.baseUrl}/shares`;
   }
 
   /**
