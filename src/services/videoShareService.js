@@ -117,49 +117,6 @@ async storeVideoAndGenerateUrl(post) {
     throw error;
   }
 }
-    
-    try {
-      // Guardar en base de datos real
-      await videoApiService.saveVideo(videoData);
-      
-      // NO guardar en localStorage para videos (son demasiado grandes)
-      // Solo guardar metadatos básicos si es necesario
-      if (videoData.mediaType !== 'video') {
-        await this.saveVideoToStorage(videoId, videoData);
-      }
-
-      // Generar URL del video real si tiene filePath
-      let videoUrl;
-      if (videoData.filePath) {
-        videoUrl = `${this.baseUrl}/videos/${videoData.filePath}`;
-      } else {
-        videoUrl = `${this.baseUrl}/api/video-preview/${videoId}`;
-      }
-      
-      // Logs solo en desarrollo
-      if (!this.isProduction) {
-        console.log(`📹 Video almacenado en base de datos con ID: ${videoId}`);
-        console.log(`🔗 URL generada: ${videoUrl}`);
-      }
-      
-      return videoUrl;
-    } catch (error) {
-      console.error('❌ Error guardando video en base de datos:', error);
-      
-      // Para videos, no usar localStorage como fallback (muy grande)
-      if (videoData.mediaType === 'video') {
-        console.log('❌ No se puede usar localStorage para videos (muy grandes)');
-        throw error;
-      }
-      
-      // Solo para imágenes, usar localStorage como fallback
-      console.log('🔄 Usando fallback a localStorage para imagen...');
-      await this.saveVideoToStorage(videoId, videoData);
-      
-      const videoUrl = `${this.baseUrl}/api/video-preview/${videoId}`;
-      return videoUrl;
-    }
-  }
 
   /**
    * Obtener datos de video por ID
