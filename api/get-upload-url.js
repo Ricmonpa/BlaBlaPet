@@ -80,6 +80,10 @@ export default async function handler(req, res) {
             },
           };
         },
+        onUploadCompleted: async (payload) => {
+          // Puedes guardar info en tu base de datos aquí si lo deseas
+          console.log('Upload completed payload:', payload);
+        },
         token: process.env.BLOB_READ_WRITE_TOKEN,
       });
     } catch (err) {
