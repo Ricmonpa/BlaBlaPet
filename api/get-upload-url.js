@@ -16,9 +16,11 @@ export default async function handler(req, res) {
   try {
     const { filename, contentType } = req.body;
     
+    console.log('Request body:', req.body);
     console.log('Generating upload URL for:', { filename, contentType });
 
     if (!filename) {
+      console.error('Missing filename in request');
       return res.status(400).json({ error: 'Filename is required' });
     }
 
@@ -26,10 +28,13 @@ export default async function handler(req, res) {
     const extension = filename.split('.').pop() || 'mp4';
     const uniqueFilename = `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
 
+    console.log('Generated unique filename:', uniqueFilename);
+
     const jsonResponse = await handleUpload({
       request: req,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
-        console.log('Generating token for:', pathname);
+        console.log('Generating token for pathname:', pathname);
+        console.log('Client payload:', clientPayload);
         
         return {
           allowedContentTypes: [
