@@ -44,6 +44,17 @@ export default async function handler(req, res) {
 
     console.log('Generated unique filename:', uniqueFilename);
 
+    // TEMP: Verifica si el token está presente
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error('BLOB_READ_WRITE_TOKEN is missing!');
+      return res.status(500).json({
+        error: 'BLOB_READ_WRITE_TOKEN is missing in environment variables',
+        details: 'Check your Vercel environment variable configuration.'
+      });
+    } else {
+      console.log('BLOB_READ_WRITE_TOKEN exists');
+    }
+
     const jsonResponse = await handleUpload({
       request: req,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
