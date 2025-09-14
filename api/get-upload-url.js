@@ -33,6 +33,10 @@ export default async function handler(req, res) {
       console.error('Missing filename in request');
       return res.status(400).json({ error: 'Filename is required' });
     }
+    if (!contentType) {
+      console.error('Missing contentType in request');
+      return res.status(400).json({ error: 'contentType is required' });
+    }
 
     // Generar nombre único manteniendo extensión
     const extension = filename.split('.').pop() || 'mp4';
