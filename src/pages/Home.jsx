@@ -4,9 +4,12 @@ import BottomNavigation from '../components/BottomNavigation';
 import SharedFeed from '../components/SharedFeed';
 import videoShareService from '../services/videoShareService.js';
 
-// Función para convertir blob URL a archivo real optimizado
+/// Reemplaza tu función convertBlobToFile actual con esta versión:
+
 const convertBlobToFile = async (blobData, mediaType) => {
   try {
+    console.log('🎬 Convirtiendo blob a archivo para upload directo...');
+    
     // Si es un blob URL, convertir a blob
     let blob;
     if (typeof blobData === 'string' && blobData.startsWith('blob:')) {
@@ -22,60 +25,87 @@ const convertBlobToFile = async (blobData, mediaType) => {
     const fileName = `video_${Date.now()}.${mediaType === 'video' ? 'mp4' : 'jpg'}`;
     const file = new File([blob], fileName, { type: blob.type });
 
-    // Subir archivo al servidor
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', mediaType);
+    console.log('📁 Archivo creado:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
 
-    // Detectar si estamos en producción
-    const isProduction = typeof window !== 'undefined' && 
-      (window.location.hostname.includes('vercel.app') || 
-       window.location.hostname.includes('blabla-pet-web') ||
-       window.location.hostname !== 'localhost');
+    // NUEVO: Upload directo a Vercel Blob
+    // Paso 1: Obtener URL de upload directo
+    console.log('🔗 Obteniendo URL de upload directo...');
     
-    const uploadUrl = isProduction 
-      ? `${window.location.origin}/api/upload-video`
-      : 'http://localhost:3003/api/upload-video';
-
-    const uploadResponse = await fetch(uploadUrl, {
+    const uploadUrlResponse = await fetch('/api/get-upload-url', {
       method: 'POST',
-      body: formData
+      headers: { 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({ 
+        filename: fileName,
+        contentType: file.type 
+      })
+    });
+
+    if (!uploadUrlResponse.ok) {
+      const errorData = await uploadUrlResponse.text();
+      console.error('❌ Error obteniendo URL de upload:', errorData);
+      throw new Error('Error obteniendo URL de upload directo');
+    }
+
+    const uploadData = await uploadUrlResponse.json();
+    console.log('✅ URL de upload obtenida');
+
+    // Paso 2: Subir archivo directamente a Vercel Blob
+    console.log('⬆️ Subiendo archivo directamente a Blob Storage...');
+    
+    const uploadResponse = await fetch(uploadData.url, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type
+      }
     });
 
     if (!uploadResponse.ok) {
-      throw new Error('Error subiendo archivo al servidor');
+      const errorText = await uploadResponse.text();
+      console.error('❌ Error en upload directo:', errorText);
+      throw new Error(`Error subiendo archivo: ${uploadResponse.status} ${uploadResponse.statusText}`);
     }
 
-    const uploadResult = await uploadResponse.json();
-    const serverUrl = uploadResult.url;
+    console.log('✅ Archivo subido exitosamente a Blob Storage');
+
+    // La URL final será la URL sin query parameters
+    const serverUrl = uploadData.url.split('?')[0];
+
+    console.log('🔗 URL final del video:', serverUrl);
 
     if (mediaType === 'video') {
-      // Crear thumbnail del video
+      // Crear thumbnail del video (mantener tu lógica existente)
       const thumbnail = await createVideoThumbnail(blob);
       
       return {
         file,
-        url: serverUrl, // URL del servidor
-        fileName,
+        url: serverUrl, // URL del Blob Storage
+        fileName: uploadData.uniqueFilename, // Nombre único generado
         size: file.size,
         originalSize: file.size,
         isVideo: true,
         thumbnail: thumbnail,
-        filePath: uploadResult.filePath
+        filePath: uploadData.uniqueFilename // Para compatibilidad con tu código existente
       };
     } else {
       return {
         file,
-        url: serverUrl, // URL del servidor
-        fileName,
+        url: serverUrl, // URL del Blob Storage
+        fileName: uploadData.uniqueFilename, // Nombre único generado
         size: file.size,
         isVideo: false,
-        filePath: uploadResult.filePath
+        filePath: uploadData.uniqueFilename // Para compatibilidad con tu código existente
       };
     }
   } catch (error) {
     console.error('Error convirtiendo blob a archivo:', error);
-    // Fallback a imagen estática
+    // Fallback a imagen estática (mantener tu lógica existente)
     return {
       file: null,
       url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop',
