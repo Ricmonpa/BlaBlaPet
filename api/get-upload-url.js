@@ -13,6 +13,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // 👇 Agrega este bloque para parsear el body si es necesario
+  let body = req.body;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (e) {
+      return res.status(400).json({ error: 'Invalid JSON in request body' });
+    }
+  }
+
   try {
     const { filename, contentType } = req.body;
     
