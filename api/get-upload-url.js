@@ -55,31 +55,49 @@ export default async function handler(req, res) {
       console.log('BLOB_READ_WRITE_TOKEN exists');
     }
 
-    const jsonResponse = await handleUpload({
-      request: req,
-      onBeforeGenerateToken: async (pathname, clientPayload) => {
-        console.log('Generating token for pathname:', pathname);
-        console.log('Client payload:', clientPayload);
-        
-        return {
-          allowedContentTypes: [
-            'video/mp4',
-            'video/webm', 
-            'video/mov',
-            'video/avi',
-            'video/quicktime',
-            'video/x-msvideo'
-          ],
-          maximumSizeInBytes: 100 * 1024 * 1024, // 100MB para videos largos
-          tokenPayload: {
-            userId: 'pet-video-user',
-            originalFilename: filename,
-            timestamp: Date.now()
-          },
-        };
-      },
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    // Llama a handleUpload y valida la respuesta
+    let jsonResponse;
+    try {
+      jsonResponse = await handleUpload({
+        request: req,
+        onBeforeGenerateToken: async (pathname, clientPayload) => {
+          console.log('Generating token for pathname:', pathname);
+          console.log('Client payload:', clientPayload);
+          return {
+            allowedContentTypes: [
+              'video/mp4',
+              'video/webm',
+              'video/mov',
+              'video/avi',
+              'video/quicktime',
+              'video/x-msvideo'
+            ],
+            maximumSizeInBytes: 100 * 1024 * 1024, // 100MB para videos largos
+            tokenPayload: {
+              userId: 'pet-video-user',
+              originalFilename: filename,
+              timestamp: Date.now()
+            },
+          };
+        },
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+    } catch (err) {
+      console.error('handleUpload threw error:', err);
+      return res.status(500).json({
+        error: err.message || 'handleUpload failed',
+        details: 'handleUpload threw an exception'
+      });
+    }
+
+    if (!jsonResponse || typeof jsonResponse !== 'object' || !jsonResponse.type) {
+      console.error('handleUpload did not return a valid response:', jsonResponse);
+      return res.status(500).json({
+        error: 'handleUpload failed',
+        details: 'No valid upload URL generated',
+        debug: jsonResponse
+      });
+    }
 
     console.log('Upload URL generated successfully');
 
