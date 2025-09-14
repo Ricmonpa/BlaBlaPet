@@ -24,9 +24,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { filename, contentType } = req.body;
+    const { filename, contentType } = body;
     
-    console.log('Request body:', req.body);
+    console.log('Request body:', body);
     console.log('Generating upload URL for:', { filename, contentType });
 
     if (!filename) {
