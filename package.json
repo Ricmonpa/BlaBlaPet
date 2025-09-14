@@ -19,6 +19,7 @@
     "@vercel/blob": "^1.1.1",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "formidable": "^3.5.4",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
     "react": "^19.1.1",
