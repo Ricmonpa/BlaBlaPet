@@ -4,8 +4,6 @@ import BottomNavigation from '../components/BottomNavigation';
 import SharedFeed from '../components/SharedFeed';
 import videoShareService from '../services/videoShareService.js';
 
-/// Reemplaza tu función convertBlobToFile actual con esta versión:
-
 const convertBlobToFile = async (blobData, mediaType, dogName) => {
   try {
     console.log('🎬 Convirtiendo blob a archivo para upload directo...');
@@ -63,7 +61,7 @@ const convertBlobToFile = async (blobData, mediaType, dogName) => {
     }
 
     const uploadData = await uploadUrlResponse.json();
-    console.log('✅ URL de upload obtenida');
+    console.log('✅ URL de upload obtenida:', uploadData.url);
 
     // Paso 2: Subir archivo directamente a Vercel Blob
     console.log('⬆️ Subiendo archivo directamente a Blob Storage...');
