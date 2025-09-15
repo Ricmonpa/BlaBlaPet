@@ -106,7 +106,7 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!jsonResponse || typeof jsonResponse !== 'object' || !jsonResponse.type) {
+    if (!jsonResponse || typeof jsonResponse !== 'object' || !jsonResponse.url) {
       console.error('handleUpload did not return a valid response:', jsonResponse);
       return res.status(500).json({
         error: 'handleUpload failed',
@@ -118,9 +118,10 @@ export default async function handler(req, res) {
     console.log('Upload URL generated successfully');
 
     return res.status(200).json({
-      ...jsonResponse,
+      url: jsonResponse.url, // <-- asegúrate de exponer la URL de subida
       uniqueFilename,
       originalFilename: filename
+      // Puedes incluir otros campos si lo necesitas
     });
 
   } catch (error) {
