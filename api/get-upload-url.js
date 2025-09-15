@@ -71,6 +71,7 @@ export default async function handler(req, res) {
     try {
       jsonResponse = await handleUpload({
         request: req,
+        body, // <-- ahora se pasa el body adaptado correctamente
         onBeforeGenerateToken: async (pathname, clientPayload) => {
           console.log('Generating token for pathname:', pathname);
           console.log('Client payload:', clientPayload);
