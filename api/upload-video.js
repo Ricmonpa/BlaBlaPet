@@ -77,7 +77,7 @@ export default async function handler(req, res) {
       filePath: fileName,
       originalName: file.originalFilename,
       size: file.size,
-      type: fields.type?.[0] || 'unknown'
+      type: file.mimetype
     });
 
   } catch (error) {
