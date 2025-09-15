@@ -30,10 +30,10 @@ const convertBlobToFile = async (blobData, mediaType, dogName) => {
     });
 
     // Validar dogName antes de enviar
-    if (!dogName || dogName.trim() === '') {
-      console.error('❌ dogName está vacío. No se puede subir el video.');
-      throw new Error('Debes ingresar el nombre del perro antes de subir el video.');
-    }
+    // if (!dogName || dogName.trim() === '') {
+    //   console.error('❌ dogName está vacío. No se puede subir el video.');
+    //   throw new Error('Debes ingresar el nombre del perro antes de subir el video.');
+    // }
 
     // NUEVO: Upload directo a Vercel Blob
     // Paso 1: Obtener URL de upload directo
@@ -237,7 +237,6 @@ const Home = () => {
           value={dogName}
           onChange={e => setDogName(e.target.value)}
           placeholder="Ejemplo: Rocky"
-          required
           className="mb-2 px-2 py-1 border rounded"
         />
         {/* ...otros campos y botones... */}
