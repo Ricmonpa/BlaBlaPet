@@ -31,9 +31,10 @@ export default async function handler(req, res) {
         console.log('📋 Client payload:', clientPayload);
         // Validar dogName y metadata
         const payload = clientPayload ? JSON.parse(clientPayload) : {};
-        if (!payload.dogName) {
-          throw new Error('dogName es requerido en clientPayload');
-        }
+        // Elimina la validación estricta de dogName
+        // if (!payload.dogName) {
+        //   throw new Error('dogName es requerido en clientPayload');
+        // }
         return {
           allowedContentTypes: [
             'video/mp4',
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
           maximumSizeInBytes: 200 * 1024 * 1024, // 200MB para videos largos
           tokenPayload: JSON.stringify({
             uploadedAt: new Date().toISOString(),
-            dogName: payload.dogName,
+            dogName: payload.dogName || null,
             originalFilename: payload.originalFilename,
             fileSize: payload.fileSize,
             videoMetadata: payload.videoMetadata || {},
