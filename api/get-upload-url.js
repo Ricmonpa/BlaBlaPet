@@ -23,8 +23,19 @@ export default async function handler(req, res) {
     }
   }
 
+  // Adaptar body al formato esperado por handleUpload si es necesario
+  if (!body.type) {
+    body = {
+      type: 'blob.generate-client-token',
+      payload: {
+        filename: body.filename,
+        contentType: body.contentType
+      }
+    };
+  }
+
   try {
-    const { filename, contentType } = body;
+    const { filename, contentType } = body.payload;
     
     console.log('Request body:', body);
     console.log('Generating upload URL for:', { filename, contentType });
