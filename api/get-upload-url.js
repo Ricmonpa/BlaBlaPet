@@ -24,9 +24,10 @@ export default async function handler(req, res) {
   }
 
   // Adaptar body al formato esperado por handleUpload si es necesario
+  // CAMBIO: Usar el evento correcto para obtener la URL de subida directa
   if (!body.type) {
     body = {
-      type: 'blob.generate-client-token',
+      type: 'blob.upload.create-url', // <-- evento correcto para obtener upload URL
       payload: {
         filename: body.filename,
         contentType: body.contentType
