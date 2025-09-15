@@ -23,44 +23,13 @@ export default async function handler(req, res) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     console.log('📹 Iniciando upload de video dogparent:', body);
 
-<<<<<<< HEAD
-    console.log('Uploading to Vercel Blob:', fileName);
-
-    // Subir a Vercel Blob
-    const blob = await put(fileName, fileBuffer, {
-      access: 'public',
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
-
-    // Limpiar archivo temporal
-    try {
-      fs.unlinkSync(file.filepath);
-    } catch (cleanupError) {
-      console.warn('Could not clean up temp file:', cleanupError.message);
-    }
-
-    console.log('Upload successful:', blob.url);
-
-    return res.status(200).json({
-      success: true,
-      url: blob.url,
-      filePath: fileName,
-      originalName: file.originalFilename,
-      size: file.size,
-      type: file.mimetype
-=======
     const jsonResponse = await handleUpload({
       body: body,
       request: req,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
         console.log('🎫 Generando token para:', pathname);
         console.log('📋 Client payload:', clientPayload);
-        // Validar dogName y metadata
         const payload = clientPayload ? JSON.parse(clientPayload) : {};
-        // Elimina la validación estricta de dogName
-        // if (!payload.dogName) {
-        //   throw new Error('dogName es requerido en clientPayload');
-        // }
         return {
           allowedContentTypes: [
             'video/mp4',
@@ -92,7 +61,6 @@ export default async function handler(req, res) {
           console.error('❌ Error guardando en DB:', error);
         }
       },
->>>>>>> 5b509d3c12939bd7601ac134285664d06fdeec4e
     });
 
     console.log('🚀 Upload response:', jsonResponse);
