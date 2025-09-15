@@ -1,6 +1,4 @@
-import { put } from '@vercel/blob';
-import formidable from 'formidable';
-import fs from 'fs';
+import { handleUpload } from '@vercel/blob/client';
 
 export const config = {
   api: {
@@ -22,38 +20,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('Processing upload request...');
-    
-    const form = formidable({
-      maxFileSize: 100 * 1024 * 1024, // 100MB
-      keepExtensions: true,
-    });
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    console.log('📹 Iniciando upload de video dogparent:', body);
 
-    const [fields, files] = await form.parse(req);
-    
-    console.log('Fields:', fields);
-    console.log('Files:', Object.keys(files));
-
-    // Obtener el archivo
-    const file = files.file?.[0];
-    if (!file) {
-      throw new Error('No file found in upload');
-    }
-
-    console.log('File info:', {
-      originalFilename: file.originalFilename,
-      mimetype: file.mimetype,
-      size: file.size,
-      filepath: file.filepath
-    });
-
-    // Leer el archivo
-    const fileBuffer = fs.readFileSync(file.filepath);
-    
-    // Generar nombre único manteniendo extensión
-    const extension = file.originalFilename?.split('.').pop() || 'mp4';
-    const fileName = `video_${Date.now()}.${extension}`;
-
+<<<<<<< HEAD
     console.log('Uploading to Vercel Blob:', fileName);
 
     // Subir a Vercel Blob
@@ -78,22 +48,57 @@ export default async function handler(req, res) {
       originalName: file.originalFilename,
       size: file.size,
       type: file.mimetype
+=======
+    const jsonResponse = await handleUpload({
+      body: body,
+      request: req,
+      onBeforeGenerateToken: async (pathname, clientPayload) => {
+        console.log('🎫 Generando token para:', pathname);
+        console.log('📋 Client payload:', clientPayload);
+        // Validar dogName y metadata
+        const payload = clientPayload ? JSON.parse(clientPayload) : {};
+        // Elimina la validación estricta de dogName
+        // if (!payload.dogName) {
+        //   throw new Error('dogName es requerido en clientPayload');
+        // }
+        return {
+          allowedContentTypes: [
+            'video/mp4',
+            'video/webm',
+            'video/quicktime',
+            'video/x-msvideo',
+            'video/mpeg'
+          ],
+          addRandomSuffix: true,
+          maximumSizeInBytes: 200 * 1024 * 1024, // 200MB para videos largos
+          tokenPayload: JSON.stringify({
+            uploadedAt: new Date().toISOString(),
+            dogName: payload.dogName || null,
+            originalFilename: payload.originalFilename,
+            fileSize: payload.fileSize,
+            videoMetadata: payload.videoMetadata || {},
+          }),
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        console.log('✅ Video subido exitosamente:', blob.url);
+        console.log('📊 Token payload:', tokenPayload);
+        try {
+          // Aquí podrías guardar en la DB
+          // const payload = JSON.parse(tokenPayload || '{}');
+          // await saveVideoToDatabase({ ... });
+          console.log('💾 Video guardado en DB (simulado)');
+        } catch (error) {
+          console.error('❌ Error guardando en DB:', error);
+        }
+      },
+>>>>>>> 5b509d3c12939bd7601ac134285664d06fdeec4e
     });
 
+    console.log('🚀 Upload response:', jsonResponse);
+    return res.status(200).json(jsonResponse);
   } catch (error) {
-    console.error('Error uploading video:', error);
-    
-    // Si es un error de parsing, dar más detalles
-    if (error.message.includes('maxFileSize')) {
-      return res.status(413).json({ 
-        error: 'File too large. Maximum size is 100MB.',
-        details: error.message
-      });
-    }
-    
-    return res.status(500).json({ 
-      error: error.message,
-      details: 'Check server logs for more information'
-    });
+    console.error('💥 Error en upload endpoint:', error);
+    return res.status(400).json({ error: error.message });
   }
 }
