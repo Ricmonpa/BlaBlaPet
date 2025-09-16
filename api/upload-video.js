@@ -24,6 +24,9 @@ export default async function handler(req, res) {
     if (!filename || !contentType) {
       return res.status(400).json({ error: 'Missing filename or contentType' });
     }
+    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });
+    }
     // Generar URL de subida firmada
     const { url, token } = await generateUploadUrl(filename, {
       contentType,
@@ -32,6 +35,7 @@ export default async function handler(req, res) {
     });
     return res.status(200).json({
       success: true,
+      url, // frontend espera 'url'
       uploadUrl: url,
       uploadToken: token,
       filePath: filename,
@@ -40,6 +44,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('💥 Error en upload endpoint:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
