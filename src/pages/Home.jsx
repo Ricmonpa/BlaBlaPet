@@ -33,50 +33,34 @@ const convertBlobToFile = async (blobData, mediaType) => {
     // Paso 1: Obtener URL de upload directo
     console.log('🔗 Obteniendo URL de upload directo...');
     
-    const uploadUrlResponse = await fetch('/api/get-upload-url', {
+    // Convertir el archivo a base64 para enviarlo directamente
+    const fileBuffer = await file.arrayBuffer();
+    const base64File = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+    
+    const uploadResponse = await fetch('/api/upload-video-fixed', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json' 
       },
       body: JSON.stringify({ 
+        file: base64File,
         filename: fileName,
         contentType: file.type,
-        originalFilename: fileName,
-        fileSize: file.size,
-        videoMetadata: {/* puedes agregar más metadatos aquí si tienes */}
+        fileSize: file.size
       })
     });
 
-    if (!uploadUrlResponse.ok) {
-      const errorData = await uploadUrlResponse.text();
-      console.error('❌ Error obteniendo URL de upload:', errorData);
-      throw new Error('Error obteniendo URL de upload directo');
-    }
-
-    const uploadData = await uploadUrlResponse.json();
-    console.log('✅ URL de upload obtenida:', uploadData.url);
-
-    // Paso 2: Subir archivo directamente a Vercel Blob
-    console.log('⬆️ Subiendo archivo directamente a Blob Storage...');
-    
-    const uploadResponse = await fetch(uploadData.url, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type
-      }
-    });
-
     if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      console.error('❌ Error en upload directo:', errorText);
-      throw new Error(`Error subiendo archivo: ${uploadResponse.status} ${uploadResponse.statusText}`);
+      const errorData = await uploadResponse.text();
+      console.error('❌ Error subiendo archivo:', errorData);
+      throw new Error('Error subiendo archivo');
     }
 
-    console.log('✅ Archivo subido exitosamente a Blob Storage');
+    const uploadData = await uploadResponse.json();
+    console.log('✅ Archivo subido exitosamente:', uploadData.url);
 
-    // La URL final será la URL sin query parameters
-    const serverUrl = uploadData.url.split('?')[0];
+    // La URL final es la que devuelve el endpoint
+    const serverUrl = uploadData.url;
 
     console.log('🔗 URL final del video:', serverUrl);
 
