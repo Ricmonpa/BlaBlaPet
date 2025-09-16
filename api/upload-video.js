@@ -1,8 +1,8 @@
-import { put } from '@vercel/blob';
+import { generateUploadUrl } from '@vercel/blob';
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: true,
   },
 };
 
@@ -20,39 +20,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk;
+    const { filename, contentType, originalFilename } = req.body;
+    if (!filename || !contentType) {
+      return res.status(400).json({ error: 'Missing filename or contentType' });
+    }
+    // Generar URL de subida firmada
+    const { url, token } = await generateUploadUrl(filename, {
+      contentType,
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
-    req.on('end', async () => {
-      try {
-        const data = JSON.parse(body);
-        // Espera que el frontend envíe el archivo como base64 en data.fileBase64
-        if (!data.fileBase64 || !data.filename || !data.contentType) {
-          return res.status(400).json({ error: 'Missing fileBase64, filename, or contentType' });
-        }
-        // Decodificar base64 a buffer
-        const fileBuffer = Buffer.from(data.fileBase64, 'base64');
-        // Subir a Vercel Blob
-        const blob = await put(data.filename, fileBuffer, {
-          access: 'public',
-          token: process.env.BLOB_READ_WRITE_TOKEN,
-        });
-        return res.status(200).json({
-          success: true,
-          url: blob.url,
-          filePath: data.filename,
-          originalName: data.originalFilename || data.filename,
-          size: fileBuffer.length,
-          type: data.contentType
-        });
-      } catch (error) {
-        console.error('💥 Error en upload endpoint:', error);
-        return res.status(400).json({ error: error.message });
-      }
+    return res.status(200).json({
+      success: true,
+      uploadUrl: url,
+      uploadToken: token,
+      filePath: filename,
+      originalName: originalFilename || filename,
+      type: contentType
     });
   } catch (error) {
     console.error('💥 Error en upload endpoint:', error);
-    return res.status(400).json({ error: error.message });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
