@@ -4,7 +4,7 @@ import BottomNavigation from '../components/BottomNavigation';
 import SharedFeed from '../components/SharedFeed';
 import videoShareService from '../services/videoShareService.js';
 
-const convertBlobToFile = async (blobData, mediaType, dogName) => {
+const convertBlobToFile = async (blobData, mediaType) => {
   try {
     console.log('🎬 Convirtiendo blob a archivo para upload directo...');
     
@@ -29,12 +29,6 @@ const convertBlobToFile = async (blobData, mediaType, dogName) => {
       type: file.type
     });
 
-    // Validar dogName antes de enviar
-    // if (!dogName || dogName.trim() === '') {
-    //   console.error('❌ dogName está vacío. No se puede subir el video.');
-    //   throw new Error('Debes ingresar el nombre del perro antes de subir el video.');
-    // }
-
     // NUEVO: Upload directo a Vercel Blob
     // Paso 1: Obtener URL de upload directo
     console.log('🔗 Obteniendo URL de upload directo...');
@@ -47,7 +41,6 @@ const convertBlobToFile = async (blobData, mediaType, dogName) => {
       body: JSON.stringify({ 
         filename: fileName,
         contentType: file.type,
-        dogName: dogName, // Asegúrate de pasar dogName
         originalFilename: fileName,
         fileSize: file.size,
         videoMetadata: {/* puedes agregar más metadatos aquí si tienes */}
@@ -157,7 +150,6 @@ const createVideoThumbnail = (videoBlob) => {
 const Home = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const location = useLocation();
-  const [dogName, setDogName] = useState('');
 
   // Manejar nuevo video desde la cámara
   useEffect(() => {
@@ -167,8 +159,7 @@ const Home = () => {
           // Convertir blob URL a archivo real
           const videoFile = await convertBlobToFile(
             location.state.media?.data, 
-            location.state.media?.type || 'video',
-            dogName
+            location.state.media?.type || 'video'
           );
 
           // Crear objeto de video para la base de datos
@@ -213,7 +204,7 @@ const Home = () => {
       // Limpiar el state para evitar duplicados
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, dogName]);
+  }, [location.state]);
 
   // Manejar selección de video
   const handleVideoSelect = (video) => {
@@ -228,14 +219,12 @@ const Home = () => {
 
   return (
     <div className="h-screen flex flex-col" style={{ backgroundColor: '#DC195C' }}>
-      {/* Formulario para capturar el nombre del perro */}
+      {/* Formulario para capturar el nombre del perro (puedes dejarlo como campo opcional visual, pero no usarlo en la lógica) */}
       <form onSubmit={handleSubmit}>
-        <label htmlFor="dogName">Nombre del perro:</label>
+        <label htmlFor="dogName">Nombre del perro (opcional):</label>
         <input
           id="dogName"
           type="text"
-          value={dogName}
-          onChange={e => setDogName(e.target.value)}
           placeholder="Ejemplo: Rocky"
           className="mb-2 px-2 py-1 border rounded"
         />
