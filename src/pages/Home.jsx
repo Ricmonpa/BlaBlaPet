@@ -141,38 +141,43 @@ const Home = () => {
             location.state.media?.type || 'video'
           );
 
-          // Crear objeto de video para la base de datos
-          const newVideo = {
-            petName: 'Tu Mascota',
-            translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
-            emotionalDubbing: location.state.output_emocional || location.state.translation,
-            // Guardar el VIDEO COMPLETO, no solo thumbnail
-            mediaUrl: videoFile.url, // Video completo en base64
-            mediaType: location.state.media?.type || 'video',
-            userId: 'current_user', // Por ahora usar un ID fijo
-            tags: ['nuevo', 'análisis'],
-            duration: location.state.totalDuration || 30,
-            resolution: '400x600',
-            format: 'mp4',
-            // Incluir propiedades de subtítulos secuenciales
-            isSequentialSubtitles: location.state.isSequentialSubtitles || false,
-            subtitles: location.state.subtitles || null,
-            totalDuration: location.state.totalDuration || 30,
-            // Metadatos del archivo real
-            fileSize: videoFile.size,
-            fileName: videoFile.fileName,
-            // Información adicional para videos
-            isVideo: videoFile.isVideo,
-            originalSize: videoFile.originalSize,
-            thumbnail: videoFile.thumbnail,
-            // Mantener blob URL original para reproducción inmediata
-            originalVideoUrl: location.state.media?.data
-          };
+          // Solo guardar si la subida fue exitosa (no es fallback de Unsplash)
+          if (videoFile.url && !videoFile.url.includes('unsplash.com') && videoFile.isVideo) {
+            // Crear objeto de video para la base de datos
+            const newVideo = {
+              petName: 'Tu Mascota',
+              translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
+              emotionalDubbing: location.state.output_emocional || location.state.translation,
+              // Guardar el VIDEO COMPLETO, no solo thumbnail
+              mediaUrl: videoFile.url, // Video completo subido a Vercel Blob
+              mediaType: location.state.media?.type || 'video',
+              userId: 'current_user', // Por ahora usar un ID fijo
+              tags: ['nuevo', 'análisis'],
+              duration: location.state.totalDuration || 30,
+              resolution: '400x600',
+              format: 'mp4',
+              // Incluir propiedades de subtítulos secuenciales
+              isSequentialSubtitles: location.state.isSequentialSubtitles || false,
+              subtitles: location.state.subtitles || null,
+              totalDuration: location.state.totalDuration || 30,
+              // Metadatos del archivo real
+              fileSize: videoFile.size,
+              fileName: videoFile.fileName,
+              // Información adicional para videos
+              isVideo: videoFile.isVideo,
+              originalSize: videoFile.originalSize,
+              thumbnail: videoFile.thumbnail,
+              // Mantener blob URL original para reproducción inmediata
+              originalVideoUrl: location.state.media?.data
+            };
 
-          // Guardar en la base de datos usando videoShareService
-          const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
-          console.log('✅ Video guardado en la base de datos:', videoUrl);
-          // El feed se actualizará automáticamente
+            // Guardar en la base de datos usando videoShareService
+            const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
+            console.log('✅ Video guardado en la base de datos:', videoUrl);
+            // El feed se actualizará automáticamente
+          } else {
+            console.log('⚠️ No se guardó el video - subida falló o es fallback');
+          }
         } catch (error) {
           console.error('❌ Error guardando video:', error);
         }
