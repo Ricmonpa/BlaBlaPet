@@ -33,21 +33,16 @@ const convertBlobToFile = async (blobData, mediaType) => {
     // Paso 1: Obtener URL de upload directo
     console.log('🔗 Obteniendo URL de upload directo...');
     
-    // Convertir el archivo a base64 para enviarlo directamente
-    const fileBuffer = await file.arrayBuffer();
-    const base64File = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)));
+    // Usar FormData para enviar el archivo directamente
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('filename', fileName);
+    formData.append('contentType', file.type);
+    formData.append('fileSize', file.size.toString());
     
-    const uploadResponse = await fetch('/api/upload-video-fixed', {
+    const uploadResponse = await fetch('/api/upload-video-simple', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json' 
-      },
-      body: JSON.stringify({ 
-        file: base64File,
-        filename: fileName,
-        contentType: file.type,
-        fileSize: file.size
-      })
+      body: formData
     });
 
     if (!uploadResponse.ok) {

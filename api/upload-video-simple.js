@@ -1,8 +1,10 @@
-import { generateUploadUrl } from '@vercel/blob';
+import { put } from '@vercel/blob';
+import formidable from 'formidable';
+import fs from 'fs';
 
 export const config = {
   api: {
-    bodyParser: true,
+    bodyParser: false,
   },
 };
 
@@ -20,48 +22,63 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🔍 Simple upload - Request body:', JSON.stringify(req.body, null, 2));
-    console.log('🔍 Simple upload - Token exists:', !!process.env.BLOB_READ_WRITE_TOKEN);
-
-    const { filename, contentType } = req.body;
-    
-    if (!filename || !contentType) {
-      return res.status(400).json({ error: 'Missing filename or contentType' });
-    }
+    console.log('🔍 Upload request received');
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });
     }
 
+    // Parsear FormData usando formidable
+    const form = formidable({
+      maxFileSize: 100 * 1024 * 1024, // 100MB
+    });
+
+    const [fields, files] = await form.parse(req);
+    
+    const file = files.file?.[0];
+    const filename = fields.filename?.[0] || 'video.mp4';
+    const contentType = fields.contentType?.[0] || 'video/mp4';
+    
+    if (!file) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
+
     // Generar nombre único
-    const uniqueFilename = `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.mp4`;
+    const extension = filename.split('.').pop() || 'mp4';
+    const uniqueFilename = `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
 
-    console.log('🔍 Simple upload - Generating URL for:', uniqueFilename);
+    console.log('🔍 Uploading file:', { uniqueFilename, contentType, size: file.size });
 
-    // Generar URL de subida
-    const { url, token } = await generateUploadUrl(uniqueFilename, {
-      contentType,
+    // Leer el archivo
+    const fileBuffer = await fs.promises.readFile(file.filepath);
+
+    // Subir directamente a Vercel Blob
+    const blob = await put(uniqueFilename, fileBuffer, {
       access: 'public',
+      contentType: contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    console.log('✅ Simple upload - URL generated successfully');
+    console.log('✅ File uploaded successfully:', blob.url);
+
+    // Limpiar archivo temporal
+    await fs.promises.unlink(file.filepath);
 
     return res.status(200).json({
       success: true,
-      url,
-      uploadUrl: url,
-      uploadToken: token,
+      url: blob.url,
       filePath: uniqueFilename,
       originalName: filename,
-      type: contentType
+      type: contentType,
+      size: file.size
     });
+
   } catch (error) {
-    console.error('💥 Simple upload - Error:', error);
-    console.error('💥 Simple upload - Stack:', error.stack);
+    console.error('💥 Error en upload endpoint:', error);
+    console.error('💥 Error stack:', error.stack);
     return res.status(500).json({ 
       error: error.message || 'Internal server error',
-      stack: error.stack
+      details: error.stack
     });
   }
 }
