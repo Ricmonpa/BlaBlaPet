@@ -1,4 +1,4 @@
-import { handleUpload } from '@vercel/blob/client';
+import { put } from '@vercel/blob';
 
 export const config = {
   api: {
@@ -20,51 +20,37 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    console.log('📹 Iniciando upload de video dogparent:', body);
-
-    const jsonResponse = await handleUpload({
-      body: body,
-      request: req,
-      onBeforeGenerateToken: async (pathname, clientPayload) => {
-        console.log('🎫 Generando token para:', pathname);
-        console.log('📋 Client payload:', clientPayload);
-        const payload = clientPayload ? JSON.parse(clientPayload) : {};
-        return {
-          allowedContentTypes: [
-            'video/mp4',
-            'video/webm',
-            'video/quicktime',
-            'video/x-msvideo',
-            'video/mpeg'
-          ],
-          addRandomSuffix: true,
-          maximumSizeInBytes: 200 * 1024 * 1024, // 200MB para videos largos
-          tokenPayload: JSON.stringify({
-            uploadedAt: new Date().toISOString(),
-            dogName: payload.dogName || null,
-            originalFilename: payload.originalFilename,
-            fileSize: payload.fileSize,
-            videoMetadata: payload.videoMetadata || {},
-          }),
-        };
-      },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        console.log('✅ Video subido exitosamente:', blob.url);
-        console.log('📊 Token payload:', tokenPayload);
-        try {
-          // Aquí podrías guardar en la DB
-          // const payload = JSON.parse(tokenPayload || '{}');
-          // await saveVideoToDatabase({ ... });
-          console.log('💾 Video guardado en DB (simulado)');
-        } catch (error) {
-          console.error('❌ Error guardando en DB:', error);
-        }
-      },
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk;
     });
-
-    console.log('🚀 Upload response:', jsonResponse);
-    return res.status(200).json(jsonResponse);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        // Espera que el frontend envíe el archivo como base64 en data.fileBase64
+        if (!data.fileBase64 || !data.filename || !data.contentType) {
+          return res.status(400).json({ error: 'Missing fileBase64, filename, or contentType' });
+        }
+        // Decodificar base64 a buffer
+        const fileBuffer = Buffer.from(data.fileBase64, 'base64');
+        // Subir a Vercel Blob
+        const blob = await put(data.filename, fileBuffer, {
+          access: 'public',
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+        return res.status(200).json({
+          success: true,
+          url: blob.url,
+          filePath: data.filename,
+          originalName: data.originalFilename || data.filename,
+          size: fileBuffer.length,
+          type: data.contentType
+        });
+      } catch (error) {
+        console.error('💥 Error en upload endpoint:', error);
+        return res.status(400).json({ error: error.message });
+      }
+    });
   } catch (error) {
     console.error('💥 Error en upload endpoint:', error);
     return res.status(400).json({ error: error.message });
