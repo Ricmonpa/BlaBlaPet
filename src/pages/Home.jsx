@@ -33,7 +33,7 @@ const convertBlobToFile = async (blobData, mediaType) => {
     // Paso 1: Obtener URL de upload directo
     console.log('🔗 Obteniendo URL de upload directo...');
     
-    const uploadUrlResponse = await fetch('/api/upload-video', {
+    const uploadUrlResponse = await fetch('/api/get-upload-url', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json' 
