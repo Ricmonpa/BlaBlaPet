@@ -134,13 +134,16 @@ const Home = () => {
   useEffect(() => {
     console.log('🚀 DEBUG - useEffect ejecutado en Home.jsx');
     console.log('🔍 DEBUG - location.state:', location.state);
+    console.log('🔍 DEBUG - location.pathname:', location.pathname);
+    console.log('🔍 DEBUG - window.location.href:', window.location.href);
     console.log('🔍 DEBUG - Condiciones useEffect:');
     console.log('  - location.state?.translation:', location.state?.translation);
     console.log('  - location.state?.output_emocional:', location.state?.output_emocional);
     console.log('  - location.state?.isSequentialSubtitles:', location.state?.isSequentialSubtitles);
     console.log('  - Condición completa:', location.state?.translation || location.state?.output_emocional || location.state?.isSequentialSubtitles);
     
-    if (location.state?.translation || location.state?.output_emocional || location.state?.isSequentialSubtitles) {
+    // Solo procesar si hay datos válidos (no null/undefined)
+    if (location.state && (location.state.translation || location.state.output_emocional || location.state.isSequentialSubtitles)) {
       const handleVideoSave = async () => {
         try {
           // Convertir blob URL a archivo real
@@ -199,10 +202,11 @@ const Home = () => {
 
       handleVideoSave();
 
-      // Limpiar el state para evitar duplicados
+      // Limpiar el state para evitar duplicados SOLO si se procesó el video
       window.history.replaceState({}, document.title);
     } else {
       console.log('⚠️ DEBUG - useEffect no ejecutó handleVideoSave - condiciones no cumplidas');
+      console.log('🔍 DEBUG - State NO limpiado porque no se procesó video');
     }
     console.log('🏁 DEBUG - useEffect terminado en Home.jsx');
   }, [location.state]);
