@@ -40,15 +40,18 @@ const convertBlobToFile = async (blobData, mediaType) => {
     formData.append('contentType', file.type);
     formData.append('fileSize', file.size.toString());
     
+    console.log('📤 Enviando archivo a /api/upload-video-simple...');
     const uploadResponse = await fetch('/api/upload-video-simple', {
       method: 'POST',
       body: formData
     });
 
+    console.log('📥 Respuesta del upload:', uploadResponse.status, uploadResponse.statusText);
+    
     if (!uploadResponse.ok) {
       const errorData = await uploadResponse.text();
       console.error('❌ Error subiendo archivo:', errorData);
-      throw new Error('Error subiendo archivo');
+      throw new Error(`Error subiendo archivo: ${uploadResponse.status} - ${errorData}`);
     }
 
     const uploadData = await uploadResponse.json();
@@ -84,7 +87,9 @@ const convertBlobToFile = async (blobData, mediaType) => {
       };
     }
   } catch (error) {
-    console.error('Error convirtiendo blob a archivo:', error);
+    console.error('❌ Error convirtiendo blob a archivo:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.log('🔄 Usando fallback a imagen estática...');
     // Fallback a imagen estática (mantener tu lógica existente)
     return {
       file: null,
