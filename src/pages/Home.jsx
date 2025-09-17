@@ -41,10 +41,18 @@ const convertBlobToFile = async (blobData, mediaType) => {
     formData.append('fileSize', file.size.toString());
     
     console.log('📤 Enviando archivo a /api/upload-video-simple...');
+    
+    // Crear AbortController para timeout - 5 minutos para videos largos
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos timeout
+    
     const uploadResponse = await fetch('/api/upload-video-simple', {
       method: 'POST',
-      body: formData
+      body: formData,
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     console.log('📥 Respuesta del upload:', uploadResponse.status, uploadResponse.statusText);
     
@@ -89,6 +97,11 @@ const convertBlobToFile = async (blobData, mediaType) => {
   } catch (error) {
     console.error('❌ Error convirtiendo blob a archivo:', error);
     console.error('❌ Error stack:', error.stack);
+    
+    if (error.name === 'AbortError') {
+      console.log('⏰ TIMEOUT: Upload cancelado después de 5 minutos');
+    }
+    
     console.log('🔄 Usando fallback a imagen estática...');
     // Fallback a imagen estática (mantener tu lógica existente)
     return {
