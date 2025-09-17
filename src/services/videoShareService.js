@@ -7,11 +7,14 @@
 import videoApiService from './videoApiService.js';
 class VideoShareService {
   constructor() {
-    // Detectar si estamos en producción o desarrollo
+    // Detectar si estamos en producción o desarrollo - PRIORIDAD: PRODUCCIÓN SEGURA
     const isProduction = typeof window !== 'undefined' && 
       (window.location.hostname.includes('vercel.app') || 
        window.location.hostname.includes('blabla-pet-web') ||
-       window.location.hostname !== 'localhost');
+       window.location.hostname.includes('.vercel.app') ||
+       window.location.hostname.includes('.netlify.app') ||
+       window.location.hostname.includes('.github.io') ||
+       window.location.hostname.includes('herokuapp.com'));
     
     this.baseUrl = isProduction 
       ? 'https://blabla-pet-web.vercel.app'
@@ -96,8 +99,11 @@ async storeVideoAndGenerateUrl(post) {
   };
 
   try {
-    // GUARDAR en la base de datos
-    const response = await fetch('/api/videos', {
+    // GUARDAR en la base de datos - usar el mismo sistema que videoApiService
+    const baseUrl = this.isProduction ? window.location.origin : 'http://localhost:3002';
+    const endpoint = this.isProduction ? '/api/videos' : '/videos';
+    
+    const response = await fetch(`${baseUrl}${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(videoData)

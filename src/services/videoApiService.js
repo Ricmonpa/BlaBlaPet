@@ -1,24 +1,36 @@
 /**
- * Servicio de API para videos - Conecta con la base de datos JSON Server
- * NO modifica el modelo de pensamiento existente
+ * Servicio de API para videos - Híbrido JSON Server/Vercel Blob
+ * Desarrollo: JSON Server (localhost:3002)
+ * Producción: Vercel Blob (/api/videos)
  */
 
 class VideoApiService {
   constructor() {
-    // Detectar si estamos en producción o desarrollo
+    // Detectar si estamos en producción o desarrollo - PRIORIDAD: PRODUCCIÓN SEGURA
     const isProduction = typeof window !== 'undefined' && 
       (window.location.hostname.includes('vercel.app') || 
        window.location.hostname.includes('blabla-pet-web') ||
-       window.location.hostname !== 'localhost');
+       window.location.hostname.includes('.vercel.app') ||
+       window.location.hostname.includes('.netlify.app') ||
+       window.location.hostname.includes('.github.io') ||
+       window.location.hostname.includes('herokuapp.com'));
     
-    this.baseUrl = isProduction 
-      ? (typeof window !== 'undefined' ? window.location.origin : 'https://blabla-pet-web.vercel.app')
-      : 'http://localhost:3002';
-    
-    // Usar siempre /api/videos para consistencia
-    this.videosEndpoint = `${this.baseUrl}/api/videos`;
-    this.usersEndpoint = `${this.baseUrl}/api/users`;
-    this.sharesEndpoint = `${this.baseUrl}/api/shares`;
+    // En desarrollo usar JSON Server, en producción usar Vercel Blob
+    if (isProduction) {
+      // Producción: Vercel Blob - SIEMPRE SEGURO
+      this.baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://blabla-pet-web.vercel.app';
+      this.videosEndpoint = `${this.baseUrl}/api/videos`;
+      this.usersEndpoint = `${this.baseUrl}/api/users`;
+      this.sharesEndpoint = `${this.baseUrl}/api/shares`;
+      console.log('🔧 VideoApiService configurado para PRODUCCIÓN (Vercel Blob):', this.baseUrl);
+    } else {
+      // Desarrollo: JSON Server - Solo en localhost
+      this.baseUrl = 'http://localhost:3002';
+      this.videosEndpoint = `${this.baseUrl}/videos`;
+      this.usersEndpoint = `${this.baseUrl}/users`;
+      this.sharesEndpoint = `${this.baseUrl}/shares`;
+      console.log('🔧 VideoApiService configurado para DESARROLLO (JSON Server):', this.baseUrl);
+    }
   }
 
   /**
