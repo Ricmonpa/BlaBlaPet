@@ -47,12 +47,12 @@ const convertBlobToFile = async (blobData, mediaType) => {
       type: file.type
     });
     
-    // Crear AbortController para timeout - 5 minutos para videos largos
+    // Crear AbortController para timeout - 30 segundos para diagnóstico rápido
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('⏰ TIMEOUT: Cancelando upload después de 5 minutos...');
+      console.log('⏰ TIMEOUT: Cancelando upload después de 30 segundos...');
       controller.abort();
-    }, 300000); // 5 minutos timeout
+    }, 30000); // 30 segundos timeout para diagnóstico
     
     console.log('🔄 Iniciando fetch...');
     const uploadResponse = await fetch('/api/upload-video-simple', {

@@ -23,17 +23,23 @@ export default async function handler(req, res) {
 
   try {
     console.log('🔍 Upload request received');
+    console.log('🔍 Request method:', req.method);
+    console.log('🔍 Request headers:', req.headers);
+    console.log('🔍 Content-Type:', req.headers['content-type']);
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });
     }
 
     // Parsear FormData usando formidable
+    console.log('🔍 Parsing FormData...');
     const form = formidable({
       maxFileSize: 100 * 1024 * 1024, // 100MB
     });
 
+    console.log('🔍 Starting form.parse...');
     const [fields, files] = await form.parse(req);
+    console.log('✅ FormData parsed successfully');
     
     const file = files.file?.[0];
     const filename = fields.filename?.[0] || 'video.mp4';
