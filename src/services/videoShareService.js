@@ -397,14 +397,14 @@ async storeVideoAndGenerateUrl(post) {
     try {
       const videos = await videoApiService.getAllVideos();
       return videos
-        .filter(video => video.isPublic)
+        .filter(video => video.isPublic !== false) // Incluir videos sin isPublic o con isPublic: true
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     } catch (error) {
       console.error('❌ Error obteniendo feed público:', error);
       // Fallback a localStorage
       const allVideos = this.getAllVideosFromStorage();
       return Object.values(allVideos)
-        .filter(video => video.isPublic !== false)
+        .filter(video => video.isPublic !== false) // Incluir videos sin isPublic o con isPublic: true
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
   }
