@@ -146,11 +146,16 @@ const Home = () => {
     if (location.state && (location.state.translation || location.state.output_emocional || location.state.isSequentialSubtitles)) {
       const handleVideoSave = async () => {
         try {
+          console.log('🚀 DEBUG - Iniciando handleVideoSave');
+          console.log('🔍 DEBUG - location.state.media:', location.state.media);
+          
           // Convertir blob URL a archivo real
+          console.log('🎬 Convirtiendo blob a archivo para upload directo...');
           const videoFile = await convertBlobToFile(
             location.state.media?.data, 
             location.state.media?.type || 'video'
           );
+          console.log('✅ DEBUG - convertBlobToFile completado:', videoFile);
 
           // Solo guardar si la subida fue exitosa (no es fallback de Unsplash)
           console.log('🔍 DEBUG - Condiciones para guardar video:');
@@ -197,6 +202,7 @@ const Home = () => {
           }
         } catch (error) {
           console.error('❌ Error guardando video:', error);
+          console.error('❌ Error stack:', error.stack);
         }
       };
 
