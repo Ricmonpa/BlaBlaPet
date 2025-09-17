@@ -132,6 +132,14 @@ const Home = () => {
 
   // Manejar nuevo video desde la cámara
   useEffect(() => {
+    console.log('🚀 DEBUG - useEffect ejecutado en Home.jsx');
+    console.log('🔍 DEBUG - location.state:', location.state);
+    console.log('🔍 DEBUG - Condiciones useEffect:');
+    console.log('  - location.state?.translation:', location.state?.translation);
+    console.log('  - location.state?.output_emocional:', location.state?.output_emocional);
+    console.log('  - location.state?.isSequentialSubtitles:', location.state?.isSequentialSubtitles);
+    console.log('  - Condición completa:', location.state?.translation || location.state?.output_emocional || location.state?.isSequentialSubtitles);
+    
     if (location.state?.translation || location.state?.output_emocional || location.state?.isSequentialSubtitles) {
       const handleVideoSave = async () => {
         try {
@@ -193,7 +201,10 @@ const Home = () => {
 
       // Limpiar el state para evitar duplicados
       window.history.replaceState({}, document.title);
+    } else {
+      console.log('⚠️ DEBUG - useEffect no ejecutó handleVideoSave - condiciones no cumplidas');
     }
+    console.log('🏁 DEBUG - useEffect terminado en Home.jsx');
   }, [location.state]);
 
   // Manejar selección de video
