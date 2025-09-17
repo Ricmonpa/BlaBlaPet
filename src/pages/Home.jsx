@@ -142,6 +142,12 @@ const Home = () => {
           );
 
           // Solo guardar si la subida fue exitosa (no es fallback de Unsplash)
+          console.log('🔍 DEBUG - Condiciones para guardar video:');
+          console.log('  - videoFile.url:', videoFile.url);
+          console.log('  - includes unsplash:', videoFile.url?.includes('unsplash.com'));
+          console.log('  - videoFile.isVideo:', videoFile.isVideo);
+          console.log('  - Condición completa:', videoFile.url && !videoFile.url.includes('unsplash.com') && videoFile.isVideo);
+          
           if (videoFile.url && !videoFile.url.includes('unsplash.com') && videoFile.isVideo) {
             // Crear objeto de video para la base de datos
             const newVideo = {
