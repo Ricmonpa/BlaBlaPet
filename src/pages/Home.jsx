@@ -29,71 +29,47 @@ const convertBlobToFile = async (blobData, mediaType) => {
       type: file.type
     });
 
-    // NUEVO: Upload directo con signed URL (evita límite de 10s de Vercel)
-    console.log('🔗 Obteniendo signed URL para upload directo...');
+    // NUEVO: Upload optimizado directo (evita signed URLs problemáticas)
+    console.log('📤 Subiendo archivo usando endpoint optimizado...');
     
-    // Paso 1: Obtener signed URL
-    const signedUrlResponse = await fetch('/api/get-upload-url', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filename: fileName,
-        contentType: file.type,
-        fileSize: file.size
-      })
-    });
-
-    if (!signedUrlResponse.ok) {
-      const errorData = await signedUrlResponse.text();
-      console.error('❌ Error obteniendo signed URL:', errorData);
-      throw new Error(`Error obteniendo signed URL: ${signedUrlResponse.status} - ${errorData}`);
+    // Preparar FormData para el endpoint optimizado
+    const formData = new FormData();
+    formData.append('video', file);
+    
+    // Agregar metadata si está disponible
+    if (location.state) {
+      formData.append('petName', location.state.translation?.split(' ')[0] || 'Video Subido');
+      formData.append('translation', location.state.translation || 'Análisis completado');
+      formData.append('emotionalDubbing', location.state.output_emocional || '');
+      formData.append('subtitles', JSON.stringify(location.state.subtitles || []));
+      formData.append('totalDuration', location.state.totalDuration?.toString() || '0');
+      formData.append('userId', 'uploaded_user');
+      formData.append('isPublic', 'true');
     }
 
-    const { uploadUrl, filename: uniqueFilename } = await signedUrlResponse.json();
-    console.log('✅ Signed URL obtenida:', uploadUrl);
+    // Usar el endpoint optimizado con timeout extendido
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos
 
-    // Paso 2: Upload directo a Vercel Blob
-    console.log('📤 Subiendo archivo directamente a Vercel Blob...');
-    
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type
-      }
+    const uploadResponse = await fetch('/api/upload-video-optimized', {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+      // No establecer Content-Type, el browser lo manejará automáticamente para FormData
     });
+
+    clearTimeout(timeoutId);
 
     if (!uploadResponse.ok) {
-      console.error('❌ Error en upload directo:', uploadResponse.status, uploadResponse.statusText);
-      throw new Error(`Error en upload directo: ${uploadResponse.status}`);
+      const errorData = await uploadResponse.text();
+      console.error('❌ Error en upload optimizado:', uploadResponse.status, errorData);
+      throw new Error(`Error en upload optimizado: ${uploadResponse.status} - ${errorData}`);
     }
 
-    console.log('✅ Archivo subido exitosamente a Blob');
+    const uploadData = await uploadResponse.json();
+    console.log('✅ Upload optimizado exitoso:', uploadData);
 
-    // Paso 3: Confirmar upload
-    console.log('🔍 Confirmando upload...');
-    
-    const confirmResponse = await fetch('/api/confirm-upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filename: uniqueFilename,
-        contentType: file.type,
-        fileSize: file.size,
-        uploadedUrl: uploadUrl
-      })
-    });
-
-    if (!confirmResponse.ok) {
-      console.error('❌ Error confirmando upload:', confirmResponse.status);
-      throw new Error(`Error confirmando upload: ${confirmResponse.status}`);
-    }
-
-    const confirmData = await confirmResponse.json();
-    console.log('✅ Upload confirmado:', confirmData.url);
-
-    // La URL final es la del Blob
-    const serverUrl = uploadUrl;
+    const serverUrl = uploadData.url;
     console.log('🔗 URL final del video:', serverUrl);
 
     if (mediaType === 'video') {
@@ -103,21 +79,23 @@ const convertBlobToFile = async (blobData, mediaType) => {
       return {
         file,
         url: serverUrl, // URL del Blob Storage
-        fileName: uniqueFilename, // Nombre único generado
+        fileName: uploadData.filename, // Nombre único generado
         size: file.size,
         originalSize: file.size,
         isVideo: true,
         thumbnail: thumbnail,
-        filePath: uniqueFilename // Para compatibilidad con tu código existente
+        filePath: uploadData.filename, // Para compatibilidad con tu código existente
+        metadata: uploadData.metadata // Metadata completa del video
       };
     } else {
       return {
         file,
         url: serverUrl, // URL del Blob Storage
-        fileName: uniqueFilename, // Nombre único generado
+        fileName: uploadData.filename, // Nombre único generado
         size: file.size,
         isVideo: false,
-        filePath: uniqueFilename // Para compatibilidad con tu código existente
+        filePath: uploadData.filename, // Para compatibilidad con tu código existente
+        metadata: uploadData.metadata // Metadata completa del video
       };
     }
   } catch (error) {
