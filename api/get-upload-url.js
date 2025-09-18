@@ -1,10 +1,4 @@
-import { generateUploadUrl } from '@vercel/blob';
-
-export const config = {
-  api: {
-    bodyParser: true,
-  },
-};
+import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -20,50 +14,47 @@ export default async function handler(req, res) {
   }
 
   try {
-    let body = req.body;
-    if (typeof body === 'string') {
-      body = JSON.parse(body);
-    }
+    console.log('🔍 Generating signed URL for direct upload...');
 
-    console.log('🔍 get-upload-url request body:', JSON.stringify(body, null, 2));
-
-    const { filename, contentType, originalFilename, fileSize, videoMetadata } = body || {};
-    if (!filename || !contentType) {
-      return res.status(400).json({ error: 'Missing filename or contentType' });
-    }
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });
     }
 
-    // Generar nombre único manteniendo la extensión
+    const { filename, contentType, fileSize } = req.body;
+
+    if (!filename || !contentType) {
+      return res.status(400).json({ error: 'filename and contentType are required' });
+    }
+
+    // Generar nombre único para el archivo
     const extension = filename.split('.').pop() || 'mp4';
     const uniqueFilename = `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
 
-    console.log('🔍 Generating upload URL for:', { uniqueFilename, contentType });
+    console.log('🔍 Creating signed URL for:', { uniqueFilename, contentType, fileSize });
 
-    // Generar URL de subida firmada (pública) para uploads directos desde el cliente
-    const { url, token } = await generateUploadUrl(uniqueFilename, {
-      contentType,
+    // Crear signed URL para upload directo
+    const { url, token } = await put(uniqueFilename, null, {
       access: 'public',
+      contentType: contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
+      addRandomSuffix: false,
     });
 
-    console.log('✅ Upload URL generated successfully');
+    console.log('✅ Signed URL generated successfully:', url);
 
     return res.status(200).json({
       success: true,
-      url,
       uploadUrl: url,
-      uploadToken: token,
-      filePath: uniqueFilename,
-      originalName: originalFilename || filename,
-      type: contentType,
-      fileSize: fileSize || 0,
-      videoMetadata: videoMetadata || {}
+      filename: uniqueFilename,
+      contentType: contentType,
+      fileSize: fileSize
     });
+
   } catch (error) {
-    console.error('💥 Error en get-upload-url endpoint:', error);
-    console.error('💥 Error stack:', error.stack);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    console.error('💥 Error generating signed URL:', error);
+    return res.status(500).json({ 
+      error: error.message || 'Internal server error',
+      details: error.stack
+    });
   }
 }

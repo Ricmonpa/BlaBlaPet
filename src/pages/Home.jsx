@@ -29,55 +29,71 @@ const convertBlobToFile = async (blobData, mediaType) => {
       type: file.type
     });
 
-    // NUEVO: Upload directo a Vercel Blob
-    // Paso 1: Obtener URL de upload directo
-    console.log('🔗 Obteniendo URL de upload directo...');
+    // NUEVO: Upload directo con signed URL (evita límite de 10s de Vercel)
+    console.log('🔗 Obteniendo signed URL para upload directo...');
     
-    // Usar FormData para enviar el archivo directamente
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('filename', fileName);
-    formData.append('contentType', file.type);
-    formData.append('fileSize', file.size.toString());
-    
-    console.log('📤 Enviando archivo a /api/upload-video-simple...');
-    console.log('📊 Datos del archivo:', {
-      fileName: fileName,
-      size: file.size,
-      type: file.type
-    });
-    
-    // Crear AbortController para timeout - 30 segundos para diagnóstico rápido
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.log('⏰ TIMEOUT: Cancelando upload después de 30 segundos...');
-      controller.abort();
-    }, 30000); // 30 segundos timeout para diagnóstico
-    
-    console.log('🔄 Iniciando fetch...');
-    const uploadResponse = await fetch('/api/upload-video-simple', {
+    // Paso 1: Obtener signed URL
+    const signedUrlResponse = await fetch('/api/get-upload-url', {
       method: 'POST',
-      body: formData,
-      signal: controller.signal
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: fileName,
+        contentType: file.type,
+        fileSize: file.size
+      })
     });
-    
-    console.log('✅ Fetch completado, limpiando timeout...');
-    clearTimeout(timeoutId);
 
-    console.log('📥 Respuesta del upload:', uploadResponse.status, uploadResponse.statusText);
-    
-    if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.text();
-      console.error('❌ Error subiendo archivo:', errorData);
-      throw new Error(`Error subiendo archivo: ${uploadResponse.status} - ${errorData}`);
+    if (!signedUrlResponse.ok) {
+      const errorData = await signedUrlResponse.text();
+      console.error('❌ Error obteniendo signed URL:', errorData);
+      throw new Error(`Error obteniendo signed URL: ${signedUrlResponse.status} - ${errorData}`);
     }
 
-    const uploadData = await uploadResponse.json();
-    console.log('✅ Archivo subido exitosamente:', uploadData.url);
+    const { uploadUrl, filename: uniqueFilename } = await signedUrlResponse.json();
+    console.log('✅ Signed URL obtenida:', uploadUrl);
 
-    // La URL final es la que devuelve el endpoint
-    const serverUrl = uploadData.url;
+    // Paso 2: Upload directo a Vercel Blob
+    console.log('📤 Subiendo archivo directamente a Vercel Blob...');
+    
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type
+      }
+    });
 
+    if (!uploadResponse.ok) {
+      console.error('❌ Error en upload directo:', uploadResponse.status, uploadResponse.statusText);
+      throw new Error(`Error en upload directo: ${uploadResponse.status}`);
+    }
+
+    console.log('✅ Archivo subido exitosamente a Blob');
+
+    // Paso 3: Confirmar upload
+    console.log('🔍 Confirmando upload...');
+    
+    const confirmResponse = await fetch('/api/confirm-upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: uniqueFilename,
+        contentType: file.type,
+        fileSize: file.size,
+        uploadedUrl: uploadUrl
+      })
+    });
+
+    if (!confirmResponse.ok) {
+      console.error('❌ Error confirmando upload:', confirmResponse.status);
+      throw new Error(`Error confirmando upload: ${confirmResponse.status}`);
+    }
+
+    const confirmData = await confirmResponse.json();
+    console.log('✅ Upload confirmado:', confirmData.url);
+
+    // La URL final es la del Blob
+    const serverUrl = uploadUrl;
     console.log('🔗 URL final del video:', serverUrl);
 
     if (mediaType === 'video') {
@@ -87,21 +103,21 @@ const convertBlobToFile = async (blobData, mediaType) => {
       return {
         file,
         url: serverUrl, // URL del Blob Storage
-        fileName: uploadData.uniqueFilename, // Nombre único generado
+        fileName: uniqueFilename, // Nombre único generado
         size: file.size,
         originalSize: file.size,
         isVideo: true,
         thumbnail: thumbnail,
-        filePath: uploadData.uniqueFilename // Para compatibilidad con tu código existente
+        filePath: uniqueFilename // Para compatibilidad con tu código existente
       };
     } else {
       return {
         file,
         url: serverUrl, // URL del Blob Storage
-        fileName: uploadData.uniqueFilename, // Nombre único generado
+        fileName: uniqueFilename, // Nombre único generado
         size: file.size,
         isVideo: false,
-        filePath: uploadData.uniqueFilename // Para compatibilidad con tu código existente
+        filePath: uniqueFilename // Para compatibilidad con tu código existente
       };
     }
   } catch (error) {
