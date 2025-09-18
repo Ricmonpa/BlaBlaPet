@@ -11,7 +11,7 @@ export const config = {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-content-length');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -23,6 +23,8 @@ export default async function handler(req, res) {
 
   try {
     console.log('🚀 Iniciando upload optimizado de video...');
+    console.log('📋 Headers recibidos:', req.headers);
+    console.log('📏 x-content-length:', req.headers['x-content-length']);
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });

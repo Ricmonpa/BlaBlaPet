@@ -55,6 +55,10 @@ const convertBlobToFile = async (blobData, mediaType) => {
       method: 'POST',
       body: formData,
       signal: controller.signal,
+      headers: {
+        // Agregar x-content-length header requerido por Vercel Blob
+        'x-content-length': file.size.toString()
+      }
       // No establecer Content-Type, el browser lo manejará automáticamente para FormData
     });
 
