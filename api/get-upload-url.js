@@ -33,14 +33,16 @@ export default async function handler(req, res) {
     console.log('🔍 Creating signed URL for:', { uniqueFilename, contentType, fileSize });
 
     // Usar put() correctamente para generar signed URL
-    // Para signed URLs, pasamos un Uint8Array vacío como body
+    // Vercel Blob REQUIERE el header x-content-length para signed URLs
     const { url } = await put(uniqueFilename, new Uint8Array(0), {
       access: 'public',
       contentType: contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
       addRandomSuffix: false,
-      // Para signed URLs, Vercel Blob maneja automáticamente los headers
-      // No necesitamos especificar x-content-length manualmente
+      // Vercel Blob REQUIERE este header para signed URLs
+      headers: {
+        'x-content-length': fileSize.toString()
+      }
     });
 
     console.log('✅ Signed URL generated successfully:', url);
