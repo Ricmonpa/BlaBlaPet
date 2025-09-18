@@ -31,10 +31,16 @@ const convertBlobToFile = async (blobData, mediaType) => {
 
     // NUEVO: Upload optimizado directo (evita signed URLs problemáticas)
     console.log('📤 Subiendo archivo usando endpoint optimizado...');
+    console.log('📁 Archivo a subir:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
     
     // Preparar FormData para el endpoint optimizado
     const formData = new FormData();
     formData.append('video', file);
+    console.log('📋 FormData preparado, keys:', Array.from(formData.keys()));
     
     // Agregar metadata si está disponible
     if (location.state) {
@@ -51,6 +57,8 @@ const convertBlobToFile = async (blobData, mediaType) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos
 
+    console.log('🚀 Enviando petición a /api/upload-video-optimized...');
+    
     const uploadResponse = await fetch('/api/upload-video-optimized', {
       method: 'POST',
       body: formData,
@@ -61,6 +69,8 @@ const convertBlobToFile = async (blobData, mediaType) => {
       }
       // No establecer Content-Type, el browser lo manejará automáticamente para FormData
     });
+    
+    console.log('📡 Petición enviada, esperando respuesta...');
 
     clearTimeout(timeoutId);
 
