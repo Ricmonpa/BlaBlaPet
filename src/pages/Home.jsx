@@ -64,6 +64,9 @@ const convertBlobToFile = async (blobData, mediaType) => {
 
     clearTimeout(timeoutId);
 
+    console.log('📡 Upload response status:', uploadResponse.status);
+    console.log('📡 Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()));
+
     if (!uploadResponse.ok) {
       const errorData = await uploadResponse.text();
       console.error('❌ Error en upload optimizado:', uploadResponse.status, errorData);
@@ -72,6 +75,7 @@ const convertBlobToFile = async (blobData, mediaType) => {
 
     const uploadData = await uploadResponse.json();
     console.log('✅ Upload optimizado exitoso:', uploadData);
+    console.log('🔗 URL del video subido:', uploadData.url);
 
     const serverUrl = uploadData.url;
     console.log('🔗 URL final del video:', serverUrl);
@@ -220,8 +224,10 @@ const Home = () => {
             };
 
             // Guardar en la base de datos usando videoShareService
+            console.log('💾 Guardando video en base de datos con URL:', videoFile.url);
             const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
             console.log('✅ Video guardado en la base de datos:', videoUrl);
+            console.log('🔍 Video object guardado:', newVideo);
             // El feed se actualizará automáticamente
           } else {
             console.log('⚠️ No se guardó el video - subida falló o es fallback');

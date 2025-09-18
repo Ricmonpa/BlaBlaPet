@@ -46,7 +46,17 @@ const PetCard = ({ post }) => {
             muted
             playsInline
             onError={(e) => {
-              console.warn('Error cargando video:', e);
+              console.error('❌ Error cargando video:', {
+                videoSrc: e.target.src,
+                videoError: e.target.error,
+                networkState: e.target.networkState,
+                readyState: e.target.readyState,
+                postData: {
+                  id: post.id,
+                  mediaUrl: post.mediaUrl,
+                  mediaType: post.mediaType
+                }
+              });
               // Mostrar mensaje de error si el video no se puede cargar
               e.target.style.display = 'none';
             }}
