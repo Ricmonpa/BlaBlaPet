@@ -1,8 +1,8 @@
-import { list, put } from '@vercel/blob';
+import { list, put, del } from '@vercel/blob';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -66,6 +66,28 @@ export default async function handler(req, res) {
       );
 
       return res.status(200).json(newVideo);
+    }
+
+    if (req.method === 'DELETE') {
+      // Eliminar video específico
+      const { id } = req.body;
+      
+      if (!id) {
+        return res.status(400).json({ error: 'Video ID is required' });
+      }
+
+      const key = `videos/${id}.json`;
+      console.log('🗑️ Deleting video:', key);
+      
+      await del(key, {
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+
+      return res.status(200).json({ 
+        success: true, 
+        deleted: id,
+        message: 'Video deleted successfully'
+      });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

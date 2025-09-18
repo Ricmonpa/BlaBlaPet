@@ -1,4 +1,4 @@
-import { handleUpload } from '@vercel/blob';
+import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -32,12 +32,15 @@ export default async function handler(req, res) {
 
     console.log('🔍 Creating signed URL for:', { uniqueFilename, contentType, fileSize });
 
-    // Usar handleUpload para generar signed URL correctamente
-    const { url } = await handleUpload({
-      pathname: uniqueFilename,
+    // Usar put() correctamente para generar signed URL
+    // Para signed URLs, pasamos un Uint8Array vacío como body
+    const { url } = await put(uniqueFilename, new Uint8Array(0), {
+      access: 'public',
+      contentType: contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      expiresIn: 300, // 5 minutos de validez
       addRandomSuffix: false,
+      // Para signed URLs, Vercel Blob maneja automáticamente los headers
+      // No necesitamos especificar x-content-length manualmente
     });
 
     console.log('✅ Signed URL generated successfully:', url);
