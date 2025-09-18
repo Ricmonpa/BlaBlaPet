@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🚀 Iniciando upload optimizado de video...');
+    console.log('🚀 Iniciando upload directo de video (hasta 5 minutos)...');
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });
@@ -72,17 +72,18 @@ export default async function handler(req, res) {
     const extension = videoFile.originalFilename?.split('.').pop() || 'mp4';
     const uniqueFilename = `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
 
-    console.log('📤 Subiendo a Vercel Blob:', uniqueFilename);
+    console.log('📤 Subiendo a Vercel Blob (upload directo):', uniqueFilename);
 
-    // Upload directly to Vercel Blob
+    // Upload directly to Vercel Blob using put() - LA FORMA CORRECTA para upload directo
     const { url } = await put(uniqueFilename, fileBuffer, {
       access: 'public',
-      contentType: videoFile.mimetype,
+      contentType: videoFile.mimetype || 'video/mp4',
       token: process.env.BLOB_READ_WRITE_TOKEN,
       addRandomSuffix: false,
+      // NO necesitamos headers problemáticos cuando usamos put() con buffer real
     });
 
-    console.log('✅ Video subido exitosamente:', url);
+    console.log('✅ Video subido exitosamente (upload directo):', url);
 
     // Clean up temporary file
     try {
@@ -97,7 +98,7 @@ export default async function handler(req, res) {
       translation: fields.translation?.[0] || 'Análisis completado',
       emotionalDubbing: fields.emotionalDubbing?.[0] || '',
       subtitles: fields.subtitles ? JSON.parse(fields.subtitles[0]) : [],
-      totalDuration: fields.totalDuration?.[0] || 0,
+      totalDuration: parseInt(fields.totalDuration?.[0]) || 0,
       userId: fields.userId?.[0] || 'uploaded_user',
       isPublic: fields.isPublic?.[0] !== 'false',
     };
@@ -120,7 +121,7 @@ export default async function handler(req, res) {
         fileSizeMB: fileSizeMB,
         format: extension,
         originalName: videoFile.originalFilename,
-        uploadMethod: 'optimized_upload', // Indicar que fue upload optimizado
+        uploadMethod: 'direct_upload', // Indicar que fue upload directo
       }
     };
 
@@ -136,41 +137,39 @@ export default async function handler(req, res) {
       }
     );
 
-    console.log('💾 Metadata guardada en base de datos:', videoMetadata.id);
+    console.log('💾 Metadata guardada en base de datos (upload directo):', videoMetadata.id);
 
     return res.status(200).json({
       success: true,
       url: url,
       filename: uniqueFilename,
       metadata: videoMetadata,
-      uploadMethod: 'optimized_upload',
-      message: 'Video uploaded and saved successfully (supports up to 5 minutes)'
+      uploadMethod: 'direct_upload',
+      message: 'Video uploaded successfully via direct upload (supports up to 5 minutes)'
     });
 
   } catch (error) {
-    console.error('💥 Error en upload optimizado:', error);
+    console.error('💥 Error en upload directo:', error);
     
     // Mejor manejo de errores específicos
     if (error.message?.includes('Request Entity Too Large')) {
       return res.status(413).json({ 
         error: 'Video file too large. Maximum size: 100MB (approximately 5 minutes)',
-        details: 'Try compressing your video or reducing its duration.',
-        uploadMethod: 'optimized_upload'
+        details: 'Try compressing your video or reducing its duration.'
       });
     }
     
     if (error.message?.includes('timeout')) {
       return res.status(408).json({ 
         error: 'Upload timeout. Video might be too large or network connection is slow.',
-        details: 'Try compressing your video or check your internet connection.',
-        uploadMethod: 'optimized_upload'
+        details: 'Try compressing your video or check your internet connection.'
       });
     }
     
     return res.status(500).json({ 
       error: error.message || 'Internal server error',
       details: error.stack,
-      uploadMethod: 'optimized_upload'
+      uploadMethod: 'direct_upload'
     });
   }
 }
