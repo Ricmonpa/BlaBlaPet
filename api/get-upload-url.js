@@ -38,6 +38,10 @@ export default async function handler(req, res) {
       contentType: contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
       addRandomSuffix: false,
+      // Agregar header de content-length requerido
+      headers: {
+        'x-content-length': fileSize.toString()
+      }
     });
 
     console.log('✅ Signed URL generated successfully:', url);
