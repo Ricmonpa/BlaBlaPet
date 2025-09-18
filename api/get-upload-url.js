@@ -32,8 +32,8 @@ export default async function handler(req, res) {
 
     console.log('🔍 Creating signed URL for:', { uniqueFilename, contentType, fileSize });
 
-    // Crear signed URL para upload directo
-    const { url, token } = await put(uniqueFilename, null, {
+    // Crear signed URL para upload directo usando el método correcto
+    const { url } = await put(uniqueFilename, new Uint8Array(0), {
       access: 'public',
       contentType: contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
