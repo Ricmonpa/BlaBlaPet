@@ -3,10 +3,12 @@ import { useLocation } from 'react-router-dom';
 import BottomNavigation from '../components/BottomNavigation';
 import SharedFeed from '../components/SharedFeed';
 import videoShareService from '../services/videoShareService.js';
+import { compressVideo, needsCompression } from '../utils/videoCompression.js';
+import directBlobUploadService from '../services/directBlobUploadService.js';
 
 const convertBlobToFile = async (blobData, mediaType) => {
   try {
-    console.log('🎬 Convirtiendo blob a archivo para upload directo...');
+    console.log('🎬 Convirtiendo blob a archivo con compresión y upload directo...');
     
     // Si es un blob URL, convertir a blob
     let blob;
@@ -19,116 +21,88 @@ const convertBlobToFile = async (blobData, mediaType) => {
       throw new Error('Formato de datos no soportado');
     }
 
-    // Crear un archivo con nombre único
+    console.log('📁 Blob original:', {
+      size: (blob.size / 1024 / 1024).toFixed(2) + ' MB',
+      type: blob.type
+    });
+
+    // NUEVO: Comprimir video si es necesario
+    let processedBlob = blob;
+    if (mediaType === 'video' && needsCompression(blob)) {
+      console.log('🎬 Video necesita compresión, procesando...');
+      processedBlob = await compressVideo(blob);
+      console.log('✅ Video comprimido exitosamente');
+    }
+
+    // Crear archivo con el blob procesado
     const fileName = `video_${Date.now()}.${mediaType === 'video' ? 'mp4' : 'jpg'}`;
-    const file = new File([blob], fileName, { type: blob.type });
+    const file = new File([processedBlob], fileName, { type: processedBlob.type });
 
-    console.log('📁 Archivo creado:', {
+    console.log('📁 Archivo procesado:', {
       name: file.name,
-      size: file.size,
+      size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
       type: file.type
     });
 
-    // NUEVO: Upload optimizado directo (evita signed URLs problemáticas)
-    console.log('📤 Subiendo archivo usando endpoint optimizado...');
-    console.log('📁 Archivo a subir:', {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    });
+    // NUEVO: Upload directo al Blob Store (bypass de Vercel Functions)
+    console.log('📤 Subiendo archivo directamente al Blob Store...');
     
-    // Preparar FormData para el endpoint optimizado
-    const formData = new FormData();
-    formData.append('video', file);
-    console.log('📋 FormData preparado, keys:', Array.from(formData.keys()));
+    // Preparar metadata
+    const metadata = {
+      petName: location.state?.translation?.split(' ')[0] || 'Video Subido',
+      translation: location.state?.translation || 'Análisis completado',
+      emotionalDubbing: location.state?.output_emocional || '',
+      subtitles: location.state?.subtitles || [],
+      totalDuration: location.state?.totalDuration || 0,
+      userId: 'uploaded_user',
+      tags: ['mascota', 'video', 'ai']
+    };
+
+    // Usar el servicio de upload directo
+    const uploadResult = await directBlobUploadService.uploadVideo(file, metadata);
     
-    // Agregar metadata si está disponible
-    if (location.state) {
-      formData.append('petName', location.state.translation?.split(' ')[0] || 'Video Subido');
-      formData.append('translation', location.state.translation || 'Análisis completado');
-      formData.append('emotionalDubbing', location.state.output_emocional || '');
-      formData.append('subtitles', JSON.stringify(location.state.subtitles || []));
-      formData.append('totalDuration', location.state.totalDuration?.toString() || '0');
-      formData.append('userId', 'uploaded_user');
-      formData.append('isPublic', 'true');
-    }
-
-    // Usar el endpoint optimizado con timeout extendido
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos
-
-    console.log('🚀 Enviando petición a /api/upload-video-optimized...');
-    
-    const uploadResponse = await fetch('/api/upload-video-optimized', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal,
-      headers: {
-        // Agregar x-content-length header requerido por Vercel Blob
-        'x-content-length': file.size.toString()
-      }
-      // No establecer Content-Type, el browser lo manejará automáticamente para FormData
-    });
-    
-    console.log('📡 Petición enviada, esperando respuesta...');
-
-    clearTimeout(timeoutId);
-
-    console.log('📡 Upload response status:', uploadResponse.status);
-    console.log('📡 Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()));
-
-    if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.text();
-      console.error('❌ Error en upload optimizado:', uploadResponse.status, errorData);
-      throw new Error(`Error en upload optimizado: ${uploadResponse.status} - ${errorData}`);
-    }
-
-    const uploadData = await uploadResponse.json();
-    console.log('✅ Upload optimizado exitoso:', uploadData);
-    console.log('🔗 URL del video subido:', uploadData.url);
-
-    const serverUrl = uploadData.url;
-    console.log('🔗 URL final del video:', serverUrl);
+    console.log('✅ Upload directo exitoso:', uploadResult.id);
+    console.log('🔗 URL del video:', uploadResult.mediaUrl);
 
     if (mediaType === 'video') {
-      // Crear thumbnail del video (mantener tu lógica existente)
-      const thumbnail = await createVideoThumbnail(blob);
+      // Crear thumbnail del video
+      const thumbnail = await createVideoThumbnail(processedBlob);
       
       return {
         file,
-        url: serverUrl, // URL del Blob Storage
-        fileName: uploadData.filename, // Nombre único generado
+        url: uploadResult.mediaUrl,
+        fileName: uploadResult.id,
         size: file.size,
-        originalSize: file.size,
+        originalSize: blob.size, // Tamaño original antes de compresión
         isVideo: true,
-        thumbnail: thumbnail,
-        filePath: uploadData.filename, // Para compatibilidad con tu código existente
-        metadata: uploadData.metadata // Metadata completa del video
+        thumbnail,
+        filePath: uploadResult.id,
+        metadata: uploadResult,
+        videoId: uploadResult.id
       };
     } else {
       return {
         file,
-        url: serverUrl, // URL del Blob Storage
-        fileName: uploadData.filename, // Nombre único generado
+        url: uploadResult.mediaUrl,
+        fileName: uploadResult.id,
         size: file.size,
         isVideo: false,
-        filePath: uploadData.filename, // Para compatibilidad con tu código existente
-        metadata: uploadData.metadata // Metadata completa del video
+        filePath: uploadResult.id,
+        metadata: uploadResult
       };
     }
+
   } catch (error) {
-    console.error('❌ Error convirtiendo blob a archivo:', error);
+    console.error('❌ Error en upload directo:', error);
     console.error('❌ Error stack:', error.stack);
     
-    if (error.name === 'AbortError') {
-      console.log('⏰ TIMEOUT: Upload cancelado después de 5 minutos');
-    }
-    
+    // FALLBACK: Usar imagen estática de Unsplash si falla el upload
     console.log('🔄 Usando fallback a imagen estática...');
-    // Fallback a imagen estática (mantener tu lógica existente)
+    const fallbackUrl = 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop';
+    
     return {
       file: null,
-      url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop',
+      url: fallbackUrl,
       fileName: 'fallback.jpg',
       size: 0,
       isVideo: false

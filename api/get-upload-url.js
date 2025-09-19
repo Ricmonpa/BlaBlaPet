@@ -1,4 +1,4 @@
-import { put, generateUploadUrl } from '@vercel/blob';
+import { put } from '@vercel/blob';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -14,68 +14,33 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🔍 Generating signed URL for direct upload...');
-
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });
     }
 
-    const { filename, contentType, fileSize } = req.body;
+    const { fileName, contentType = 'video/mp4' } = req.body;
 
-    if (!filename || !contentType) {
-      return res.status(400).json({ error: 'filename and contentType are required' });
+    if (!fileName) {
+      return res.status(400).json({ error: 'fileName is required' });
     }
 
-    // Validar que fileSize esté presente y sea un número válido
-    if (!fileSize || isNaN(fileSize) || fileSize <= 0) {
-      return res.status(400).json({ 
-        error: 'fileSize is required and must be a positive number',
-        received: { filename, contentType, fileSize }
-      });
-    }
-
-    // Generar nombre único para el archivo
-    const extension = filename.split('.').pop() || 'mp4';
-    const uniqueFilename = `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
-
-    console.log('🔍 Creating signed URL for:', { uniqueFilename, contentType, fileSize });
-
-    // Convertir fileSize a número y validar
-    const fileSizeNumber = parseInt(fileSize);
-    if (isNaN(fileSizeNumber) || fileSizeNumber <= 0) {
-      return res.status(400).json({ 
-        error: 'Invalid fileSize: must be a positive integer',
-        received: fileSize
-      });
-    }
-
-    console.log('🔍 Using fileSize for signed URL generation:', fileSizeNumber);
-
-    // SOLUCION CORRECTA: Usar generateUploadUrl() en lugar de put()
-    // Esta es la forma CORRECTA de generar signed URLs con Vercel Blob
-    const { url, token } = await generateUploadUrl(uniqueFilename, {
+    // Generar URL de upload directo al Blob Store
+    const blob = await put(fileName, '', {
       access: 'public',
-      contentType: contentType,
+      contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      // No necesitamos headers manualmente - generateUploadUrl los maneja internamente
     });
 
-    console.log('✅ Signed URL generated successfully:', url);
+    console.log('🔗 Generated upload URL for:', fileName);
 
     return res.status(200).json({
-      success: true,
-      uploadUrl: url,
-      uploadToken: token, // Token para uploads directos
-      filename: uniqueFilename,
-      contentType: contentType,
-      fileSize: fileSizeNumber
+      uploadUrl: blob.url,
+      downloadUrl: blob.downloadUrl,
+      pathname: blob.pathname,
     });
 
   } catch (error) {
-    console.error('💥 Error generating signed URL:', error);
-    return res.status(500).json({ 
-      error: error.message || 'Internal server error',
-      details: error.stack
-    });
+    console.error('❌ Error generating upload URL:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
