@@ -52,10 +52,11 @@ class DirectBlobUploadService {
       console.log('📁 Archivo:', { name: file.name, size: file.size, type: file.type });
 
       // Obtener URL de upload
-      const { uploadUrl } = await this.getUploadUrl(fileName, file.type);
+      const uploadData = await this.getUploadUrl(fileName, file.type);
+      console.log('🔗 URL de upload obtenida:', uploadData.pathname);
 
-      // Subir archivo directamente al Blob Store
-      const uploadResponse = await fetch(uploadUrl, {
+      // Subir archivo directamente al Blob Store usando la URL generada
+      const uploadResponse = await fetch(uploadData.uploadUrl, {
         method: 'PUT',
         body: file,
         headers: {
@@ -64,17 +65,18 @@ class DirectBlobUploadService {
       });
 
       if (!uploadResponse.ok) {
-        throw new Error(`Error subiendo archivo: ${uploadResponse.status} ${uploadResponse.statusText}`);
+        const errorText = await uploadResponse.text();
+        console.error('❌ Error en upload:', errorText);
+        throw new Error(`Error subiendo archivo: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
       }
 
-      const result = await uploadResponse.json();
-      console.log('✅ Archivo subido exitosamente:', result.pathname);
+      console.log('✅ Archivo subido exitosamente al Blob Store');
       
       return {
         success: true,
-        url: result.url,
-        downloadUrl: result.downloadUrl,
-        pathname: result.pathname,
+        url: uploadData.url,
+        downloadUrl: uploadData.downloadUrl,
+        pathname: uploadData.pathname,
         size: file.size,
         type: file.type,
       };
