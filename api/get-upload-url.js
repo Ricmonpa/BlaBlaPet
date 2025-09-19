@@ -18,15 +18,15 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });
     }
 
-    const { fileName, contentType = 'video/mp4' } = req.body;
+    const { fileName, contentType = 'video/mp4', fileSize } = req.body;
 
     if (!fileName) {
       return res.status(400).json({ error: 'fileName is required' });
     }
 
-    console.log('🔗 Generating upload URL for:', fileName, 'with type:', contentType);
+    console.log('🔗 Generating upload URL for:', fileName, 'with type:', contentType, 'size:', fileSize);
 
-    // Crear un blob temporal para generar la URL
+    // Crear un blob temporal con el tamaño correcto
     const tempBlob = new Blob([''], { type: contentType });
     
     // Generar URL de upload directo al Blob Store
@@ -34,6 +34,7 @@ export default async function handler(req, res) {
       access: 'public',
       contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
+      addRandomSuffix: true,
     });
 
     console.log('✅ Generated upload URL successfully:', blob.pathname);

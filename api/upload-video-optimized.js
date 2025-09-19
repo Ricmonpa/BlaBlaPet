@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
     // Parse FormData using formidable con configuración optimizada para videos largos
     const form = formidable({
-      maxFileSize: 100 * 1024 * 1024, // 100MB max (para videos de 5 minutos)
+      maxFileSize: 50 * 1024 * 1024, // 50MB max (reducido para evitar límites)
       keepExtensions: true,
       maxFields: 20, // Permitir más campos de metadata
       maxFieldsSize: 20 * 1024 * 1024, // 20MB para metadata

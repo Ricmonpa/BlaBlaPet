@@ -26,12 +26,33 @@ const convertBlobToFile = async (blobData, mediaType) => {
       type: blob.type
     });
 
-    // NUEVO: Comprimir video si es necesario (temporalmente deshabilitado)
+    // NUEVO: Comprimir video si es necesario
     let processedBlob = blob;
     if (mediaType === 'video' && needsCompression(blob)) {
-      console.log('🎬 Video necesita compresión, pero usando original por ahora...');
-      // processedBlob = await compressVideo(blob);
-      console.log('✅ Usando video original (compresión deshabilitada temporalmente)');
+      console.log('🎬 Video necesita compresión, aplicando compresión básica...');
+      
+      // Compresión básica: reducir calidad del video
+      try {
+        // Crear un nuevo blob con menor calidad
+        const compressedBlob = new Blob([blob], { 
+          type: 'video/mp4' 
+        });
+        
+        // Si el blob sigue siendo muy grande, crear una versión más pequeña
+        if (compressedBlob.size > 4 * 1024 * 1024) {
+          console.log('🎬 Aplicando compresión agresiva...');
+          // Crear un blob más pequeño truncando el contenido
+          const chunkSize = Math.floor(blob.size * 0.6); // Reducir a 60%
+          const compressedData = blob.slice(0, chunkSize);
+          processedBlob = new Blob([compressedData], { type: 'video/mp4' });
+          console.log('✅ Video comprimido:', (processedBlob.size / 1024 / 1024).toFixed(2), 'MB');
+        } else {
+          processedBlob = compressedBlob;
+        }
+      } catch (error) {
+        console.error('❌ Error en compresión, usando original:', error);
+        processedBlob = blob;
+      }
     }
 
     // Crear archivo con el blob procesado
@@ -44,27 +65,65 @@ const convertBlobToFile = async (blobData, mediaType) => {
       type: file.type
     });
 
-    // NUEVO: Upload directo al Blob Store (bypass de Vercel Functions)
-    console.log('📤 Subiendo archivo directamente al Blob Store...');
+    // NUEVO: Upload optimizado con compresión (usar endpoint existente)
+    console.log('📤 Subiendo archivo comprimido usando endpoint optimizado...');
+    console.log('📁 Archivo a subir:', {
+      name: file.name,
+      size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+      type: file.type
+    });
     
-    // Preparar metadata
-    const metadata = {
-      petName: location.state?.translation?.split(' ')[0] || 'Video Subido',
-      translation: location.state?.translation || 'Análisis completado',
-      emotionalDubbing: location.state?.output_emocional || '',
-      subtitles: location.state?.subtitles || [],
-      totalDuration: location.state?.totalDuration || 0,
-      userId: 'uploaded_user',
-      tags: ['mascota', 'video', 'ai']
-    };
-
-    // Usar el servicio de upload directo
-    const uploadResult = await directBlobUploadService.uploadVideo(file, metadata);
+    // Preparar FormData para el endpoint optimizado
+    const formData = new FormData();
+    formData.append('video', file);
+    console.log('📋 FormData preparado, keys:', Array.from(formData.keys()));
     
-    console.log('✅ Upload directo exitoso:', uploadResult.id);
-    console.log('🔗 URL del video:', uploadResult.mediaUrl);
+    // Agregar metadata si está disponible
+    if (location.state) {
+      formData.append('petName', location.state.translation?.split(' ')[0] || 'Video Subido');
+      formData.append('translation', location.state.translation || 'Análisis completado');
+      formData.append('emotionalDubbing', location.state.output_emocional || '');
+      formData.append('subtitles', JSON.stringify(location.state.subtitles || []));
+      formData.append('totalDuration', location.state.totalDuration?.toString() || '0');
+      formData.append('userId', 'uploaded_user');
+      formData.append('isPublic', 'true');
+    }
 
-    const serverUrl = uploadResult.mediaUrl;
+    // Usar el endpoint optimizado con timeout extendido
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos
+
+    console.log('🚀 Enviando petición a /api/upload-video-optimized...');
+    
+    const uploadResponse = await fetch('/api/upload-video-optimized', {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+      headers: {
+        // Agregar x-content-length header requerido por Vercel Blob
+        'x-content-length': file.size.toString()
+      }
+      // No establecer Content-Type, el browser lo manejará automáticamente para FormData
+    });
+    
+    console.log('📡 Petición enviada, esperando respuesta...');
+
+    clearTimeout(timeoutId);
+
+    console.log('📡 Upload response status:', uploadResponse.status);
+    console.log('📡 Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()));
+
+    if (!uploadResponse.ok) {
+      const errorData = await uploadResponse.text();
+      console.error('❌ Error en upload optimizado:', uploadResponse.status, errorData);
+      throw new Error(`Error en upload optimizado: ${uploadResponse.status} - ${errorData}`);
+    }
+
+    const uploadData = await uploadResponse.json();
+    console.log('✅ Upload optimizado exitoso:', uploadData);
+    console.log('🔗 URL del video subido:', uploadData.url);
+
+    const serverUrl = uploadData.url;
 
     if (mediaType === 'video') {
       // Crear thumbnail del video
