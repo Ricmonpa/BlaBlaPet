@@ -131,25 +131,25 @@ const convertBlobToFile = async (blobData, mediaType) => {
       
       return {
         file,
-        url: uploadResult.mediaUrl,
-        fileName: uploadResult.id,
+        url: serverUrl,
+        fileName: uploadData.filename,
         size: file.size,
         originalSize: blob.size, // Tamaño original antes de compresión
         isVideo: true,
         thumbnail,
-        filePath: uploadResult.id,
-        metadata: uploadResult,
-        videoId: uploadResult.id
+        filePath: uploadData.filename,
+        metadata: uploadData,
+        videoId: uploadData.filename
       };
     } else {
       return {
         file,
-        url: uploadResult.mediaUrl,
-        fileName: uploadResult.id,
+        url: serverUrl,
+        fileName: uploadData.filename,
         size: file.size,
         isVideo: false,
-        filePath: uploadResult.id,
-        metadata: uploadResult
+        filePath: uploadData.filename,
+        metadata: uploadData
       };
     }
 
