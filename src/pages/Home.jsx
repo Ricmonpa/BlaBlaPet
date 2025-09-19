@@ -85,6 +85,7 @@ const convertBlobToFile = async (blobData, mediaType) => {
       formData.append('emotionalDubbing', location.state.output_emocional || '');
       formData.append('subtitles', JSON.stringify(location.state.subtitles || []));
       formData.append('totalDuration', location.state.totalDuration?.toString() || '0');
+      formData.append('isSequentialSubtitles', location.state.isSequentialSubtitles?.toString() || 'false');
       formData.append('userId', 'uploaded_user');
       formData.append('isPublic', 'true');
     }

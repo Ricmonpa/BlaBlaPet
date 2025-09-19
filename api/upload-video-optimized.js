@@ -100,6 +100,7 @@ export default async function handler(req, res) {
       emotionalDubbing: fields.emotionalDubbing?.[0] || '',
       subtitles: fields.subtitles ? JSON.parse(fields.subtitles[0]) : [],
       totalDuration: fields.totalDuration?.[0] || 0,
+      isSequentialSubtitles: fields.isSequentialSubtitles?.[0] === 'true',
       userId: fields.userId?.[0] || 'uploaded_user',
       isPublic: fields.isPublic?.[0] !== 'false',
     };
