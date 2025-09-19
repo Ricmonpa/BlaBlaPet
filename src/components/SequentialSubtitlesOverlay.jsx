@@ -60,7 +60,13 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
           timestamp: current.timestamp,
           tecnica: current.traduccion_tecnica,
           emocional: current.traduccion_emocional,
-          confidence: current.confidence
+          confidence: current.confidence,
+          // VERIFICAR ESTRUCTURA COMPLETA
+          fullStructure: current,
+          hasTraduccionEmocional: !!current.traduccion_emocional,
+          hasTraduccionTecnica: !!current.traduccion_tecnica,
+          hasTimestamp: !!current.timestamp,
+          hasConfidence: !!current.confidence
         });
       }
       
@@ -110,7 +116,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     <div className="absolute inset-0 bg-black bg-opacity-30 flex flex-col justify-end p-4 pointer-events-none">
       <div className="text-center max-w-2xl mx-auto">
         {/* Traducción Emocional - Ahora arriba */}
-        {showEmotional && currentSubtitle.traduccion_emocional && (
+        {showEmotional && currentSubtitle && currentSubtitle.traduccion_emocional && (
           <div className="mb-3">
             <p className="text-sm text-gray-200 mb-1">Traducción Emocional:</p>
             <p className="text-lg font-semibold text-yellow-300 leading-relaxed bg-black bg-opacity-70 p-3 rounded-lg border border-yellow-500">
@@ -120,7 +126,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
         )}
         
         {/* Traducción Técnica - Ahora abajo con mejor legibilidad */}
-        {showTechnical && currentSubtitle.traduccion_tecnica && (
+        {showTechnical && currentSubtitle && currentSubtitle.traduccion_tecnica && (
           <div className="mb-3">
             <p className="text-sm text-gray-200 mb-1">Traducción Técnica:</p>
             <p className="text-sm leading-relaxed bg-white bg-opacity-90 text-gray-800 p-3 rounded-lg border border-gray-300">
@@ -130,9 +136,11 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
         )}
         
         {/* Información del subtítulo */}
-        <div className="mt-2 text-xs text-gray-300 bg-black bg-opacity-50 px-2 py-1 rounded">
-          {currentSubtitle.timestamp} • Confianza: {currentSubtitle.confidence}%
-        </div>
+        {currentSubtitle && (
+          <div className="mt-2 text-xs text-gray-300 bg-black bg-opacity-50 px-2 py-1 rounded">
+            {currentSubtitle.timestamp || 'Sin timestamp'} • Confianza: {currentSubtitle.confidence || 0}%
+          </div>
+        )}
       </div>
     </div>
   );
