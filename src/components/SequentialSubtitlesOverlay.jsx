@@ -35,10 +35,24 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
   // Actualizar subtítulo actual basado en el tiempo
   useEffect(() => {
     if (subtitles && subtitles.length > 0) {
-      const current = subtitles.find(subtitle => {
+      // Buscar subtítulo exacto primero
+      let current = subtitles.find(subtitle => {
         const timeRange = parseTimestamp(subtitle.timestamp);
         return currentTime >= timeRange.start && currentTime <= timeRange.end;
       });
+      
+      // Si no hay coincidencia exacta, buscar el más cercano
+      if (!current) {
+        current = subtitles.find(subtitle => {
+          const timeRange = parseTimestamp(subtitle.timestamp);
+          return currentTime >= timeRange.start;
+        });
+      }
+      
+      // Si aún no hay coincidencia, usar el primer subtítulo
+      if (!current && subtitles.length > 0) {
+        current = subtitles[0];
+      }
       
       // Solo loggear cuando cambie el subtítulo
       if (current && (!currentSubtitle || current.id !== currentSubtitle.id)) {
@@ -69,11 +83,28 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       setCurrentTime(time);
     };
 
+    // Asegurar que el video esté listo
+    const handleLoadedData = () => {
+      console.log('🎬 Video loaded, duration:', video.duration);
+      setCurrentTime(video.currentTime);
+    };
+
     video.addEventListener('timeupdate', handleTimeUpdate);
-    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('loadeddata', handleLoadedData);
+    
+    // Si el video ya está cargado, establecer el tiempo inicial
+    if (video.readyState >= 2) {
+      setCurrentTime(video.currentTime);
+    }
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('loadeddata', handleLoadedData);
+    };
   }, [videoRef]);
 
-  if (!currentSubtitle) return null;
+  // Mostrar el overlay si hay subtítulos disponibles, incluso si no hay currentSubtitle
+  if (!subtitles || subtitles.length === 0) return null;
 
   return (
     <div className="absolute inset-0 bg-black bg-opacity-30 flex flex-col justify-end p-4 pointer-events-none">

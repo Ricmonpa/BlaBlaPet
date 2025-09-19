@@ -81,6 +81,25 @@ const SharedFeed = ({ onVideoSelect }) => {
     loadVideos();
   }, []);
 
+  // Escuchar eventos de actualización del feed
+  useEffect(() => {
+    const handleFeedUpdate = (event) => {
+      console.log('🔄 Evento de actualización del feed recibido:', event.detail);
+      // Refrescar el feed cuando se sube un nuevo video
+      refreshFeed();
+    };
+
+    // Agregar listener para el evento personalizado
+    window.addEventListener('feedUpdate', handleFeedUpdate);
+    console.log('👂 Listener de feedUpdate agregado');
+
+    // Cleanup del listener
+    return () => {
+      window.removeEventListener('feedUpdate', handleFeedUpdate);
+      console.log('🧹 Listener de feedUpdate removido');
+    };
+  }, []);
+
   // Manejar swipe vertical tipo TikTok
   const handleSwipe = (direction) => {
     if (direction === 'up' && currentIndex < videos.length - 1) {

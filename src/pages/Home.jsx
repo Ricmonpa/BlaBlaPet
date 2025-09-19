@@ -274,20 +274,42 @@ const Home = () => {
             const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
             console.log('✅ Video guardado en la base de datos:', videoUrl);
             console.log('🔍 Video object guardado:', newVideo);
-            // El feed se actualizará automáticamente
+            
+            // Disparar evento personalizado para actualizar el feed
+            console.log('🔄 Disparando evento de actualización del feed...');
+            const feedUpdateEvent = new CustomEvent('feedUpdate', {
+              detail: { 
+                newVideo: newVideo,
+                videoUrl: videoUrl,
+                timestamp: Date.now()
+              }
+            });
+            window.dispatchEvent(feedUpdateEvent);
+            console.log('✅ Evento de actualización del feed disparado');
+            
+            return true; // Indicar éxito
           } else {
             console.log('⚠️ No se guardó el video - subida falló o es fallback');
+            return false; // Indicar que no se guardó
           }
         } catch (error) {
           console.error('❌ Error guardando video:', error);
           console.error('❌ Error stack:', error.stack);
+          throw error; // Re-lanzar el error para que sea manejado por el catch
         }
       };
 
-      handleVideoSave();
-
-      // Limpiar el state para evitar duplicados SOLO si se procesó el video
-      window.history.replaceState({}, document.title);
+      // Ejecutar handleVideoSave y limpiar estado después
+      handleVideoSave().then(() => {
+        // Limpiar el state DESPUÉS de que se complete la subida
+        console.log('🧹 Limpiando estado de navegación...');
+        window.history.replaceState({}, document.title);
+        console.log('✅ Estado de navegación limpiado');
+      }).catch((error) => {
+        console.error('❌ Error en handleVideoSave:', error);
+        // Limpiar estado incluso si hay error para evitar loops
+        window.history.replaceState({}, document.title);
+      });
     } else {
       console.log('⚠️ DEBUG - useEffect no ejecutó handleVideoSave - condiciones no cumplidas');
       console.log('🔍 DEBUG - State NO limpiado porque no se procesó video');

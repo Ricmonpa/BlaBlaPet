@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SequentialSubtitlesOverlay from './SequentialSubtitlesOverlay.jsx';
 import ShareModal from './ShareModal.jsx';
 
@@ -7,6 +7,36 @@ const PetCard = ({ post }) => {
   const [showTranslation, setShowTranslation] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const videoRef = useRef(null);
+  const [videoReady, setVideoReady] = useState(false);
+
+  // Sincronizar videoRef con el estado del video
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video && post.mediaType === 'video') {
+      const handleLoadedData = () => {
+        console.log('🎬 Video cargado y listo:', video.src);
+        setVideoReady(true);
+      };
+
+      const handleError = () => {
+        console.error('❌ Error cargando video:', video.src);
+        setVideoReady(false);
+      };
+
+      // Si el video ya está cargado
+      if (video.readyState >= 2) {
+        setVideoReady(true);
+      }
+
+      video.addEventListener('loadeddata', handleLoadedData);
+      video.addEventListener('error', handleError);
+
+      return () => {
+        video.removeEventListener('loadeddata', handleLoadedData);
+        video.removeEventListener('error', handleError);
+      };
+    }
+  }, [post.mediaUrl, post.mediaType]);
 
   // Debug logging para subtítulos secuenciales
   if (post.isSequentialSubtitles) {
@@ -16,7 +46,8 @@ const PetCard = ({ post }) => {
       isSequentialSubtitles: post.isSequentialSubtitles,
       subtitlesCount: post.subtitles?.length,
       totalDuration: post.totalDuration,
-      mediaType: post.mediaType
+      mediaType: post.mediaType,
+      videoReady: videoReady
     });
   }
 
