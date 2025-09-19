@@ -9,15 +9,21 @@ export const config = {
 };
 
 export default async function handler(req, res) {
+  console.log('🎯 ENDPOINT LLAMADO - Method:', req.method);
+  console.log('🎯 ENDPOINT LLAMADO - URL:', req.url);
+  console.log('🎯 ENDPOINT LLAMADO - Headers:', req.headers);
+  
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-content-length');
 
   if (req.method === 'OPTIONS') {
+    console.log('✅ OPTIONS request handled');
     return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
+    console.log('❌ Method not allowed:', req.method);
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -25,12 +31,14 @@ export default async function handler(req, res) {
     console.log('🚀 Iniciando upload optimizado de video...');
     console.log('📋 Headers recibidos:', req.headers);
     console.log('📏 x-content-length:', req.headers['x-content-length']);
+    console.log('⏰ Timestamp inicio:', new Date().toISOString());
 
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
       return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });
     }
 
     // Parse FormData using formidable con configuración optimizada para videos largos
+    console.log('📝 Configurando formidable...');
     const form = formidable({
       maxFileSize: 50 * 1024 * 1024, // 50MB max (reducido para evitar límites)
       keepExtensions: true,
@@ -38,7 +46,13 @@ export default async function handler(req, res) {
       maxFieldsSize: 20 * 1024 * 1024, // 20MB para metadata
     });
 
+    console.log('🔄 Iniciando parsing de FormData...');
+    console.log('⏰ Timestamp antes de parse:', new Date().toISOString());
+    
     const [fields, files] = await form.parse(req);
+    
+    console.log('✅ FormData parseado exitosamente');
+    console.log('⏰ Timestamp después de parse:', new Date().toISOString());
     
     console.log('📁 Archivos recibidos:', Object.keys(files));
     console.log('📋 Campos recibidos:', Object.keys(fields));
@@ -67,14 +81,21 @@ export default async function handler(req, res) {
     });
 
     // Read file content
+    console.log('📖 Leyendo archivo...');
+    console.log('⏰ Timestamp antes de lectura:', new Date().toISOString());
+    
     const fs = await import('fs');
     const fileBuffer = fs.readFileSync(videoFile.filepath);
+    
+    console.log('✅ Archivo leído exitosamente, tamaño:', fileBuffer.length, 'bytes');
+    console.log('⏰ Timestamp después de lectura:', new Date().toISOString());
     
     // Generate unique filename
     const extension = videoFile.originalFilename?.split('.').pop() || 'mp4';
     const uniqueFilename = `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
 
     console.log('📤 Subiendo a Vercel Blob:', uniqueFilename);
+    console.log('⏰ Timestamp antes de upload:', new Date().toISOString());
 
     // Upload directly to Vercel Blob
     const { url } = await put(uniqueFilename, fileBuffer, {
@@ -83,6 +104,9 @@ export default async function handler(req, res) {
       token: process.env.BLOB_READ_WRITE_TOKEN,
       addRandomSuffix: false,
     });
+    
+    console.log('✅ Upload a Vercel Blob exitoso');
+    console.log('⏰ Timestamp después de upload:', new Date().toISOString());
 
     console.log('✅ Video subido exitosamente:', url);
 
