@@ -40,7 +40,7 @@ export default async function handler(req, res) {
     // Parse FormData using formidable con configuración optimizada para videos largos
     console.log('📝 Configurando formidable...');
     const form = formidable({
-      maxFileSize: 50 * 1024 * 1024, // 50MB max (reducido para evitar límites)
+      maxFileSize: 20 * 1024 * 1024, // 20MB max (reducido para evitar límites de Vercel)
       keepExtensions: true,
       maxFields: 20, // Permitir más campos de metadata
       maxFieldsSize: 20 * 1024 * 1024, // 20MB para metadata
@@ -65,10 +65,11 @@ export default async function handler(req, res) {
 
     // Validar duración máxima por tamaño de archivo (aproximado)
     const fileSizeMB = videoFile.size / (1024 * 1024);
-    if (fileSizeMB > 100) {
+    if (fileSizeMB > 20) {
       return res.status(400).json({ 
-        error: 'Video file too large. Maximum size: 100MB (approximately 5 minutes)',
-        receivedSize: `${fileSizeMB.toFixed(2)}MB`
+        error: 'Video file too large. Maximum size: 20MB (approximately 2-3 minutes)',
+        receivedSize: `${fileSizeMB.toFixed(2)}MB`,
+        suggestion: 'Please compress your video or reduce its duration.'
       });
     }
 
@@ -171,7 +172,7 @@ export default async function handler(req, res) {
       filename: uniqueFilename,
       metadata: videoMetadata,
       uploadMethod: 'optimized_upload',
-      message: 'Video uploaded and saved successfully (supports up to 5 minutes)'
+      message: 'Video uploaded and saved successfully (supports up to 2-3 minutes)'
     });
 
   } catch (error) {
@@ -180,7 +181,7 @@ export default async function handler(req, res) {
     // Mejor manejo de errores específicos
     if (error.message?.includes('Request Entity Too Large')) {
       return res.status(413).json({ 
-        error: 'Video file too large. Maximum size: 100MB (approximately 5 minutes)',
+        error: 'Video file too large. Maximum size: 20MB (approximately 2-3 minutes)',
         details: 'Try compressing your video or reducing its duration.',
         uploadMethod: 'optimized_upload'
       });
