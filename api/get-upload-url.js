@@ -43,14 +43,13 @@ export default async function handler(req, res) {
     console.log('📋 Metadata:', metadata);
 
     // Generar signed URL para upload directo
-    // Usamos put() con multipart: true para uploads grandes
-    const { url } = await put(uniqueFilename, null, {
+    // Usamos put() con un placeholder body para generar la URL
+    const placeholderBody = Buffer.from('placeholder');
+    const { url } = await put(uniqueFilename, placeholderBody, {
       access: 'public',
       contentType: contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      addRandomSuffix: false,
-      // Habilitar multipart para archivos grandes
-      multipart: true
+      addRandomSuffix: false
     });
 
     console.log('✅ Signed URL generada exitosamente');
