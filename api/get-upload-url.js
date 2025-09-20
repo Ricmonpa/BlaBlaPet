@@ -55,18 +55,15 @@ export default async function handler(req, res) {
     console.log('🔍 handleUpload type:', typeof handleUpload);
     
     // Generar token temporal para upload directo usando handleUpload
-    // Este método genera tokens temporales seguros para upload directo desde el navegador
-    console.log('🚀 Llamando handleUpload con parámetros:', {
-      filename: uniqueFilename,
-      contentType: contentType,
-      access: 'public'
+    // handleUpload() espera el request completo del cliente, no parámetros individuales
+    console.log('🚀 Llamando handleUpload con request del cliente...');
+    console.log('🔍 Request completo:', {
+      method: req.method,
+      headers: req.headers,
+      body: req.body
     });
     
-    const { token, url } = await handleUpload({
-      filename: uniqueFilename,
-      contentType: contentType,
-      access: 'public'
-    });
+    const { token, url } = await handleUpload(req);
 
     console.log('✅ Signed URL generada exitosamente');
     console.log('🔗 URL:', url);
