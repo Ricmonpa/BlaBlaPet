@@ -1,4 +1,5 @@
 import { handleUpload } from '@vercel/blob/client';
+import formidable from 'formidable';
 
 export default async function handler(req, res) {
   console.log('🎯 ENDPOINT get-upload-url - Method:', req.method);
@@ -30,49 +31,63 @@ export default async function handler(req, res) {
     
     console.log('✅ Variables de entorno verificadas');
 
-    // Obtener metadata del request
-    const { fileName, contentType, metadata } = req.body;
-    console.log('📋 Parámetros recibidos:', { fileName, contentType, metadata });
+    // Parsear FormData usando formidable
+    console.log('📋 Parseando FormData con formidable...');
+    const form = formidable({
+      maxFileSize: 50 * 1024 * 1024, // 50MB
+      keepExtensions: true
+    });
+
+    const [fields, files] = await form.parse(req);
+    console.log('📋 Fields parsed:', fields);
+    console.log('📋 Files parsed:', files);
+
+    // Extraer el archivo y metadata
+    const file = files.file?.[0];
+    const metadataString = fields.metadata?.[0];
     
-    // Validar parámetros requeridos
-    if (!fileName || !contentType) {
-      console.error('❌ Parámetros faltantes:', { fileName, contentType });
-      return res.status(400).json({ 
-        error: 'fileName and contentType are required' 
-      });
+    if (!file) {
+      console.error('❌ No se encontró archivo en el FormData');
+      return res.status(400).json({ error: 'No file provided' });
     }
 
-    // Generar nombre único para el archivo
-    const extension = fileName.split('.').pop() || 'mp4';
-    const uniqueFilename = `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
+    console.log('📁 Archivo extraído:', {
+      name: file.originalFilename,
+      type: file.mimetype,
+      size: file.size
+    });
 
-    console.log('📝 Generando signed URL para:', uniqueFilename);
-    console.log('📊 Content-Type:', contentType);
-    console.log('📋 Metadata:', metadata);
+    // Parsear metadata si existe
+    let metadata = {};
+    if (metadataString) {
+      try {
+        metadata = JSON.parse(metadataString);
+        console.log('📋 Metadata parseada:', metadata);
+      } catch (error) {
+        console.warn('⚠️ Error parseando metadata:', error.message);
+      }
+    }
 
     // Verificar si handleUpload existe antes de usarlo
     console.log('🔍 Verificando disponibilidad de handleUpload...');
     console.log('🔍 handleUpload type:', typeof handleUpload);
     
     // Generar token temporal para upload directo usando handleUpload
-    // handleUpload() espera el request completo del cliente, no parámetros individuales
-    console.log('🚀 Llamando handleUpload con request del cliente...');
-    console.log('🔍 Request completo:', {
-      method: req.method,
-      headers: req.headers,
-      body: req.body
-    });
+    // handleUpload() espera un File object del FormData
+    console.log('🚀 Llamando handleUpload con File object...');
     
-    const { token, url } = await handleUpload(req);
+    const { token, url } = await handleUpload(file, {
+      access: 'public'
+    });
 
     console.log('✅ Signed URL generada exitosamente');
     console.log('🔗 URL:', url);
 
     // Preparar metadata para guardar después del upload
     const videoMetadata = {
-      id: uniqueFilename.split('.')[0],
-      filename: uniqueFilename,
-      contentType: contentType,
+      id: file.originalFilename.split('.')[0],
+      filename: file.originalFilename,
+      contentType: file.mimetype,
       metadata: metadata || {},
       uploadUrl: url,
       createdAt: new Date().toISOString(),
@@ -83,7 +98,7 @@ export default async function handler(req, res) {
       success: true,
       uploadUrl: url,
       token: token,
-      filename: uniqueFilename,
+      filename: file.originalFilename,
       metadata: videoMetadata,
       message: 'Token generated for direct upload'
     });

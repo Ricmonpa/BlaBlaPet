@@ -75,25 +75,28 @@ const convertBlobToFile = async (blobData, mediaType) => {
     
     // Paso 1: Obtener signed URL del servidor
     console.log('🚀 Obteniendo signed URL del servidor...');
+    
+    // Crear FormData con el archivo real para handleUpload()
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Agregar metadata como campos adicionales
+    if (location.state) {
+      formData.append('metadata', JSON.stringify({
+        petName: location.state.translation?.split(' ')[0] || 'Video Subido',
+        translation: location.state.translation || 'Análisis completado',
+        emotionalDubbing: location.state.output_emocional || '',
+        subtitles: location.state.subtitles || [],
+        totalDuration: location.state.totalDuration || 0,
+        isSequentialSubtitles: location.state.isSequentialSubtitles || false,
+        userId: 'uploaded_user',
+        isPublic: true
+      }));
+    }
+    
     const signedUrlResponse = await fetch('/api/get-upload-url', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        fileName: file.name,
-        contentType: file.type,
-        metadata: location.state ? {
-          petName: location.state.translation?.split(' ')[0] || 'Video Subido',
-          translation: location.state.translation || 'Análisis completado',
-          emotionalDubbing: location.state.output_emocional || '',
-          subtitles: location.state.subtitles || [],
-          totalDuration: location.state.totalDuration || 0,
-          isSequentialSubtitles: location.state.isSequentialSubtitles || false,
-          userId: 'uploaded_user',
-          isPublic: true
-        } : {}
-      })
+      body: formData  // Enviar FormData, no JSON
     });
 
     if (!signedUrlResponse.ok) {
