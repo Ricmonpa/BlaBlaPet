@@ -1,4 +1,4 @@
-import { put } from '@vercel/blob';
+import { createPutUrl } from '@vercel/blob';
 
 export default async function handler(req, res) {
   console.log('🎯 ENDPOINT get-upload-url - Method:', req.method);
@@ -43,9 +43,8 @@ export default async function handler(req, res) {
     console.log('📋 Metadata:', metadata);
 
     // Generar signed URL para upload directo
-    // Usamos put() con un placeholder body para generar la URL
-    const placeholderBody = Buffer.from('placeholder');
-    const { url } = await put(uniqueFilename, placeholderBody, {
+    // Usamos createPutUrl() para generar la URL firmada
+    const { url } = await createPutUrl(uniqueFilename, {
       access: 'public',
       contentType: contentType,
       token: process.env.BLOB_READ_WRITE_TOKEN,
