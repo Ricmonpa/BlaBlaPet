@@ -1,7 +1,9 @@
-import { handleUpload } from '@vercel/blob';
+import { handleUpload } from '@vercel/blob/client';
 
 export default async function handler(req, res) {
   console.log('🎯 ENDPOINT get-upload-url - Method:', req.method);
+  console.log('🔍 Request body:', JSON.stringify(req.body, null, 2));
+  console.log('🔍 Environment check - BLOB_READ_WRITE_TOKEN exists:', !!process.env.BLOB_READ_WRITE_TOKEN);
   
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -18,17 +20,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🚀 Generando signed URL para upload directo...');
+    console.log('🚀 Iniciando generación de signed URL para upload directo...');
+    console.log('🔍 Verificando variables de entorno...');
     
     if (!process.env.BLOB_READ_WRITE_TOKEN) {
+      console.error('❌ BLOB_READ_WRITE_TOKEN is not set in environment');
       return res.status(500).json({ error: 'BLOB_READ_WRITE_TOKEN is not set in environment.' });
     }
+    
+    console.log('✅ Variables de entorno verificadas');
 
     // Obtener metadata del request
     const { fileName, contentType, metadata } = req.body;
+    console.log('📋 Parámetros recibidos:', { fileName, contentType, metadata });
     
     // Validar parámetros requeridos
     if (!fileName || !contentType) {
+      console.error('❌ Parámetros faltantes:', { fileName, contentType });
       return res.status(400).json({ 
         error: 'fileName and contentType are required' 
       });
@@ -42,8 +50,18 @@ export default async function handler(req, res) {
     console.log('📊 Content-Type:', contentType);
     console.log('📋 Metadata:', metadata);
 
+    // Verificar si handleUpload existe antes de usarlo
+    console.log('🔍 Verificando disponibilidad de handleUpload...');
+    console.log('🔍 handleUpload type:', typeof handleUpload);
+    
     // Generar token temporal para upload directo usando handleUpload
     // Este método genera tokens temporales seguros para upload directo desde el navegador
+    console.log('🚀 Llamando handleUpload con parámetros:', {
+      filename: uniqueFilename,
+      contentType: contentType,
+      access: 'public'
+    });
+    
     const { token, url } = await handleUpload({
       filename: uniqueFilename,
       contentType: contentType,
@@ -75,10 +93,16 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('💥 Error generando signed URL:', error);
+    console.error('💥 Error name:', error.name);
+    console.error('💥 Error message:', error.message);
+    console.error('💥 Error stack:', error.stack);
+    console.error('💥 Error details:', JSON.stringify(error, null, 2));
     
     return res.status(500).json({ 
       error: error.message || 'Internal server error',
-      details: error.stack
+      details: error.stack,
+      errorName: error.name,
+      timestamp: new Date().toISOString()
     });
   }
 }
