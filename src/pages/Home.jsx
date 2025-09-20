@@ -95,19 +95,37 @@ const convertBlobToFile = async (blobData, mediaType) => {
     const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos
 
     console.log('🚀 Enviando petición a /api/upload-video-optimized...');
+    console.log('⏰ Timestamp inicio petición:', new Date().toISOString());
+    console.log('📊 Tamaño del archivo:', file.size, 'bytes');
+    console.log('📊 Tamaño del FormData:', formData.get('video')?.size || 'unknown');
     
-    const uploadResponse = await fetch('/api/upload-video-optimized', {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal,
-      headers: {
-        // Agregar x-content-length header requerido por Vercel Blob
-        'x-content-length': file.size.toString()
+    let uploadResponse;
+    try {
+      uploadResponse = await fetch('/api/upload-video-optimized', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+        headers: {
+          // Agregar x-content-length header requerido por Vercel Blob
+          'x-content-length': file.size.toString()
+        }
+        // No establecer Content-Type, el browser lo manejará automáticamente para FormData
+      });
+      
+      console.log('📡 Petición enviada, esperando respuesta...');
+      console.log('⏰ Timestamp después de fetch:', new Date().toISOString());
+    } catch (fetchError) {
+      console.error('❌ Error en fetch:', fetchError);
+      console.error('❌ Error name:', fetchError.name);
+      console.error('❌ Error message:', fetchError.message);
+      
+      if (fetchError.name === 'AbortError') {
+        console.error('⏰ TIMEOUT: La petición fue cancelada por timeout (5 minutos)');
+        throw new Error('Upload timeout: El video es muy grande o la conexión es lenta. Intenta comprimir más el video.');
       }
-      // No establecer Content-Type, el browser lo manejará automáticamente para FormData
-    });
-    
-    console.log('📡 Petición enviada, esperando respuesta...');
+      
+      throw fetchError;
+    }
 
     clearTimeout(timeoutId);
 
