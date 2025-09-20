@@ -111,7 +111,7 @@ const convertBlobToFile = async (blobData, mediaType) => {
     console.log('⏰ Timestamp inicio upload directo:', new Date().toISOString());
     
     const directUploadResponse = await fetch(signedUrlData.uploadUrl, {
-      method: 'POST',
+      method: 'PUT',
       body: file,
       headers: {
         'Content-Type': file.type
