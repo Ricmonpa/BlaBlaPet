@@ -1,4 +1,4 @@
-import { createPutUrl } from '@vercel/blob';
+import { handleUpload } from '@vercel/blob';
 
 export default async function handler(req, res) {
   console.log('🎯 ENDPOINT get-upload-url - Method:', req.method);
@@ -42,13 +42,12 @@ export default async function handler(req, res) {
     console.log('📊 Content-Type:', contentType);
     console.log('📋 Metadata:', metadata);
 
-    // Generar signed URL para upload directo usando createPutUrl
-    // Este método genera URLs firmadas que permiten PUT directo desde el navegador
-    const { url } = await createPutUrl(uniqueFilename, {
-      access: 'public',
+    // Generar token temporal para upload directo usando handleUpload
+    // Este método genera tokens temporales seguros para upload directo desde el navegador
+    const { token, url } = await handleUpload({
+      filename: uniqueFilename,
       contentType: contentType,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      addRandomSuffix: false
+      access: 'public'
     });
 
     console.log('✅ Signed URL generada exitosamente');
@@ -68,9 +67,10 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       uploadUrl: url,
+      token: token,
       filename: uniqueFilename,
       metadata: videoMetadata,
-      message: 'Signed URL generated for direct upload'
+      message: 'Token generated for direct upload'
     });
 
   } catch (error) {

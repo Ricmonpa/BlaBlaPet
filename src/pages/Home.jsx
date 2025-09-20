@@ -103,7 +103,8 @@ const convertBlobToFile = async (blobData, mediaType) => {
     }
 
     const signedUrlData = await signedUrlResponse.json();
-    console.log('✅ Signed URL obtenida:', signedUrlData.uploadUrl);
+    console.log('✅ Token temporal obtenido:', signedUrlData.token);
+    console.log('✅ Upload URL obtenida:', signedUrlData.uploadUrl);
     console.log('📝 Filename:', signedUrlData.filename);
 
     // Paso 2: Upload directo a Vercel Blob usando la signed URL
@@ -114,7 +115,8 @@ const convertBlobToFile = async (blobData, mediaType) => {
       method: 'PUT',
       body: file,
       headers: {
-        'Content-Type': file.type
+        'Content-Type': file.type,
+        'x-vercel-blob-token': signedUrlData.token
       }
     });
 
