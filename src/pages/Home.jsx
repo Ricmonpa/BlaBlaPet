@@ -65,91 +65,104 @@ const convertBlobToFile = async (blobData, mediaType) => {
       type: file.type
     });
 
-    // NUEVO: Upload optimizado con compresión (usar endpoint existente)
-    console.log('📤 Subiendo archivo comprimido usando endpoint optimizado...');
+    // NUEVO: Upload directo con signed URL (evita límites de payload)
+    console.log('📤 Subiendo archivo usando upload directo con signed URL...');
     console.log('📁 Archivo a subir:', {
       name: file.name,
       size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
       type: file.type
     });
     
-    // Preparar FormData para el endpoint optimizado
-    const formData = new FormData();
-    formData.append('video', file);
-    console.log('📋 FormData preparado, keys:', Array.from(formData.keys()));
-    
-    // Agregar metadata si está disponible
-    if (location.state) {
-      formData.append('petName', location.state.translation?.split(' ')[0] || 'Video Subido');
-      formData.append('translation', location.state.translation || 'Análisis completado');
-      formData.append('emotionalDubbing', location.state.output_emocional || '');
-      formData.append('subtitles', JSON.stringify(location.state.subtitles || []));
-      formData.append('totalDuration', location.state.totalDuration?.toString() || '0');
-      formData.append('isSequentialSubtitles', location.state.isSequentialSubtitles?.toString() || 'false');
-      formData.append('userId', 'uploaded_user');
-      formData.append('isPublic', 'true');
-    }
-
-    // Usar el endpoint optimizado con timeout optimizado para videos largos
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 420000); // 7 minutos para videos largos
-
-    console.log('🚀 Enviando petición a /api/upload-video-optimized...');
-    console.log('⏰ Timestamp inicio petición:', new Date().toISOString());
-    console.log('📊 Tamaño del archivo:', file.size, 'bytes');
-    console.log('📊 Tamaño del FormData:', formData.get('video')?.size || 'unknown');
-    
-    let uploadResponse;
-    try {
-      console.log('🔄 Iniciando fetch...');
-      console.log('⏰ Timestamp antes de fetch:', new Date().toISOString());
-      
-      // Agregar timeout de progreso
-      const progressTimeout = setTimeout(() => {
-        console.log('⏳ 30 segundos transcurridos, petición aún en progreso...');
-      }, 30000);
-      
-      uploadResponse = await fetch('/api/upload-video-optimized', {
+    // Paso 1: Obtener signed URL del servidor
+    console.log('🚀 Obteniendo signed URL del servidor...');
+    const signedUrlResponse = await fetch('/api/get-upload-url', {
       method: 'POST',
-      body: formData,
-      signal: controller.signal,
       headers: {
-        // Agregar x-content-length header requerido por Vercel Blob
-        'x-content-length': file.size.toString()
-      }
-      // No establecer Content-Type, el browser lo manejará automáticamente para FormData
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type,
+        metadata: location.state ? {
+          petName: location.state.translation?.split(' ')[0] || 'Video Subido',
+          translation: location.state.translation || 'Análisis completado',
+          emotionalDubbing: location.state.output_emocional || '',
+          subtitles: location.state.subtitles || [],
+          totalDuration: location.state.totalDuration || 0,
+          isSequentialSubtitles: location.state.isSequentialSubtitles || false,
+          userId: 'uploaded_user',
+          isPublic: true
+        } : {}
+      })
     });
+
+    if (!signedUrlResponse.ok) {
+      const errorData = await signedUrlResponse.text();
+      console.error('❌ Error obteniendo signed URL:', signedUrlResponse.status, errorData);
+      throw new Error(`Error obteniendo signed URL: ${signedUrlResponse.status} - ${errorData}`);
+    }
+
+    const signedUrlData = await signedUrlResponse.json();
+    console.log('✅ Signed URL obtenida:', signedUrlData.uploadUrl);
+    console.log('📝 Filename:', signedUrlData.filename);
+
+    // Paso 2: Upload directo a Vercel Blob usando la signed URL
+    console.log('🚀 Subiendo archivo directamente a Vercel Blob...');
+    console.log('⏰ Timestamp inicio upload directo:', new Date().toISOString());
     
-      clearTimeout(progressTimeout);
-    console.log('📡 Petición enviada, esperando respuesta...');
-      console.log('⏰ Timestamp después de fetch:', new Date().toISOString());
-    } catch (fetchError) {
-      console.error('❌ Error en fetch:', fetchError);
-      console.error('❌ Error name:', fetchError.name);
-      console.error('❌ Error message:', fetchError.message);
-      
-      if (fetchError.name === 'AbortError') {
-        console.error('⏰ TIMEOUT: La petición fue cancelada por timeout (7 minutos)');
-        throw new Error('Upload timeout: El video es muy grande o la conexión es muy lenta. Intenta comprimir más el video o verifica tu conexión.');
+    const directUploadResponse = await fetch(signedUrlData.uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: {
+        'Content-Type': file.type
       }
-      
-      throw fetchError;
+    });
+
+    if (!directUploadResponse.ok) {
+      const errorData = await directUploadResponse.text();
+      console.error('❌ Error en upload directo:', directUploadResponse.status, errorData);
+      throw new Error(`Error en upload directo: ${directUploadResponse.status} - ${errorData}`);
     }
 
-    clearTimeout(timeoutId);
+    console.log('✅ Upload directo exitoso');
+    console.log('⏰ Timestamp fin upload directo:', new Date().toISOString());
+    console.log('🔗 URL del video subido:', signedUrlData.uploadUrl);
 
-    console.log('📡 Upload response status:', uploadResponse.status);
-    console.log('📡 Upload response headers:', Object.fromEntries(uploadResponse.headers.entries()));
+    // Paso 3: Guardar metadata en la base de datos
+    console.log('💾 Guardando metadata en base de datos...');
+    const metadataResponse = await fetch('/api/save-video-metadata', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        filename: signedUrlData.filename,
+        videoUrl: signedUrlData.uploadUrl,
+        petName: location.state?.translation?.split(' ')[0] || 'Video Subido',
+        translation: location.state?.translation || 'Análisis completado',
+        emotionalDubbing: location.state?.output_emocional || '',
+        subtitles: location.state?.subtitles || [],
+        totalDuration: location.state?.totalDuration || 0,
+        isSequentialSubtitles: location.state?.isSequentialSubtitles || false,
+        userId: 'uploaded_user',
+        isPublic: true
+      })
+    });
 
-    if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.text();
-      console.error('❌ Error en upload optimizado:', uploadResponse.status, errorData);
-      throw new Error(`Error en upload optimizado: ${uploadResponse.status} - ${errorData}`);
+    if (!metadataResponse.ok) {
+      const errorData = await metadataResponse.text();
+      console.error('❌ Error guardando metadata:', metadataResponse.status, errorData);
+      throw new Error(`Error guardando metadata: ${metadataResponse.status} - ${errorData}`);
     }
 
-    const uploadData = await uploadResponse.json();
-    console.log('✅ Upload optimizado exitoso:', uploadData);
-    console.log('🔗 URL del video subido:', uploadData.url);
+    const metadataData = await metadataResponse.json();
+    console.log('✅ Metadata guardada exitosamente');
+
+    const uploadData = {
+      url: signedUrlData.uploadUrl,
+      filename: signedUrlData.filename,
+      metadata: metadataData.metadata
+    };
 
     const serverUrl = uploadData.url;
 
