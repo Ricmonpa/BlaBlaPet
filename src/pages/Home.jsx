@@ -39,10 +39,10 @@ const convertBlobToFile = async (blobData, mediaType) => {
         });
         
         // Si el blob sigue siendo muy grande, crear una versión más pequeña
-        if (compressedBlob.size > 4 * 1024 * 1024) {
-          console.log('🎬 Aplicando compresión agresiva...');
+        if (compressedBlob.size > 2 * 1024 * 1024) { // Reducido de 4MB a 2MB
+          console.log('🎬 Aplicando compresión MUY agresiva...');
           // Crear un blob más pequeño truncando el contenido
-          const chunkSize = Math.floor(blob.size * 0.6); // Reducir a 60%
+          const chunkSize = Math.floor(blob.size * 0.4); // Reducir a 40% (más agresivo)
           const compressedData = blob.slice(0, chunkSize);
           processedBlob = new Blob([compressedData], { type: 'video/mp4' });
           console.log('✅ Video comprimido:', (processedBlob.size / 1024 / 1024).toFixed(2), 'MB');
