@@ -90,9 +90,9 @@ const convertBlobToFile = async (blobData, mediaType) => {
       formData.append('isPublic', 'true');
     }
 
-    // Usar el endpoint optimizado con timeout extendido
+    // Usar el endpoint optimizado con timeout optimizado para videos largos
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos
+    const timeoutId = setTimeout(() => controller.abort(), 420000); // 7 minutos para videos largos
 
     console.log('🚀 Enviando petición a /api/upload-video-optimized...');
     console.log('⏰ Timestamp inicio petición:', new Date().toISOString());
@@ -101,18 +101,27 @@ const convertBlobToFile = async (blobData, mediaType) => {
     
     let uploadResponse;
     try {
-      uploadResponse = await fetch('/api/upload-video-optimized', {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal,
-        headers: {
-          // Agregar x-content-length header requerido por Vercel Blob
-          'x-content-length': file.size.toString()
-        }
-        // No establecer Content-Type, el browser lo manejará automáticamente para FormData
-      });
+      console.log('🔄 Iniciando fetch...');
+      console.log('⏰ Timestamp antes de fetch:', new Date().toISOString());
       
-      console.log('📡 Petición enviada, esperando respuesta...');
+      // Agregar timeout de progreso
+      const progressTimeout = setTimeout(() => {
+        console.log('⏳ 30 segundos transcurridos, petición aún en progreso...');
+      }, 30000);
+      
+      uploadResponse = await fetch('/api/upload-video-optimized', {
+      method: 'POST',
+      body: formData,
+      signal: controller.signal,
+      headers: {
+        // Agregar x-content-length header requerido por Vercel Blob
+        'x-content-length': file.size.toString()
+      }
+      // No establecer Content-Type, el browser lo manejará automáticamente para FormData
+    });
+    
+      clearTimeout(progressTimeout);
+    console.log('📡 Petición enviada, esperando respuesta...');
       console.log('⏰ Timestamp después de fetch:', new Date().toISOString());
     } catch (fetchError) {
       console.error('❌ Error en fetch:', fetchError);
@@ -120,8 +129,8 @@ const convertBlobToFile = async (blobData, mediaType) => {
       console.error('❌ Error message:', fetchError.message);
       
       if (fetchError.name === 'AbortError') {
-        console.error('⏰ TIMEOUT: La petición fue cancelada por timeout (5 minutos)');
-        throw new Error('Upload timeout: El video es muy grande o la conexión es lenta. Intenta comprimir más el video.');
+        console.error('⏰ TIMEOUT: La petición fue cancelada por timeout (7 minutos)');
+        throw new Error('Upload timeout: El video es muy grande o la conexión es muy lenta. Intenta comprimir más el video o verifica tu conexión.');
       }
       
       throw fetchError;
@@ -326,7 +335,7 @@ const Home = () => {
       }).catch((error) => {
         console.error('❌ Error en handleVideoSave:', error);
         // Limpiar estado incluso si hay error para evitar loops
-        window.history.replaceState({}, document.title);
+      window.history.replaceState({}, document.title);
       });
     } else {
       console.log('⚠️ DEBUG - useEffect no ejecutó handleVideoSave - condiciones no cumplidas');
