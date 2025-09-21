@@ -271,16 +271,54 @@ const Home = () => {
           console.log('🔍 DEBUG - location.state.media:', location.state.media);
           console.log('🔍 DEBUG - skipUpload flag:', location.state.skipUpload);
           
-          // Si skipUpload es true, no procesar el video (ya se procesó en Camera)
+          // Si skipUpload es true, guardar el video local en el feed
           if (location.state.skipUpload) {
-            console.log('⏭️ Saltando upload - video ya procesado en Camera');
+            console.log('⏭️ Saltando upload - guardando video local en feed');
+            
+            // Crear entrada del video para el feed usando datos locales
+            const videoData = {
+              id: `video_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              petName: 'Tu Mascota',
+              translation: location.state.translation || 'Análisis completado',
+              emotionalDubbing: location.state.output_emocional || '',
+              mediaUrl: location.state.media?.localData || location.state.media?.data,
+              mediaType: 'video',
+              thumbnailUrl: location.state.media?.localData || location.state.media?.data,
+              userId: 'user_anonymous',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              shareCount: 0,
+              likeCount: 0,
+              commentCount: 0,
+              isPublic: true,
+              tags: ['video', 'analisis', 'local'],
+              // Subtítulos secuenciales
+              isSequentialSubtitles: location.state.isSequentialSubtitles || false,
+              subtitles: location.state.subtitles || [],
+              totalDuration: location.state.totalDuration || 30,
+              metadata: {
+                duration: location.state.totalDuration || 30,
+                fileSize: 0,
+                resolution: '360x640',
+                format: 'webm',
+                isLocal: true
+              }
+            };
+
+            // Guardar en localStorage para que aparezca en el feed
+            const existingVideos = JSON.parse(localStorage.getItem('localVideos') || '[]');
+            existingVideos.unshift(videoData);
+            localStorage.setItem('localVideos', JSON.stringify(existingVideos));
+            
+            console.log('✅ Video local guardado en feed:', videoData.id);
+            
             return {
               success: true,
-              url: location.state.media?.uploadedUrl || location.state.media?.data,
-              fileName: 'video_processed_in_camera.webm',
+              url: videoData.mediaUrl,
+              fileName: 'video_local.webm',
               size: 0,
               isVideo: true,
-              message: 'Video ya procesado en background'
+              message: 'Video local guardado en feed'
             };
           }
           

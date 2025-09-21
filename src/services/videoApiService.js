@@ -95,23 +95,33 @@ class VideoApiService {
   }
 
   /**
-   * Obtener todos los videos públicos
+   * Obtener todos los videos públicos (remotos + locales)
    * @returns {Promise<Array>} Lista de videos
    */
   async getAllVideos() {
     try {
       console.log('📋 Obteniendo todos los videos...');
       
-      const response = await fetch(this.videosEndpoint);
-      
-      if (!response.ok) {
-        throw new Error(`Error obteniendo videos: ${response.status} ${response.statusText}`);
+      // Obtener videos remotos
+      let remoteVideos = [];
+      try {
+        const response = await fetch(this.videosEndpoint);
+        if (response.ok) {
+          remoteVideos = await response.json();
+        }
+      } catch (error) {
+        console.warn('⚠️ Error obteniendo videos remotos:', error.message);
       }
-
-      const videos = await response.json();
-      console.log(`✅ ${videos.length} videos obtenidos`);
       
-      return videos;
+      // Obtener videos locales
+      const localVideos = JSON.parse(localStorage.getItem('localVideos') || '[]');
+      
+      // Combinar videos (locales primero para que aparezcan arriba)
+      const allVideos = [...localVideos, ...remoteVideos];
+      
+      console.log(`✅ ${allVideos.length} videos obtenidos (${localVideos.length} locales + ${remoteVideos.length} remotos)`);
+      
+      return allVideos;
     } catch (error) {
       console.error('❌ Error obteniendo videos:', error);
       return [];
