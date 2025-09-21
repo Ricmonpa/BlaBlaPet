@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Upload Directo</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .upload-area { border: 2px dashed #ccc; padding: 20px; text-align: center; margin: 20px 0; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>Test Upload Directo - Vercel Blob</h1>
+    
+    <div class="upload-area">
+        <input type="file" id="fileInput" accept="video/*" />
+        <button onclick="testUpload()">Subir Video</button>
+    </div>
+    
+    <div id="logs"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            logs.appendChild(div);
+            console.log(message);
+        }
+
+        async function testUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                log('Por favor selecciona un archivo', 'error');
+                return;
+            }
+
+            log(`Iniciando upload de: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+
+            try {
+                // Crear FormData
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                log('Enviando archivo a handleUpload...');
+                
+                const response = await fetch('/api/get-upload-url', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`${response.status}: ${errorText}`);
+                }
+
+                const result = await response.json();
+                log('✅ Upload exitoso!', 'success');
+                log(`URL: ${result.url}`, 'success');
+                
+                // Mostrar el video si es posible
+                if (result.url) {
+                    const video = document.createElement('video');
+                    video.src = result.url;
+                    video.controls = true;
+                    video.style.maxWidth = '100%';
+                    document.body.appendChild(video);
+                }
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

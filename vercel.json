@@ -9,6 +9,9 @@
   "functions": {
     "api/upload-video-optimized.js": {
       "maxDuration": 300
+    },
+    "api/get-upload-url.js": {
+      "maxDuration": 60
     }
   }
 }
