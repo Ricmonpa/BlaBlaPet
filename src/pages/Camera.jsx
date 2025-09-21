@@ -149,34 +149,30 @@ const Camera = () => {
       let result;
       let videoFile = null;
       
-      // Si es un video, subir a Vercel Blob primero
+      // Si es un video, usar ANÁLISIS RÁPIDO + upload en background
       if (capturedMedia.type === 'video') {
-        console.log('🎬 Procesando video...');
+        console.log('🎬 Procesando video con análisis rápido...');
         
-        // Convertir blob URL a File
+        // Convertir blob URL a File para upload posterior
         const fileName = `video_${Date.now()}.webm`;
         videoFile = await convertBlobToFile(capturedMedia.data, fileName);
         
+        // UPLOAD EN BACKGROUND (no esperar, no bloquear)
         if (videoFile) {
-          console.log('📤 Subiendo video a Vercel Blob...');
-          try {
-            const uploadResult = await directBlobUploadService.uploadVideo(videoFile, {
-              petName: 'Mascota',
-              userId: 'user_anonymous',
-              tags: ['video', 'analisis']
-            });
-            
-            console.log('✅ Video subido exitosamente:', uploadResult.mediaUrl);
-            
-            // Actualizar capturedMedia con la URL del blob subido
-            capturedMedia.data = uploadResult.mediaUrl;
+          console.log('📤 Iniciando upload en background...');
+          
+          // Upload asíncrono - el usuario no espera esto
+          directBlobUploadService.uploadVideo(videoFile, {
+            petName: 'Mascota',
+            userId: 'user_anonymous',
+            tags: ['video', 'analisis']
+          }).then(uploadResult => {
+            console.log('✅ Video subido en background:', uploadResult.mediaUrl);
             capturedMedia.uploadedUrl = uploadResult.mediaUrl;
             capturedMedia.videoId = uploadResult.id;
-            
-          } catch (uploadError) {
-            console.warn('⚠️ Error subiendo video, continuando con análisis local:', uploadError.message);
-            // Continuar con el análisis aunque falle el upload
-          }
+          }).catch(uploadError => {
+            console.warn('⚠️ Upload en background falló:', uploadError.message);
+          });
         }
         
         console.log('🎬 Usando subtítulos secuenciales para video...');
@@ -262,6 +258,8 @@ const Camera = () => {
         errorMessage = 'No se pudo procesar el análisis. Inténtalo de nuevo.';
       } else if (error.message.includes('análisis')) {
         errorMessage = 'Error en el análisis de comportamiento. Inténtalo de nuevo.';
+      } else if (error.message.includes('subtítulos')) {
+        errorMessage = 'Error generando subtítulos. El video se subió correctamente, inténtalo de nuevo.';
       }
       
       setError(errorMessage);
@@ -338,13 +336,13 @@ const Camera = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
                 <p className="mb-2">
                   {capturedMedia.type === 'video' 
-                    ? 'Subiendo video y analizando...' 
+                    ? 'Analizando video...' 
                     : 'Analizando con el traductor perro-humano...'
                   }
                 </p>
                 {capturedMedia.type === 'video' && (
                   <p className="text-sm text-gray-300">
-                    Esto puede tomar unos minutos para videos grandes
+                    Upload en background - análisis rápido
                   </p>
                 )}
               </div>
