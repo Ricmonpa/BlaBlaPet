@@ -201,36 +201,20 @@ Responde en formato JSON con la siguiente estructura:
         // Para videos, extraer frame clave o usar thumbnail
         const videoBlob = mediaData instanceof Blob ? mediaData : await fetch(mediaData).then(r => r.blob());
         
-        // Detectar duración del video para decidir estrategia
-        const videoDuration = await this.getVideoDuration(videoBlob);
-        console.log(`🎬 Video duration detected: ${videoDuration}s`);
+        // Para videos, usar análisis multi-frame REAL
+        console.log('🎬 Extrayendo frames reales del video para análisis honesto...');
+        const frames = await this.createMultipleVideoFrames(videoBlob, 8);
         
-        if (videoDuration > 15) {
-          // Video largo: usar múltiples frames para análisis completo
-          console.log('🎬 Video largo detectado - usando análisis multi-frame');
-          const frames = await this.createMultipleVideoFrames(videoBlob);
-          
-          // Retornar el primer frame como principal (compatibilidad)
-          return {
-            inlineData: {
-              data: frames[0].base64,
-              mimeType: 'image/jpeg'
-            },
-            // Añadir frames adicionales para análisis extendido
-            additionalFrames: frames.slice(1)
-          };
-        } else {
-          // Video corto: usar thumbnail tradicional (mantener lógica actual)
-          console.log('🎬 Video corto - usando thumbnail tradicional');
-          const thumbnail = await this.createVideoThumbnail(videoBlob);
-          
-          return {
-            inlineData: {
-              data: thumbnail,
-              mimeType: 'image/jpeg'
-            }
-          };
-        }
+        // Retornar todos los frames para análisis completo
+        return {
+          inlineData: {
+            data: frames[0].base64,
+            mimeType: 'image/jpeg'
+          },
+          // Frames adicionales con timestamps reales
+          multiFrameData: frames,
+          isMultiFrame: true
+        };
       }
       
       // Fallback
@@ -308,45 +292,79 @@ Responde en formato JSON con la siguiente estructura:
   }
 
   /**
-   * Crear múltiples frames de video para análisis completo (NUEVA FUNCIONALIDAD)
+   * Crear múltiples frames de video para análisis completo
    * @param {Blob} videoBlob - Blob del video
-   * @returns {Promise<Array>} Array de frames en base64
+   * @param {number} frameCount - Número de frames a extraer
+   * @returns {Promise<Array>} Array de frames en base64 con timestamps
    */
-  createMultipleVideoFrames(videoBlob) {
+  createMultipleVideoFrames(videoBlob, frameCount = 8) {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const frames = [];
-      const framePositions = [0, 0.25, 0.5, 0.75, 1.0]; // 0%, 25%, 50%, 75%, 100%
+      
+      // Generar posiciones de frames distribuidas uniformemente
+      const framePositions = [];
+      for (let i = 0; i < frameCount; i++) {
+        framePositions.push(i / (frameCount - 1));
+      }
+      
       let currentFrameIndex = 0;
       
       video.onloadedmetadata = () => {
-        console.log(`🎬 Video duration: ${video.duration}s - Generando ${framePositions.length} frames`);
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        console.log(`🎬 Video duration: ${video.duration}s - Extrayendo ${frameCount} frames reales`);
+        canvas.width = Math.min(video.videoWidth, 640); // Limitar tamaño para Gemini
+        canvas.height = Math.min(video.videoHeight, 640);
         
         // Procesar primer frame
-        video.currentTime = video.duration * framePositions[currentFrameIndex];
+        video.currentTime = Math.max(0, video.duration * framePositions[currentFrameIndex]);
       };
       
       video.onseeked = () => {
-        ctx.drawImage(video, 0, 0);
+        // Dibujar frame actual
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
         canvas.toBlob((blob) => {
           this.blobToBase64(blob).then(base64 => {
+            const timeInSeconds = video.duration * framePositions[currentFrameIndex];
             frames.push({
               position: framePositions[currentFrameIndex],
-              time: video.duration * framePositions[currentFrameIndex],
+              timeSeconds: timeInSeconds,
+              timestamp: this.formatTimeForSubtitle(timeInSeconds),
               base64: base64
             });
+            
+            console.log(`📸 Frame ${currentFrameIndex + 1}/${frameCount} extraído: ${frames[frames.length - 1].timestamp}`);
             
             currentFrameIndex++;
             
             // Procesar siguiente frame
             if (currentFrameIndex < framePositions.length) {
-              video.currentTime = video.duration * framePositions[currentFrameIndex];
+              video.currentTime = Math.max(0, video.duration * framePositions[currentFrameIndex]);
             } else {
+              console.log(`✅ ${frames.length} frames extraídos del video real`);
+              resolve(frames);
+            }
+          }).catch(reject);
+        }, 'image/jpeg', 0.8);
+      };
+      
+      video.onerror = reject;
+      video.src = URL.createObjectURL(videoBlob);
+    });
+  }
+
+  /**
+   * Formatear tiempo en segundos a formato MM:SS para subtítulos
+   * @param {number} seconds - Tiempo en segundos
+   * @returns {string} Tiempo formateado
+   */
+  formatTimeForSubtitle(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
               // Todos los frames procesados
               console.log(`✅ Generados ${frames.length} frames para análisis completo`);
               resolve(frames);
