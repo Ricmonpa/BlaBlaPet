@@ -79,13 +79,24 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     const video = videoRef?.current;
     console.log('🎬 Video ref:', video);
     if (!video) {
-      console.log('❌ No hay video ref');
-      return;
+      console.log('❌ No hay video ref - usando simulación de tiempo');
+      // Si no hay video ref, simular progreso de tiempo
+      const interval = setInterval(() => {
+        setCurrentTime(prev => {
+          const newTime = prev + 0.5; // Incrementar cada 500ms
+          if (newTime >= totalDuration) {
+            clearInterval(interval);
+            return 0; // Reiniciar
+          }
+          return newTime;
+        });
+      }, 500);
+      
+      return () => clearInterval(interval);
     }
 
     const handleTimeUpdate = () => {
       const time = video.currentTime;
-      console.log('⏰ Video time:', time);
       setCurrentTime(time);
     };
 
@@ -95,8 +106,18 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       setCurrentTime(video.currentTime);
     };
 
+    const handlePlay = () => {
+      console.log('🎬 Video started playing');
+    };
+
+    const handlePause = () => {
+      console.log('🎬 Video paused');
+    };
+
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
     
     // Si el video ya está cargado, establecer el tiempo inicial
     if (video.readyState >= 2) {
@@ -106,6 +127,8 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
     };
   }, [videoRef]);
 

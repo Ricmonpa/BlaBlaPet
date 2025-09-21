@@ -18,25 +18,42 @@ const PetCard = ({ post }) => {
         setVideoReady(true);
       };
 
-      const handleError = () => {
-        console.error('❌ Error cargando video:', video.src);
+      const handleError = (e) => {
+        console.error('❌ Error cargando video:', {
+          videoSrc: video.src,
+          videoError: e.target.error,
+          networkState: video.networkState,
+          readyState: video.readyState,
+          postData: {
+            mediaUrl: post.mediaUrl,
+            isLocal: post.metadata?.isLocal,
+            mediaType: post.mediaType
+          }
+        });
         setVideoReady(false);
       };
 
       // Si el video ya está cargado
       if (video.readyState >= 2) {
+        console.log('🎬 Video ya estaba cargado:', video.src);
         setVideoReady(true);
       }
 
       video.addEventListener('loadeddata', handleLoadedData);
       video.addEventListener('error', handleError);
 
+      // Para videos locales (blob URLs), forzar la carga
+      if (post.metadata?.isLocal && video.src.startsWith('blob:')) {
+        console.log('🎬 Forzando carga de video local:', video.src);
+        video.load();
+      }
+
       return () => {
         video.removeEventListener('loadeddata', handleLoadedData);
         video.removeEventListener('error', handleError);
       };
     }
-  }, [post.mediaUrl, post.mediaType]);
+  }, [post.mediaUrl, post.mediaType, post.metadata?.isLocal]);
 
   // Debug logging para subtítulos secuenciales
   if (post.isSequentialSubtitles) {
