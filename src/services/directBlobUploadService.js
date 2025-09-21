@@ -9,98 +9,82 @@ class DirectBlobUploadService {
   }
 
   /**
-   * Obtener token de upload usando handleUpload de Vercel Blob
+   * Obtener presigned URL para upload directo
    * @param {File} file - Archivo a subir
-   * @returns {Promise<Object>} Token y URL de upload
+   * @returns {Promise<Object>} URL de upload y metadata
    */
-  async getUploadToken(file) {
+  async getUploadUrl(file) {
     try {
-      console.log('🔗 Obteniendo token de upload para:', file.name);
+      console.log('🔗 Obteniendo presigned URL para:', file.name);
       
-      // Crear FormData con el archivo
-      const formData = new FormData();
-      formData.append('file', file);
-      
+      // Enviar solo metadata, no el archivo
       const response = await fetch(`${this.baseUrl}/api/get-upload-url`, {
         method: 'POST',
-        body: formData // No establecer Content-Type, el browser lo hace automáticamente
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type,
+          fileSize: file.size
+        })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Error obteniendo token: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Error obteniendo presigned URL: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Token de upload obtenido:', result);
+      console.log('✅ Presigned URL obtenida:', result);
       
       return result;
     } catch (error) {
-      console.error('❌ Error obteniendo token de upload:', error);
+      console.error('❌ Error obteniendo presigned URL:', error);
       throw error;
     }
   }
 
   /**
-   * Subir archivo usando handleUpload de Vercel Blob
+   * Subir archivo usando presigned URL de Vercel Blob
    * @param {File} file - Archivo a subir
    * @returns {Promise<Object>} Resultado del upload
    */
   async uploadFile(file) {
     try {
-      console.log('📤 Iniciando upload con handleUpload...', file.name);
+      console.log('📤 Iniciando upload directo...', file.name);
       console.log('📁 Archivo:', { name: file.name, size: file.size, type: file.type });
 
-      // Obtener token de upload usando handleUpload
-      const uploadData = await this.getUploadToken(file);
-      console.log('🔗 Token obtenido:', uploadData);
+      // Obtener presigned URL
+      const uploadData = await this.getUploadUrl(file);
+      console.log('🔗 Presigned URL obtenida:', uploadData.uploadUrl);
 
-      // Si handleUpload devuelve directamente la URL del blob, no necesitamos hacer PUT
-      if (uploadData.url) {
-        console.log('✅ Archivo subido exitosamente via handleUpload');
-        
-        return {
-          success: true,
-          url: uploadData.url,
-          downloadUrl: uploadData.downloadUrl || uploadData.url,
-          pathname: uploadData.pathname,
-          size: file.size,
-          type: file.type,
-        };
+      // Subir archivo directamente usando PUT
+      console.log('📤 Subiendo archivo a Vercel Blob...');
+      const uploadResponse = await fetch(uploadData.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error('❌ Error en upload:', errorText);
+        throw new Error(`Error subiendo archivo: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
       }
 
-      // Si devuelve un token para upload posterior
-      if (uploadData.token && uploadData.uploadUrl) {
-        console.log('🔗 Usando token para upload directo...');
-        
-        const uploadResponse = await fetch(uploadData.uploadUrl, {
-          method: 'PUT',
-          body: file,
-          headers: {
-            'Content-Type': file.type,
-            'Authorization': `Bearer ${uploadData.token}`
-          },
-        });
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          console.error('❌ Error en upload:', errorText);
-          throw new Error(`Error subiendo archivo: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
-        }
-
-        console.log('✅ Archivo subido exitosamente con token');
-        
-        return {
-          success: true,
-          url: uploadData.url,
-          downloadUrl: uploadData.downloadUrl || uploadData.url,
-          pathname: uploadData.pathname,
-          size: file.size,
-          type: file.type,
-        };
-      }
-
-      throw new Error('Respuesta inesperada de handleUpload');
+      console.log('✅ Archivo subido exitosamente a Vercel Blob');
+      
+      return {
+        success: true,
+        url: uploadData.url,
+        downloadUrl: uploadData.downloadUrl || uploadData.url,
+        pathname: uploadData.pathname,
+        size: file.size,
+        type: file.type,
+      };
 
     } catch (error) {
       console.error('❌ Error en upload directo:', error);

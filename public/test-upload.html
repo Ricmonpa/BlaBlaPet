@@ -44,30 +44,52 @@
             log(`Iniciando upload de: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
             try {
-                // Crear FormData
-                const formData = new FormData();
-                formData.append('file', file);
+                // Paso 1: Obtener presigned URL (solo metadata)
+                log('Obteniendo presigned URL...');
                 
-                log('Enviando archivo a handleUpload...');
-                
-                const response = await fetch('/api/get-upload-url', {
+                const urlResponse = await fetch('/api/get-upload-url', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        contentType: file.type,
+                        fileSize: file.size
+                    })
                 });
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`${response.status}: ${errorText}`);
+                if (!urlResponse.ok) {
+                    const errorText = await urlResponse.text();
+                    throw new Error(`Error obteniendo URL: ${urlResponse.status}: ${errorText}`);
                 }
 
-                const result = await response.json();
+                const urlData = await urlResponse.json();
+                log(`✅ Presigned URL obtenida: ${urlData.uploadUrl}`);
+
+                // Paso 2: Subir archivo directamente a Vercel Blob
+                log('Subiendo archivo directamente a Vercel Blob...');
+                
+                const uploadResponse = await fetch(urlData.uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type,
+                    },
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text();
+                    throw new Error(`Error subiendo: ${uploadResponse.status}: ${errorText}`);
+                }
+
                 log('✅ Upload exitoso!', 'success');
-                log(`URL: ${result.url}`, 'success');
+                log(`URL final: ${urlData.url}`, 'success');
                 
                 // Mostrar el video si es posible
-                if (result.url) {
+                if (urlData.url) {
                     const video = document.createElement('video');
-                    video.src = result.url;
+                    video.src = urlData.url;
                     video.controls = true;
                     video.style.maxWidth = '100%';
                     document.body.appendChild(video);
