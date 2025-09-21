@@ -183,6 +183,18 @@ const Camera = () => {
         
         // Navegar directamente al home con los subtítulos secuenciales
         if (result && result.success) {
+          // Preservar el video local para mostrar inmediatamente
+          const preservedMedia = {
+            ...capturedMedia,
+            // Mantener el blob local para mostrar inmediatamente
+            localData: capturedMedia.data,
+            // Info del upload en background
+            uploadedUrl: capturedMedia.uploadedUrl,
+            videoId: capturedMedia.videoId,
+            // Usar URL remota si está disponible, sino local
+            data: capturedMedia.uploadedUrl || capturedMedia.data
+          };
+
           navigate('/', { 
             state: { 
               // Campos para subtítulos secuenciales
@@ -193,7 +205,7 @@ const Camera = () => {
               translation: result.subtitles[0]?.traduccion_tecnica || 'Análisis de video',
               output_tecnico: result.subtitles[0]?.traduccion_tecnica,
               output_emocional: result.subtitles[0]?.traduccion_emocional,
-              media: capturedMedia,
+              media: preservedMedia,
               confidence: result.subtitles[0]?.confidence || 85,
               emotion: 'secuencial',
               behavior: 'análisis por momentos',
@@ -203,7 +215,9 @@ const Camera = () => {
               // Información del video subido
               videoFile: videoFile,
               uploadedUrl: capturedMedia.uploadedUrl,
-              videoId: capturedMedia.videoId
+              videoId: capturedMedia.videoId,
+              // Flag para indicar que no necesita upload adicional
+              skipUpload: true
             }
           });
           return;

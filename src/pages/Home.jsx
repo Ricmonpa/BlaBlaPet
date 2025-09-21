@@ -269,8 +269,22 @@ const Home = () => {
         try {
           console.log('🚀 DEBUG - Iniciando handleVideoSave');
           console.log('🔍 DEBUG - location.state.media:', location.state.media);
+          console.log('🔍 DEBUG - skipUpload flag:', location.state.skipUpload);
           
-          // Convertir blob URL a archivo real
+          // Si skipUpload es true, no procesar el video (ya se procesó en Camera)
+          if (location.state.skipUpload) {
+            console.log('⏭️ Saltando upload - video ya procesado en Camera');
+            return {
+              success: true,
+              url: location.state.media?.uploadedUrl || location.state.media?.data,
+              fileName: 'video_processed_in_camera.webm',
+              size: 0,
+              isVideo: true,
+              message: 'Video ya procesado en background'
+            };
+          }
+          
+          // Convertir blob URL a archivo real solo si no se saltó
           console.log('🎬 Convirtiendo blob a archivo para upload directo...');
           const videoFile = await convertBlobToFile(
             location.state.media?.data, 
