@@ -70,6 +70,7 @@ class DirectBlobUploadService {
           'Content-Type': file.type,
           'Content-Length': file.size.toString(),
           'x-content-length': file.size.toString(),
+          'Authorization': `Bearer ${uploadData.token}`,
         },
       });
 

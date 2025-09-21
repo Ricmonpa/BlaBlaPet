@@ -38,18 +38,19 @@ export default async function handler(req, res) {
     const uniqueFileName = `videos/${timestamp}_${fileName}`;
 
     // Generar presigned URL usando la API de Vercel Blob
-    const presignedUrl = `https://blob.vercel-storage.com/${uniqueFileName}?token=${process.env.BLOB_READ_WRITE_TOKEN}`;
+    const uploadUrl = `https://blob.vercel-storage.com/${uniqueFileName}`;
     const finalUrl = `https://blob.vercel-storage.com/${uniqueFileName}`;
 
-    console.log('✅ Presigned URL generada:', presignedUrl);
+    console.log('✅ Presigned URL generada:', uploadUrl);
 
     return res.status(200).json({
       success: true,
-      uploadUrl: presignedUrl, // URL para PUT directo
+      uploadUrl: uploadUrl, // URL para PUT directo
       url: finalUrl, // URL final del archivo
       downloadUrl: finalUrl,
       pathname: uniqueFileName,
       filename: fileName,
+      token: process.env.BLOB_READ_WRITE_TOKEN, // Token para el header Authorization
       message: 'Presigned URL generated for direct upload'
     });
 
