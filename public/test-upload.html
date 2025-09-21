@@ -75,6 +75,8 @@
                     body: file,
                     headers: {
                         'Content-Type': file.type,
+                        'Content-Length': file.size.toString(),
+                        'x-content-length': file.size.toString(),
                     },
                 });
 

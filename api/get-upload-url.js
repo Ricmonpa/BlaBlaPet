@@ -1,5 +1,3 @@
-import { put } from '@vercel/blob';
-
 export default async function handler(req, res) {
   console.log('🎯 ENDPOINT get-upload-url - Method:', req.method);
   console.log('🔍 Environment check - BLOB_READ_WRITE_TOKEN exists:', !!process.env.BLOB_READ_WRITE_TOKEN);
@@ -33,30 +31,23 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'fileName is required' });
     }
 
-    console.log('📋 Generando URL para:', { fileName, contentType, fileSize });
+    console.log('📋 Generando presigned URL para:', { fileName, contentType, fileSize });
 
     // Generar nombre único para el archivo
     const timestamp = Date.now();
     const uniqueFileName = `videos/${timestamp}_${fileName}`;
 
-    // Crear un blob vacío para obtener la URL de upload
-    // Esto genera una presigned URL sin subir el archivo aún
-    const blob = await put(uniqueFileName, new Uint8Array(0), {
-      access: 'public',
-      contentType: contentType || 'video/mp4',
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    // Generar presigned URL usando la API de Vercel Blob
+    const presignedUrl = `https://blob.vercel-storage.com/${uniqueFileName}?token=${process.env.BLOB_READ_WRITE_TOKEN}`;
+    const finalUrl = `https://blob.vercel-storage.com/${uniqueFileName}`;
 
-    console.log('✅ Presigned URL generada:', blob.url);
-
-    // La URL del blob se puede usar para PUT directo desde el cliente
-    const uploadUrl = blob.url.replace('/blob/', '/blob/upload/');
+    console.log('✅ Presigned URL generada:', presignedUrl);
 
     return res.status(200).json({
       success: true,
-      uploadUrl: blob.url, // URL para PUT directo
-      url: blob.url, // URL final del archivo
-      downloadUrl: blob.url,
+      uploadUrl: presignedUrl, // URL para PUT directo
+      url: finalUrl, // URL final del archivo
+      downloadUrl: finalUrl,
       pathname: uniqueFileName,
       filename: fileName,
       message: 'Presigned URL generated for direct upload'

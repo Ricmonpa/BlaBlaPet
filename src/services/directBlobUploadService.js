@@ -1,6 +1,8 @@
+import VideoCompressor from '../utils/videoCompressor.js';
+
 /**
  * Servicio para upload directo al Blob Store de Vercel
- * Bypass de Vercel Functions para evitar límites de tamaño
+ * Con compresión agresiva como fallback para videos grandes
  */
 
 class DirectBlobUploadService {
@@ -66,6 +68,8 @@ class DirectBlobUploadService {
         body: file,
         headers: {
           'Content-Type': file.type,
+          'Content-Length': file.size.toString(),
+          'x-content-length': file.size.toString(),
         },
       });
 
@@ -93,7 +97,7 @@ class DirectBlobUploadService {
   }
 
   /**
-   * Subir video con metadata
+   * Subir video con metadata y compresión automática
    * @param {File} videoFile - Archivo de video
    * @param {Object} metadata - Metadata del video
    * @returns {Promise<Object>} Video subido con metadata
@@ -101,12 +105,60 @@ class DirectBlobUploadService {
   async uploadVideo(videoFile, metadata = {}) {
     try {
       const timestamp = Date.now();
-      const fileName = `videos/video_${timestamp}_${Math.random().toString(36).slice(2, 8)}.mp4`;
+      let processedFile = videoFile;
+      let wasCompressed = false;
       
-      console.log('🎬 Subiendo video con metadata...', fileName);
+      console.log('🎬 Subiendo video con metadata...');
+      console.log('📁 Archivo original:', {
+        name: videoFile.name,
+        size: (videoFile.size / 1024 / 1024).toFixed(2) + ' MB',
+        type: videoFile.type
+      });
 
-      // Subir archivo de video
-      const uploadResult = await this.uploadFile(videoFile);
+      // Verificar si necesita compresión
+      if (VideoCompressor.needsCompression(videoFile)) {
+        console.log('🗜️ Video muy grande, aplicando compresión agresiva...');
+        
+        try {
+          processedFile = await VideoCompressor.compressVideo(videoFile, {
+            maxWidth: 480, // 480p máximo
+            targetBitrate: 200 // 200kbps muy bajo
+          });
+          wasCompressed = true;
+          
+          console.log('✅ Video comprimido exitosamente');
+        } catch (compressionError) {
+          console.warn('⚠️ Error en compresión, intentando upload original:', compressionError.message);
+          // Si falla la compresión, intentar con el original
+          processedFile = videoFile;
+        }
+      }
+
+      // Intentar subir el archivo (comprimido o original)
+      let uploadResult;
+      try {
+        uploadResult = await this.uploadFile(processedFile);
+      } catch (uploadError) {
+        // Si falla el upload y no se había comprimido, intentar compresión
+        if (!wasCompressed && uploadError.message.includes('413')) {
+          console.log('🗜️ Upload falló por tamaño, forzando compresión...');
+          
+          try {
+            processedFile = await VideoCompressor.compressVideo(videoFile, {
+              maxWidth: 360, // Aún más pequeño
+              targetBitrate: 150 // Bitrate aún menor
+            });
+            
+            uploadResult = await this.uploadFile(processedFile);
+            wasCompressed = true;
+          } catch (fallbackError) {
+            console.error('❌ Falló incluso con compresión máxima:', fallbackError);
+            throw new Error('Video demasiado grande incluso después de compresión agresiva');
+          }
+        } else {
+          throw uploadError;
+        }
+      }
 
       // Crear metadata del video
       const videoData = {
@@ -116,7 +168,7 @@ class DirectBlobUploadService {
         emotionalDubbing: metadata.emotionalDubbing || '',
         mediaUrl: uploadResult.url,
         mediaType: 'video',
-        thumbnailUrl: uploadResult.url, // Usar la misma URL como thumbnail por ahora
+        thumbnailUrl: uploadResult.url,
         userId: metadata.userId || 'user_anonymous',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -128,8 +180,10 @@ class DirectBlobUploadService {
         metadata: {
           duration: metadata.duration || 0,
           fileSize: uploadResult.size,
-          resolution: metadata.resolution || 'unknown',
-          format: 'mp4'
+          originalSize: videoFile.size,
+          wasCompressed: wasCompressed,
+          resolution: wasCompressed ? '480p' : (metadata.resolution || 'original'),
+          format: processedFile.type.includes('webm') ? 'webm' : 'mp4'
         },
         ...metadata
       };
@@ -149,6 +203,10 @@ class DirectBlobUploadService {
 
       const savedVideo = await response.json();
       console.log('✅ Video y metadata guardados:', savedVideo.id);
+      
+      if (wasCompressed) {
+        console.log('🗜️ Video fue comprimido para cumplir límites de tamaño');
+      }
       
       return savedVideo;
 
