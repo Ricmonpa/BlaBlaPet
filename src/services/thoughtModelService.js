@@ -365,18 +365,6 @@ Responde en formato JSON con la siguiente estructura:
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
-              // Todos los frames procesados
-              console.log(`✅ Generados ${frames.length} frames para análisis completo`);
-              resolve(frames);
-            }
-          }).catch(reject);
-        }, 'image/jpeg', 0.8);
-      };
-      
-      video.onerror = reject;
-      video.src = URL.createObjectURL(videoBlob);
-    });
-  }
 
   /**
    * Verificar si el servicio está disponible
