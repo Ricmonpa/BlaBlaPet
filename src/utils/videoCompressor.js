@@ -65,8 +65,15 @@ class VideoCompressor {
 
       // Configurar MediaRecorder con compresión agresiva
       const stream = canvas.captureStream(15); // 15 FPS máximo
+      
+      // Intentar MP4 primero, fallback a WebM
+      let mimeType = 'video/mp4;codecs=avc1.42E01E';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'video/webm;codecs=vp8';
+      }
+      
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp8',
+        mimeType: mimeType,
         videoBitsPerSecond: this.targetBitrate * 1000 // Convertir a bps
       });
 
@@ -112,11 +119,14 @@ class VideoCompressor {
       video.remove();
       canvas.remove();
 
-      // Crear archivo comprimido
+      // Crear archivo comprimido con el tipo correcto
+      const fileExtension = mimeType.includes('mp4') ? '.mp4' : '.webm';
+      const fileType = mimeType.includes('mp4') ? 'video/mp4' : 'video/webm';
+      
       const compressedFile = new File(
         [compressedBlob], 
-        videoFile.name.replace(/\.[^/.]+$/, '_compressed.webm'),
-        { type: 'video/webm' }
+        videoFile.name.replace(/\.[^/.]+$/, `_compressed${fileExtension}`),
+        { type: fileType }
       );
 
       const compressionRatio = ((videoFile.size - compressedFile.size) / videoFile.size * 100).toFixed(1);
