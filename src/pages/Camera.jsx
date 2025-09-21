@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import translatorService from '../services/translatorService';
+import directBlobUploadService from '../services/directBlobUploadService';
 import BottomNavigation from '../components/BottomNavigation';
 
 const Camera = () => {
@@ -117,6 +118,18 @@ const Camera = () => {
     fileInputRef.current?.click();
   };
 
+  // Convertir blob URL a File
+  const convertBlobToFile = async (blobUrl, fileName) => {
+    try {
+      const response = await fetch(blobUrl);
+      const blob = await response.blob();
+      return new File([blob], fileName, { type: blob.type });
+    } catch (error) {
+      console.error('Error convirtiendo blob a file:', error);
+      return null;
+    }
+  };
+
   // Enviar al traductor
   const sendToTranslator = async () => {
     if (!capturedMedia) return;
@@ -134,9 +147,38 @@ const Camera = () => {
       );
       
       let result;
+      let videoFile = null;
       
-      // Si es un video, usar subtítulos secuenciales
+      // Si es un video, subir a Vercel Blob primero
       if (capturedMedia.type === 'video') {
+        console.log('🎬 Procesando video...');
+        
+        // Convertir blob URL a File
+        const fileName = `video_${Date.now()}.webm`;
+        videoFile = await convertBlobToFile(capturedMedia.data, fileName);
+        
+        if (videoFile) {
+          console.log('📤 Subiendo video a Vercel Blob...');
+          try {
+            const uploadResult = await directBlobUploadService.uploadVideo(videoFile, {
+              petName: 'Mascota',
+              userId: 'user_anonymous',
+              tags: ['video', 'analisis']
+            });
+            
+            console.log('✅ Video subido exitosamente:', uploadResult.mediaUrl);
+            
+            // Actualizar capturedMedia con la URL del blob subido
+            capturedMedia.data = uploadResult.mediaUrl;
+            capturedMedia.uploadedUrl = uploadResult.mediaUrl;
+            capturedMedia.videoId = uploadResult.id;
+            
+          } catch (uploadError) {
+            console.warn('⚠️ Error subiendo video, continuando con análisis local:', uploadError.message);
+            // Continuar con el análisis aunque falle el upload
+          }
+        }
+        
         console.log('🎬 Usando subtítulos secuenciales para video...');
         result = await translatorService.generateSequentialSubtitles(
           capturedMedia.data, 
@@ -161,7 +203,11 @@ const Camera = () => {
               behavior: 'análisis por momentos',
               context: 'video con subtítulos secuenciales',
               source: result.source,
-              analysisType: 'sequential'
+              analysisType: 'sequential',
+              // Información del video subido
+              videoFile: videoFile,
+              uploadedUrl: capturedMedia.uploadedUrl,
+              videoId: capturedMedia.videoId
             }
           });
           return;
@@ -191,7 +237,11 @@ const Camera = () => {
             behavior: result.behavior,
             context: result.context,
             source: result.source,
-            analysisType: result.analysisType
+            analysisType: result.analysisType,
+            // Para fotos no hay upload de video
+            videoFile: null,
+            uploadedUrl: null,
+            videoId: null
           }
         });
       } else {
@@ -286,7 +336,17 @@ const Camera = () => {
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
               <div className="text-white text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-                <p>Analizando con el traductor perro-humano...</p>
+                <p className="mb-2">
+                  {capturedMedia.type === 'video' 
+                    ? 'Subiendo video y analizando...' 
+                    : 'Analizando con el traductor perro-humano...'
+                  }
+                </p>
+                {capturedMedia.type === 'video' && (
+                  <p className="text-sm text-gray-300">
+                    Esto puede tomar unos minutos para videos grandes
+                  </p>
+                )}
               </div>
             </div>
           )}
