@@ -370,7 +370,6 @@ CRÍTICO: Si no hay suficiente información visual clara, responde con null en a
       }
 
       successfulAnalyses = subtitles.length; // Contar solo los subtítulos realmente creados
-      }
 
       console.log(`✅ Análisis honesto completado: ${successfulAnalyses}/${frames.length} frames analizados exitosamente`);
 
