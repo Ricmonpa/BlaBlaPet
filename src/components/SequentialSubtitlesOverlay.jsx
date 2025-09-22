@@ -136,32 +136,34 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
   if (!subtitles || subtitles.length === 0) return null;
 
   return (
-    <div className="absolute inset-0 bg-black bg-opacity-30 flex flex-col justify-end p-4 pointer-events-none">
-      <div className="text-center max-w-2xl mx-auto">
-        {/* Traducción Emocional - Ahora arriba */}
+    <div className="absolute inset-0 flex flex-col justify-end p-2 pointer-events-none">
+      <div className="text-center max-w-lg mx-auto">
+        {/* Traducción Emocional - Más compacta */}
         {showEmotional && currentSubtitle && currentSubtitle.traduccion_emocional && (
-          <div className="mb-3">
-            <p className="text-sm text-gray-200 mb-1">Traducción Emocional:</p>
-            <p className="text-lg font-semibold text-yellow-300 leading-relaxed bg-black bg-opacity-70 p-3 rounded-lg border border-yellow-500">
+          <div className="mb-2">
+            <p className="text-xs text-gray-200 mb-1">Traducción Emocional:</p>
+            <p className="text-base font-semibold text-yellow-300 leading-tight bg-black bg-opacity-70 p-2 rounded-lg border border-yellow-500">
               "{currentSubtitle.traduccion_emocional}"
             </p>
           </div>
         )}
         
-        {/* Traducción Técnica - Ahora abajo con mejor legibilidad */}
+        {/* Traducción Técnica - Compacta y con scroll */}
         {showTechnical && currentSubtitle && currentSubtitle.traduccion_tecnica && (
-          <div className="mb-3">
-            <p className="text-sm text-gray-200 mb-1">Traducción Técnica:</p>
-            <p className="text-sm leading-relaxed bg-white bg-opacity-90 text-gray-800 p-3 rounded-lg border border-gray-300">
-              {currentSubtitle.traduccion_tecnica}
-            </p>
+          <div className="mb-2">
+            <p className="text-xs text-gray-200 mb-1">Traducción Técnica:</p>
+            <div className="max-h-20 overflow-y-auto bg-white bg-opacity-90 text-gray-800 p-2 rounded-lg border border-gray-300">
+              <p className="text-xs leading-tight">
+                {currentSubtitle.traduccion_tecnica}
+              </p>
+            </div>
           </div>
         )}
         
-        {/* Información del subtítulo */}
+        {/* Información del subtítulo - Ultra compacta */}
         {currentSubtitle && (
-          <div className="mt-2 text-xs text-gray-300 bg-black bg-opacity-50 px-2 py-1 rounded">
-            {currentSubtitle.timestamp || 'Sin timestamp'} • Confianza: {currentSubtitle.confidence || 0}%
+          <div className="mt-1 text-xs text-gray-400 bg-black bg-opacity-40 px-2 py-0.5 rounded text-center">
+            {currentSubtitle.timestamp || 'Sin timestamp'}
           </div>
         )}
       </div>
