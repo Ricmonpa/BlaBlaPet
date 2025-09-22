@@ -292,7 +292,7 @@ Responde en formato JSON con la siguiente estructura:
   }
 
   /**
-   * Crear múltiples frames de video para análisis completo
+   * Crear múltiples frames de video para análisis completo (MEJORADO PARA COBERTURA TOTAL)
    * @param {Blob} videoBlob - Blob del video
    * @param {number} frameCount - Número de frames a extraer
    * @returns {Promise<Array>} Array de frames en base64 con timestamps
@@ -304,16 +304,35 @@ Responde en formato JSON con la siguiente estructura:
       const ctx = canvas.getContext('2d');
       const frames = [];
       
-      // Generar posiciones de frames distribuidas uniformemente
-      const framePositions = [];
-      for (let i = 0; i < frameCount; i++) {
-        framePositions.push(i / (frameCount - 1));
-      }
-      
       let currentFrameIndex = 0;
       
       video.onloadedmetadata = () => {
-        console.log(`🎬 Video duration: ${video.duration}s - Extrayendo ${frameCount} frames reales`);
+        const duration = video.duration;
+        console.log(`🎬 Video duration: ${duration}s - Extrayendo ${frameCount} frames para COBERTURA COMPLETA`);
+        
+        // CRÍTICO: Ajustar frameCount basado en duración del video
+        let adjustedFrameCount = frameCount;
+        if (duration > 30) {
+          adjustedFrameCount = Math.min(12, Math.ceil(duration / 3)); // Un frame cada 3 segundos para videos largos
+        } else if (duration > 15) {
+          adjustedFrameCount = Math.min(10, Math.ceil(duration / 2)); // Un frame cada 2 segundos
+        }
+        
+        console.log(`🎬 Frames ajustados: ${adjustedFrameCount} para video de ${duration}s`);
+        
+        // Generar posiciones de frames distribuidas uniformemente INCLUYENDO EL FINAL
+        const framePositions = [];
+        for (let i = 0; i < adjustedFrameCount; i++) {
+          if (i === adjustedFrameCount - 1) {
+            // Último frame: 95% del video para asegurar que no esté al final exacto
+            framePositions.push(0.95);
+          } else {
+            framePositions.push(i / (adjustedFrameCount - 1));
+          }
+        }
+        
+        console.log(`🎬 Posiciones de frames: ${framePositions.map(p => (p * duration).toFixed(1) + 's').join(', ')}`);
+        
         canvas.width = Math.min(video.videoWidth, 640); // Limitar tamaño para Gemini
         canvas.height = Math.min(video.videoHeight, 640);
         
@@ -327,6 +346,19 @@ Responde en formato JSON con la siguiente estructura:
         
         canvas.toBlob((blob) => {
           this.blobToBase64(blob).then(base64 => {
+            const framePositions = [];
+            const duration = video.duration;
+            const adjustedFrameCount = currentFrameIndex < 8 ? 8 : Math.min(12, Math.ceil(duration / 3));
+            
+            // Recalcular posiciones (necesario para mantener consistencia)
+            for (let i = 0; i < adjustedFrameCount; i++) {
+              if (i === adjustedFrameCount - 1) {
+                framePositions.push(0.95);
+              } else {
+                framePositions.push(i / (adjustedFrameCount - 1));
+              }
+            }
+            
             const timeInSeconds = video.duration * framePositions[currentFrameIndex];
             frames.push({
               position: framePositions[currentFrameIndex],
@@ -335,7 +367,7 @@ Responde en formato JSON con la siguiente estructura:
               base64: base64
             });
             
-            console.log(`📸 Frame ${currentFrameIndex + 1}/${frameCount} extraído: ${frames[frames.length - 1].timestamp}`);
+            console.log(`📸 Frame ${currentFrameIndex + 1}/${framePositions.length} extraído: ${frames[frames.length - 1].timestamp} (${timeInSeconds.toFixed(1)}s)`);
             
             currentFrameIndex++;
             

@@ -31,6 +31,15 @@ const PetCard = ({ post }) => {
           }
         });
         setVideoReady(false);
+        
+        // Intentar recargar el video una vez
+        if (!video.hasAttribute('data-retry')) {
+          console.log('🔄 Intentando recargar video...');
+          video.setAttribute('data-retry', 'true');
+          setTimeout(() => {
+            video.load();
+          }, 1000);
+        }
       };
 
       // Si el video ya está cargado
