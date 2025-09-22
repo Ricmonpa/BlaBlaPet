@@ -8,19 +8,19 @@ class VideoCompressor {
     this.maxDuration = 5 * 60; // 5 minutos en segundos
     this.maxSizeBytes = 10 * 1024 * 1024; // 10MB límite objetivo
     
-    // Configuraciones por modo
+    // Configuraciones por modo (más conservadoras para evitar corrupción)
     this.modes = {
-      // Modo agresivo (actual) - para almacenamiento
+      // Modo agresivo - para almacenamiento
       aggressive: {
-        targetBitrate: 200, // kbps muy bajo
+        targetBitrate: 500, // kbps más alto para evitar corrupción
         maxWidth: 480,
-        fps: 15
+        fps: 20 // FPS más alto para mejor calidad
       },
       // Modo análisis - para que Gemini pueda ver bien
       analysis: {
-        targetBitrate: 800, // kbps más alto para mejor calidad
+        targetBitrate: 1000, // kbps alto para máxima calidad
         maxWidth: 720, // HD para mejor análisis
-        fps: 24
+        fps: 25
       }
     };
   }
@@ -83,18 +83,42 @@ class VideoCompressor {
         mode: mode
       });
 
-      // Configurar MediaRecorder según el modo
-      const stream = canvas.captureStream(config.fps);
+      // Configurar MediaRecorder con configuraciones COMPATIBLES
+      const stream = canvas.captureStream(Math.min(config.fps, 30)); // Máximo 30fps
       
-      // Intentar MP4 primero, fallback a WebM
-      let mimeType = 'video/mp4;codecs=avc1.42E01E';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
+      // Usar configuraciones más conservadoras y compatibles
+      let mimeType = 'video/webm';
+      let recorderOptions = {};
+      
+      // Solo agregar bitrate si es soportado y no muy bajo
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
         mimeType = 'video/webm;codecs=vp8';
       }
       
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: mimeType,
-        videoBitsPerSecond: config.targetBitrate * 1000 // Convertir a bps
+      // Bitrate mínimo para evitar corrupción
+      const safeBitrate = Math.max(config.targetBitrate * 1000, 300000); // Mínimo 300kbps
+      
+      try {
+        recorderOptions = {
+          mimeType: mimeType,
+          videoBitsPerSecond: safeBitrate
+        };
+        
+        // Probar si la configuración es soportada
+        const testRecorder = new MediaRecorder(stream, recorderOptions);
+        testRecorder.stop();
+        
+      } catch (error) {
+        console.warn('⚠️ Configuración avanzada no soportada, usando básica');
+        recorderOptions = { mimeType: 'video/webm' };
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+      
+      console.log('🎬 MediaRecorder configurado:', {
+        mimeType: recorderOptions.mimeType,
+        bitrate: recorderOptions.videoBitsPerSecond || 'automático',
+        fps: Math.min(config.fps, 30)
       });
 
       const chunks = [];
@@ -107,24 +131,35 @@ class VideoCompressor {
       // Iniciar grabación
       mediaRecorder.start(100); // Chunk cada 100ms
 
-      // Reproducir y capturar frames
+      // Reproducir y capturar frames de manera más estable
       video.currentTime = 0;
       await video.play();
 
+      let frameCount = 0;
+      const maxFrames = Math.ceil(duration * Math.min(config.fps, 30));
+
       const captureFrame = () => {
-        if (video.ended || video.paused) {
+        if (video.ended || video.paused || frameCount >= maxFrames) {
+          console.log(`🎬 Captura completada: ${frameCount} frames`);
           mediaRecorder.stop();
           return;
         }
 
-        // Dibujar frame actual en canvas comprimido
-        ctx.drawImage(video, 0, 0, width, height);
-        
-        // Continuar captura
-        requestAnimationFrame(captureFrame);
+        try {
+          // Dibujar frame actual en canvas comprimido
+          ctx.drawImage(video, 0, 0, width, height);
+          frameCount++;
+          
+          // Continuar captura con throttling
+          setTimeout(() => requestAnimationFrame(captureFrame), 1000 / Math.min(config.fps, 30));
+        } catch (error) {
+          console.warn('⚠️ Error capturando frame:', error);
+          mediaRecorder.stop();
+        }
       };
 
-      captureFrame();
+      // Esperar un poco antes de empezar la captura
+      setTimeout(captureFrame, 100);
 
       // Esperar a que termine la grabación
       const compressedBlob = await new Promise((resolve) => {
@@ -139,9 +174,9 @@ class VideoCompressor {
       video.remove();
       canvas.remove();
 
-      // Crear archivo comprimido con el tipo correcto
-      const fileExtension = mimeType.includes('mp4') ? '.mp4' : '.webm';
-      const fileType = mimeType.includes('mp4') ? 'video/mp4' : 'video/webm';
+      // Crear archivo comprimido como WebM (más compatible)
+      const fileExtension = '.webm';
+      const fileType = 'video/webm';
       
       const compressedFile = new File(
         [compressedBlob], 

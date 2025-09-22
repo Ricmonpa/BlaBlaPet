@@ -122,7 +122,7 @@ class DirectBlobUploadService {
         
         try {
           // Usar modo análisis si es para subtítulos, agresivo para almacenamiento
-          const compressionMode = options?.forAnalysis ? 'analysis' : 'aggressive';
+          const compressionMode = metadata?.forAnalysis ? 'analysis' : 'aggressive';
           
           processedFile = await VideoCompressor.compressVideo(videoFile, {
             mode: compressionMode
