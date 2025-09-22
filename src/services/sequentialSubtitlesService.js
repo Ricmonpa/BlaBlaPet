@@ -152,25 +152,36 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
               console.warn('⚠️ No se pudo obtener duración real del video');
             }
 
-            const validatedSubtitles = subtitles.map((subtitle, index) => ({
-              id: `subtitle_${index + 1}`,
-              timestamp: subtitle.timestamp || `00:${String(index * 5).padStart(2, '0')} - 00:${String((index + 1) * 5).padStart(2, '0')}`,
-              traduccion_tecnica: subtitle.traduccion_tecnica || 'Análisis técnico no disponible',
-              traduccion_emocional: subtitle.traduccion_emocional || 'Traducción emocional no disponible',
-              confidence: 85 + Math.random() * 15, // 85-100%
-              source: 'thought_model_sequential'
-            }));
+            // VALIDACIÓN ESTRICTA: Solo subtítulos con contenido real
+            const validatedSubtitles = subtitles
+              .filter(subtitle => subtitle.traduccion_tecnica && subtitle.traduccion_emocional)
+              .map((subtitle, index) => ({
+                id: `subtitle_${index + 1}`,
+                timestamp: subtitle.timestamp,
+                traduccion_tecnica: subtitle.traduccion_tecnica,
+                traduccion_emocional: subtitle.traduccion_emocional,
+                confidence: 85 + Math.random() * 15, // 85-100%
+                source: 'thought_model_sequential'
+              }));
+
+            if (validatedSubtitles.length === 0) {
+              throw new Error('No se generaron subtítulos válidos - rechazando contenido falso');
+            }
 
             // POST-PROCESAMIENTO CRÍTICO: Asegurar cobertura completa del video
             const processedSubtitles = this.ensureFullVideoCoverage(validatedSubtitles, realVideoDuration);
             const finalDuration = this.calculateTotalDuration(processedSubtitles);
             
-            // VALIDACIÓN FINAL: Verificar que la cobertura sea aceptable
+            // VALIDACIÓN FINAL HONESTA: Solo aceptar si hay contenido real suficiente
             const coveragePercentage = realVideoDuration > 0 ? (finalDuration / realVideoDuration) * 100 : 100;
             
+            if (coveragePercentage < 50) {
+              console.error(`❌ COBERTURA FINAL INSUFICIENTE: ${coveragePercentage.toFixed(1)}% - RECHAZANDO`);
+              throw new Error(`Análisis insuficiente: solo ${coveragePercentage.toFixed(1)}% del video tiene contenido real`);
+            }
+            
             if (coveragePercentage < 80) {
-              console.error(`❌ COBERTURA FINAL INSUFICIENTE: ${coveragePercentage.toFixed(1)}%`);
-              throw new Error(`Cobertura de subtítulos insuficiente: ${coveragePercentage.toFixed(1)}% del video`);
+              console.warn(`⚠️ Cobertura parcial: ${coveragePercentage.toFixed(1)}% del video analizado`);
             }
             
             console.log(`✅ COBERTURA FINAL VALIDADA: ${coveragePercentage.toFixed(1)}% del video (${finalDuration}s de ${realVideoDuration}s)`);
@@ -376,116 +387,24 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
     const coveragePercentage = (currentCoverage / realDuration) * 100;
     console.log(`🎬 Cobertura actual: ${currentCoverage}s de ${realDuration}s (${coveragePercentage.toFixed(1)}%)`);
 
-    // CRÍTICO: Si la cobertura es menor al 80%, es inaceptable
-    if (coveragePercentage < 80) {
-      console.error(`❌ COBERTURA INSUFICIENTE: ${coveragePercentage.toFixed(1)}% - REGENERANDO SUBTÍTULOS`);
-      return this.forceFullCoverage(subtitles, realDuration);
+    // HONESTIDAD TOTAL: Si la cobertura es insuficiente, admitirlo
+    if (coveragePercentage < 60) {
+      console.error(`❌ COBERTURA INSUFICIENTE: ${coveragePercentage.toFixed(1)}% - NO se generarán subtítulos falsos`);
+      throw new Error(`Cobertura insuficiente: solo ${coveragePercentage.toFixed(1)}% del video tiene análisis real`);
     }
 
-    // Si la cobertura está entre 80-95%, extender
-    if (coveragePercentage < 95) {
-      console.log(`🔧 Cobertura parcial (${coveragePercentage.toFixed(1)}%) - Extendiendo...`);
-      return this.extendCoverage(subtitles, realDuration);
+    // Si la cobertura está entre 60-90%, mantener solo lo real
+    if (coveragePercentage < 90) {
+      console.log(`⚠️ Cobertura parcial (${coveragePercentage.toFixed(1)}%) - Manteniendo solo contenido real`);
+      return subtitles; // NO extender con contenido falso
     }
 
     console.log('✅ Cobertura completa ya alcanzada');
     return subtitles;
   }
 
-  // Forzar cobertura completa regenerando subtítulos
-  forceFullCoverage(existingSubtitles, realDuration) {
-    console.log('🔧 FORZANDO cobertura completa del video...');
-    
-    // Calcular número de subtítulos necesarios (cada 6-8 segundos)
-    const targetInterval = 7; // segundos por subtítulo
-    const neededSubtitles = Math.ceil(realDuration / targetInterval);
-    
-    const newSubtitles = [];
-    
-    // Reutilizar subtítulos existentes si son válidos
-    const validExisting = existingSubtitles.filter(sub => {
-      const timeRange = this.parseTimestamp(sub.timestamp);
-      return timeRange.start < realDuration;
-    });
-    
-    // Generar subtítulos para cubrir toda la duración
-    for (let i = 0; i < neededSubtitles; i++) {
-      const startTime = i * targetInterval;
-      const endTime = Math.min((i + 1) * targetInterval, realDuration);
-      
-      if (startTime >= realDuration) break;
-      
-      // Usar subtítulo existente si está disponible
-      const existingMatch = validExisting.find(sub => {
-        const timeRange = this.parseTimestamp(sub.timestamp);
-        return Math.abs(timeRange.start - startTime) < 3; // Tolerancia de 3 segundos
-      });
-      
-      if (existingMatch) {
-        // Ajustar timestamp del subtítulo existente
-        existingMatch.timestamp = `${this.formatTime(startTime)} - ${this.formatTime(endTime)}`;
-        newSubtitles.push(existingMatch);
-      } else {
-        // Crear nuevo subtítulo
-        newSubtitles.push({
-          id: `subtitle_${i + 1}`,
-          timestamp: `${this.formatTime(startTime)} - ${this.formatTime(endTime)}`,
-          traduccion_tecnica: 'El perro continúa mostrando comportamientos que requieren análisis detallado en este segmento del video.',
-          traduccion_emocional: '¡Aquí sigo! ¡Observa lo que hago en este momento!',
-          confidence: 75 + Math.random() * 15,
-          source: 'forced_full_coverage'
-        });
-      }
-    }
-    
-    console.log(`🔧 Cobertura forzada: ${newSubtitles.length} subtítulos para ${realDuration}s`);
-    return newSubtitles;
-  }
-
-  // Extender cobertura existente
-  extendCoverage(subtitles, realDuration) {
-    const extended = [...subtitles];
-    
-    if (extended.length > 0) {
-      // Extender el último subtítulo hasta el final
-      const lastSubtitle = extended[extended.length - 1];
-      const lastTimeRange = this.parseTimestamp(lastSubtitle.timestamp);
-      
-      lastSubtitle.timestamp = `${this.formatTime(lastTimeRange.start)} - ${this.formatTime(realDuration)}`;
-      console.log(`🔧 Último subtítulo extendido hasta: ${this.formatTime(realDuration)}`);
-    }
-    
-    return extended;
-  }
-
-  // Generar subtítulos adicionales para cubrir gaps grandes
-  generateAdditionalSubtitles(existingSubtitles, realDuration) {
-    const additional = [];
-    const lastTimeRange = this.parseTimestamp(existingSubtitles[existingSubtitles.length - 1].timestamp);
-    const startTime = lastTimeRange.end;
-    
-    // Generar subtítulos cada 8-10 segundos hasta el final
-    let currentTime = startTime;
-    let subtitleIndex = existingSubtitles.length + 1;
-    
-    while (currentTime < realDuration - 5) {
-      const endTime = Math.min(currentTime + 8, realDuration);
-      
-      additional.push({
-        id: `subtitle_${subtitleIndex}`,
-        timestamp: `${this.formatTime(currentTime)} - ${this.formatTime(endTime)}`,
-        traduccion_tecnica: 'El perro continúa su actividad, mostrando comportamientos adicionales que requieren observación detallada.',
-        traduccion_emocional: '¡Sigo aquí! ¡Más cosas por descubrir!',
-        confidence: 75 + Math.random() * 15,
-        source: 'thought_model_sequential_extended'
-      });
-      
-      currentTime = endTime;
-      subtitleIndex++;
-    }
-    
-    return additional;
-  }
+  // FUNCIÓN ELIMINADA: No más generación de contenido falso
+  // El sistema ahora solo acepta análisis real de frames reales
 
   // Generar subtítulos desde frames reales del video (MEJORADO PARA HONESTIDAD)
   async generateSubtitlesFromRealFrames(frames, basePrompt) {
@@ -511,29 +430,31 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
         
         console.log(`📸 Analizando frame ${i + 1}/${frames.length}: ${timestamp} (${frame.timeSeconds}s)`);
         
-        // Prompt específico para este frame con énfasis en honestidad
+        // Prompt específico para este frame con MÁXIMA honestidad
         const framePrompt = `Analiza esta imagen específica de un video de mascota tomada en el momento ${timestamp}.
 
-INSTRUCCIONES CRÍTICAS:
-- Describe SOLO lo que realmente ves en esta imagen
-- NO inventes comportamientos que no están visibles
-- Si el animal está quieto, di que está quieto
-- Si no puedes ver claramente algo, admítelo
-- Sé completamente honesto sobre lo que observas
+REGLAS ABSOLUTAS DE HONESTIDAD:
+- Describe ÚNICAMENTE lo que está VISIBLE en esta imagen específica
+- NO inventes, NO asumas, NO extrapoles comportamientos
+- Si el animal está inmóvil, di "El animal está inmóvil"
+- Si no puedes ver la cara, di "No se puede ver la expresión facial"
+- Si la imagen es borrosa, di "La imagen no es clara"
+- Si no hay actividad visible, di "No hay actividad visible"
+- NUNCA uses frases como "parece que", "probablemente", "podría estar"
 
-Describe EXACTAMENTE lo que ves:
-- Postura del animal (específica y observable)
-- Expresión facial (si es visible)
-- Actividad que está realizando (solo lo visible)
-- Estado emocional aparente (basado en evidencia visual)
+Describe SOLO lo observable:
+- Postura exacta del animal (solo lo que ves)
+- Partes del cuerpo visibles y su posición
+- Objetos o elementos visibles en la escena
+- Ubicación del animal en el encuadre
 
 Responde en formato JSON:
 {
-  "traduccion_tecnica": "Descripción técnica precisa y honesta de lo que se ve",
-  "traduccion_emocional": "Lo que el animal estaría 'diciendo' basado en lo que realmente se observa"
+  "traduccion_tecnica": "Descripción objetiva de lo visible sin interpretaciones",
+  "traduccion_emocional": "Traducción basada ÚNICAMENTE en evidencia visual clara"
 }
 
-IMPORTANTE: Prefiere la honestidad sobre la creatividad. Si el momento es aburrido, está bien decirlo.`;
+CRÍTICO: Si no hay suficiente información visual clara, responde con null en ambos campos.`;
 
         try {
           const result = await thoughtModelService.model.generateContent([
@@ -554,41 +475,48 @@ IMPORTANTE: Prefiere la honestidad sobre la creatividad. Si el momento es aburri
               throw new Error('No JSON found');
             }
           } catch (parseError) {
-            console.warn(`⚠️ Error parseando frame ${i + 1}, usando análisis básico`);
+            console.warn(`⚠️ Error parseando frame ${i + 1}, NO se creará contenido falso`);
             frameAnalysis = {
-              traduccion_tecnica: `Análisis del momento ${timestamp}: ${text.substring(0, 150)}...`,
-              traduccion_emocional: "Observando este momento del video..."
+              traduccion_tecnica: null,
+              traduccion_emocional: null
             };
           }
 
-          subtitles.push({
-            id: `subtitle_${i + 1}`,
-            timestamp: timestamp,
-            traduccion_tecnica: frameAnalysis.traduccion_tecnica || 'Análisis técnico no disponible',
-            traduccion_emocional: frameAnalysis.traduccion_emocional || 'Traducción emocional no disponible',
-            confidence: 90 + Math.random() * 10,
-            source: 'honest_frame_analysis',
-            frameIndex: i,
-            realTime: frame.timeSeconds
-          });
+          // VALIDACIÓN ESTRICTA: Solo contenido real y honesto
+          if (frameAnalysis.traduccion_tecnica && frameAnalysis.traduccion_emocional) {
+            // Rechazar respuestas especulativas
+            const speculativeWords = ['parece', 'probablemente', 'podría', 'tal vez', 'quizás', 'aparentemente', 'posiblemente'];
+            const hasSpeculation = speculativeWords.some(word => 
+              frameAnalysis.traduccion_tecnica.toLowerCase().includes(word) ||
+              frameAnalysis.traduccion_emocional.toLowerCase().includes(word)
+            );
+            
+            if (hasSpeculation) {
+              console.warn(`⚠️ Frame ${i + 1} contiene especulación, RECHAZADO`);
+            } else {
+              subtitles.push({
+                id: `subtitle_${i + 1}`,
+                timestamp: timestamp,
+                traduccion_tecnica: frameAnalysis.traduccion_tecnica,
+                traduccion_emocional: frameAnalysis.traduccion_emocional,
+                confidence: 95, // Alta confianza solo para contenido verificado
+                source: 'verified_honest_analysis',
+                frameIndex: i,
+                realTime: frame.timeSeconds
+              });
+              console.log(`✅ Frame ${i + 1} VERIFICADO como honesto`);
+            }
+          } else {
+            console.warn(`⚠️ Frame ${i + 1} no generó contenido válido, OMITIENDO`);
+          }
 
           successfulAnalyses++;
           console.log(`✅ Frame ${i + 1} analizado honestamente: "${frameAnalysis.traduccion_emocional?.substring(0, 50)}..."`);
           
         } catch (error) {
           console.error(`❌ Error analizando frame ${i + 1}:`, error);
-          
-          // Crear subtítulo de fallback honesto
-          subtitles.push({
-            id: `subtitle_${i + 1}`,
-            timestamp: timestamp,
-            traduccion_tecnica: `Momento del video en ${timestamp}: análisis no disponible debido a error técnico.`,
-            traduccion_emocional: "¡Algo está pasando aquí, pero no puedo analizarlo bien!",
-            confidence: 50,
-            source: 'fallback_frame',
-            frameIndex: i,
-            realTime: frame.timeSeconds
-          });
+          console.warn(`⚠️ Frame ${i + 1} falló completamente, NO se creará subtítulo falso`);
+          // NO crear subtítulos falsos cuando hay errores
         }
       }
 
