@@ -333,24 +333,22 @@ CRÍTICO: Si no hay suficiente información visual clara, responde con null en a
               throw new Error('No JSON found');
             }
           } catch (parseError) {
-            console.warn(`⚠️ Error parseando frame ${i + 1}, NO se creará contenido falso`);
-            frameAnalysis = {
-              traduccion_tecnica: null,
-              traduccion_emocional: null
-            };
+            console.error(`❌ Error parseando frame ${i + 1}:`, parseError);
+            // Saltar este frame completamente
+            continue;
           }
 
           // VALIDACIÓN ESTRICTA: Solo contenido real y honesto
-          if (frameAnalysis.traduccion_tecnica && frameAnalysis.traduccion_emocional) {
-            // Rechazar respuestas especulativas
-            const speculativeWords = ['parece', 'probablemente', 'podría', 'tal vez', 'quizás', 'aparentemente', 'posiblemente'];
-            const hasSpeculation = speculativeWords.some(word => 
+          if (frameAnalysis && frameAnalysis.traduccion_tecnica && frameAnalysis.traduccion_emocional) {
+            // Rechazar respuestas especulativas o vacías
+            const invalidWords = ['parece', 'probablemente', 'podría', 'tal vez', 'quizás', 'aparentemente', 'posiblemente', 'no se puede', 'no puedo', 'no es clara', 'no visible'];
+            const hasInvalidContent = invalidWords.some(word => 
               frameAnalysis.traduccion_tecnica.toLowerCase().includes(word) ||
               frameAnalysis.traduccion_emocional.toLowerCase().includes(word)
             );
             
-            if (hasSpeculation) {
-              console.warn(`⚠️ Frame ${i + 1} contiene especulación, RECHAZADO`);
+            if (hasInvalidContent) {
+              console.warn(`⚠️ Frame ${i + 1} contiene contenido inválido, RECHAZADO`);
             } else {
               subtitles.push({
                 id: `subtitle_${i + 1}`,
@@ -378,6 +376,11 @@ CRÍTICO: Si no hay suficiente información visual clara, responde con null en a
       successfulAnalyses = subtitles.length; // Contar solo los subtítulos realmente creados
 
       console.log(`✅ Análisis honesto completado: ${successfulAnalyses}/${frames.length} frames analizados exitosamente`);
+
+      // VALIDACIÓN CRÍTICA: Si no hay subtítulos válidos, FALLAR
+      if (subtitles.length === 0) {
+        throw new Error('No se generaron subtítulos válidos - todos los frames fueron rechazados por contenido insuficiente');
+      }
 
       // VALIDACIÓN FINAL: Asegurar que tenemos subtítulos para todo el video
       const finalDuration = Math.max(maxFrameTime + 3, 10); // Mínimo 10 segundos
