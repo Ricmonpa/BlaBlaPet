@@ -323,6 +323,8 @@ CRÍTICO: Si no hay suficiente información visual clara, responde con null en a
           const response = await result.response;
           const text = response.text();
           
+          console.log(`🔍 FRAME ${i + 1} RESPUESTA RAW GEMINI:`, text);
+          
           // Parsear respuesta
           let frameAnalysis;
           try {
@@ -338,32 +340,27 @@ CRÍTICO: Si no hay suficiente información visual clara, responde con null en a
             continue;
           }
 
-          // VALIDACIÓN ESTRICTA: Solo contenido real y honesto
+          // ACEPTAR TODO EL CONTENIDO - No hay contenido inválido
           if (frameAnalysis && frameAnalysis.traduccion_tecnica && frameAnalysis.traduccion_emocional) {
-            // Rechazar respuestas especulativas o vacías
-            const invalidWords = ['parece', 'probablemente', 'podría', 'tal vez', 'quizás', 'aparentemente', 'posiblemente', 'no se puede', 'no puedo', 'no es clara', 'no visible'];
-            const hasInvalidContent = invalidWords.some(word => 
-              frameAnalysis.traduccion_tecnica.toLowerCase().includes(word) ||
-              frameAnalysis.traduccion_emocional.toLowerCase().includes(word)
-            );
+            console.log(`🔍 FRAME ${i + 1} RESPUESTA GEMINI:`, {
+              tecnica: frameAnalysis.traduccion_tecnica,
+              emocional: frameAnalysis.traduccion_emocional
+            });
             
-            if (hasInvalidContent) {
-              console.warn(`⚠️ Frame ${i + 1} contiene contenido inválido, RECHAZADO`);
-            } else {
-              subtitles.push({
-                id: `subtitle_${i + 1}`,
-                timestamp: timestamp,
-                traduccion_tecnica: frameAnalysis.traduccion_tecnica,
-                traduccion_emocional: frameAnalysis.traduccion_emocional,
-                confidence: 95, // Alta confianza solo para contenido verificado
-                source: 'verified_honest_analysis',
-                frameIndex: i,
-                realTime: frame.timeSeconds
-              });
-              console.log(`✅ Frame ${i + 1} VERIFICADO como honesto`);
-            }
+            subtitles.push({
+              id: `subtitle_${i + 1}`,
+              timestamp: timestamp,
+              traduccion_tecnica: frameAnalysis.traduccion_tecnica,
+              traduccion_emocional: frameAnalysis.traduccion_emocional,
+              confidence: 95,
+              source: 'gemini_analysis',
+              frameIndex: i,
+              realTime: frame.timeSeconds
+            });
+            console.log(`✅ Frame ${i + 1} ACEPTADO - TODO CONTENIDO ES VÁLIDO`);
           } else {
-            console.warn(`⚠️ Frame ${i + 1} no generó contenido válido, OMITIENDO`);
+            console.log(`🔍 FRAME ${i + 1} RESPUESTA INCOMPLETA:`, frameAnalysis);
+            console.warn(`⚠️ Frame ${i + 1} no tiene traduccion_tecnica o traduccion_emocional`);
           }
           
         } catch (error) {
