@@ -261,7 +261,7 @@ Responde en formato JSON con la siguiente estructura:
         
         canvas.toBlob((blob) => {
           this.blobToBase64(blob).then(resolve).catch(reject);
-        }, 'image/jpeg', 0.8);
+        }, 'image/jpeg', 0.95); // MÁXIMA CALIDAD para análisis
       };
       
       video.onerror = reject;
@@ -329,8 +329,15 @@ Responde en formato JSON con la siguiente estructura:
         
         console.log(`🎬 Posiciones de frames: ${framePositions.map(p => (p * duration).toFixed(1) + 's').join(', ')}`);
         
-        canvas.width = Math.min(video.videoWidth, 640); // Limitar tamaño para Gemini
-        canvas.height = Math.min(video.videoHeight, 640);
+        // MÁXIMA CALIDAD para análisis original
+        canvas.width = Math.min(video.videoWidth, 1280); // Aumentado para mejor análisis
+        canvas.height = Math.min(video.videoHeight, 1280);
+        
+        console.log('🎬 FRAMES EN ALTA CALIDAD:', {
+          original: `${video.videoWidth}x${video.videoHeight}`,
+          canvas: `${canvas.width}x${canvas.height}`,
+          quality: 'MÁXIMA para análisis'
+        });
         
         // Procesar primer frame
         video.currentTime = Math.max(0, video.duration * framePositions[currentFrameIndex]);
@@ -375,7 +382,7 @@ Responde en formato JSON con la siguiente estructura:
               resolve(frames);
             }
           }).catch(reject);
-        }, 'image/jpeg', 0.8);
+        }, 'image/jpeg', 0.95); // MÁXIMA CALIDAD para análisis
       };
       
       video.onerror = reject;

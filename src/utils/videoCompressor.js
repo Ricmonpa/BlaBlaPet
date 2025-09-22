@@ -7,7 +7,22 @@ class VideoCompressor {
   constructor() {
     this.maxDuration = 5 * 60; // 5 minutos en segundos
     this.maxSizeBytes = 10 * 1024 * 1024; // 10MB límite objetivo
-    this.targetBitrate = 200; // kbps muy bajo para compresión agresiva
+    
+    // Configuraciones por modo
+    this.modes = {
+      // Modo agresivo (actual) - para almacenamiento
+      aggressive: {
+        targetBitrate: 200, // kbps muy bajo
+        maxWidth: 480,
+        fps: 15
+      },
+      // Modo análisis - para que Gemini pueda ver bien
+      analysis: {
+        targetBitrate: 800, // kbps más alto para mejor calidad
+        maxWidth: 720, // HD para mejor análisis
+        fps: 24
+      }
+    };
   }
 
   /**
@@ -17,6 +32,10 @@ class VideoCompressor {
    * @returns {Promise<File>} Video comprimido
    */
   async compressVideo(videoFile, options = {}) {
+    const mode = options.mode || 'aggressive'; // Por defecto agresivo
+    const config = this.modes[mode];
+    
+    console.log(`🗜️ Iniciando compresión en modo ${mode.toUpperCase()}...`);
     try {
       console.log('🗜️ Iniciando compresión agresiva de video...');
       console.log('📁 Archivo original:', {
@@ -48,11 +67,11 @@ class VideoCompressor {
         video.onerror = reject;
       });
 
-      // Calcular dimensiones comprimidas (máximo 480p)
+      // Calcular dimensiones según el modo
       const { width, height } = this.calculateCompressedDimensions(
         video.videoWidth, 
         video.videoHeight,
-        options.maxWidth || 480
+        config.maxWidth
       );
 
       canvas.width = width;
@@ -60,11 +79,12 @@ class VideoCompressor {
 
       console.log('📐 Dimensiones:', {
         original: `${video.videoWidth}x${video.videoHeight}`,
-        compressed: `${width}x${height}`
+        compressed: `${width}x${height}`,
+        mode: mode
       });
 
-      // Configurar MediaRecorder con compresión agresiva
-      const stream = canvas.captureStream(15); // 15 FPS máximo
+      // Configurar MediaRecorder según el modo
+      const stream = canvas.captureStream(config.fps);
       
       // Intentar MP4 primero, fallback a WebM
       let mimeType = 'video/mp4;codecs=avc1.42E01E';
@@ -74,7 +94,7 @@ class VideoCompressor {
       
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: mimeType,
-        videoBitsPerSecond: this.targetBitrate * 1000 // Convertir a bps
+        videoBitsPerSecond: config.targetBitrate * 1000 // Convertir a bps
       });
 
       const chunks = [];

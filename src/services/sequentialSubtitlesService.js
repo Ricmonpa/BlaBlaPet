@@ -106,7 +106,13 @@ class SequentialSubtitlesService {
         // USAR ANÁLISIS MULTI-FRAME REAL en lugar de thumbnail falso
         const videoBlob = mediaData instanceof Blob ? mediaData : await fetch(mediaData).then(r => r.blob());
         
-        // Generar frames reales del video
+        console.log('🎬 ANALIZANDO VIDEO ORIGINAL:', {
+          size: (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+          type: videoBlob.type,
+          isOriginal: mediaData instanceof Blob ? 'SÍ - Blob original' : 'NO - URL remota'
+        });
+        
+        // Generar frames reales del video ORIGINAL
         const frames = await thoughtModelService.createMultipleVideoFrames(videoBlob, 8);
         
         return {

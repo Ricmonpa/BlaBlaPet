@@ -121,9 +121,16 @@ class DirectBlobUploadService {
         console.log('🗜️ Video muy grande, aplicando compresión agresiva...');
         
         try {
+          // Usar modo análisis si es para subtítulos, agresivo para almacenamiento
+          const compressionMode = options?.forAnalysis ? 'analysis' : 'aggressive';
+          
           processedFile = await VideoCompressor.compressVideo(videoFile, {
-            maxWidth: 480, // 480p máximo
-            targetBitrate: 200 // 200kbps muy bajo
+            mode: compressionMode
+          });
+          
+          console.log(`🗜️ Compresión en modo ${compressionMode}:`, {
+            original: (videoFile.size / 1024 / 1024).toFixed(2) + ' MB',
+            compressed: (processedFile.size / 1024 / 1024).toFixed(2) + ' MB'
           });
           wasCompressed = true;
           
@@ -146,8 +153,7 @@ class DirectBlobUploadService {
           
           try {
             processedFile = await VideoCompressor.compressVideo(videoFile, {
-              maxWidth: 360, // Aún más pequeño
-              targetBitrate: 150 // Bitrate aún menor
+              mode: 'aggressive' // Siempre agresivo en fallback
             });
             
             uploadResult = await this.uploadFile(processedFile);

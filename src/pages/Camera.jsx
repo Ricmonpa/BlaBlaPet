@@ -157,29 +157,31 @@ const Camera = () => {
         const fileName = `video_${Date.now()}.webm`;
         videoFile = await convertBlobToFile(capturedMedia.data, fileName);
         
-        // UPLOAD EN BACKGROUND (no esperar, no bloquear)
+        // PASO 1: ANALIZAR VIDEO ORIGINAL (máxima calidad para Gemini)
+        console.log('🎬 Analizando video ORIGINAL para máxima calidad...');
+        result = await translatorService.generateSequentialSubtitles(
+          capturedMedia.data, // Video ORIGINAL sin comprimir
+          capturedMedia.type
+        );
+        
+        // PASO 2: UPLOAD EN BACKGROUND (comprimido para almacenamiento)
         if (videoFile) {
-          console.log('📤 Iniciando upload en background...');
+          console.log('📤 Iniciando upload comprimido en background...');
           
           // Upload asíncrono - el usuario no espera esto
           directBlobUploadService.uploadVideo(videoFile, {
             petName: 'Mascota',
             userId: 'user_anonymous',
-            tags: ['video', 'analisis']
+            tags: ['video', 'analisis'],
+            forAnalysis: false // Usar compresión agresiva para almacenamiento
           }).then(uploadResult => {
-            console.log('✅ Video subido en background:', uploadResult.mediaUrl);
+            console.log('✅ Video comprimido subido en background:', uploadResult.mediaUrl);
             capturedMedia.uploadedUrl = uploadResult.mediaUrl;
             capturedMedia.videoId = uploadResult.id;
           }).catch(uploadError => {
             console.warn('⚠️ Upload en background falló:', uploadError.message);
           });
         }
-        
-        console.log('🎬 Usando subtítulos secuenciales para video...');
-        result = await translatorService.generateSequentialSubtitles(
-          capturedMedia.data, 
-          capturedMedia.type
-        );
         
         // Navegar directamente al home con los subtítulos secuenciales
         if (result && result.success) {
