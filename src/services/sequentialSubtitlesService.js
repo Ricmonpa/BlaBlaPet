@@ -288,31 +288,29 @@ class SequentialSubtitlesService {
         
         console.log(`📸 Analizando frame ${i + 1}/${frames.length}: ${timestamp} (${frame.timeSeconds}s)`);
         
-        // Prompt específico para este frame con MÁXIMA honestidad
-        const framePrompt = `Analiza esta imagen específica de un video de mascota tomada en el momento ${timestamp}.
+        // TU PROMPT ORIGINAL RESTAURADO - Experto en lenguaje corporal canino
+        const framePrompt = `Eres un analista de lenguaje corporal canino de nivel experto. Tu tarea es analizar esta imagen específica de un video tomada en el momento ${timestamp} y generar una traducción experta del comportamiento del perro.
 
-REGLAS ABSOLUTAS DE HONESTIDAD:
-- Describe ÚNICAMENTE lo que está VISIBLE en esta imagen específica
-- NO inventes, NO asumas, NO extrapoles comportamientos
-- Si el animal está inmóvil, di "El animal está inmóvil"
-- Si no puedes ver la cara, di "No se puede ver la expresión facial"
-- Si la imagen es borrosa, di "La imagen no es clara"
-- Si no hay actividad visible, di "No hay actividad visible"
-- NUNCA uses frases como "parece que", "probablemente", "podría estar"
+Proceso de pensamiento:
+1. Observa la imagen y analiza la postura o acción del perro en este momento específico.
+2. Genera una traducción técnica detallada basada en tu expertise en comportamiento canino.
+3. Genera una traducción emocional amigable que represente lo que el perro estaría "diciendo".
+4. Formatea la respuesta como un objeto JSON con 'traduccion_tecnica' y 'traduccion_emocional'.
 
-Describe SOLO lo observable:
-- Postura exacta del animal (solo lo que ves)
-- Partes del cuerpo visibles y su posición
-- Objetos o elementos visibles en la escena
-- Ubicación del animal en el encuadre
+Como experto en lenguaje corporal canino, interpreta:
+- Posturas corporales y su significado
+- Expresiones faciales y emociones
+- Movimientos de cola, orejas, y cuerpo
+- Intenciones y estados emocionales del perro
+- Comunicación no verbal canina
 
 Responde en formato JSON:
 {
-  "traduccion_tecnica": "Descripción objetiva de lo visible sin interpretaciones",
-  "traduccion_emocional": "Traducción basada ÚNICAMENTE en evidencia visual clara"
+  "traduccion_tecnica": "Análisis experto del comportamiento canino observado en este momento",
+  "traduccion_emocional": "Lo que el perro estaría 'diciendo' basado en su lenguaje corporal"
 }
 
-CRÍTICO: Si no hay suficiente información visual clara, responde con null en ambos campos.`;
+Usa tu expertise completo en comportamiento canino para interpretar este momento específico del video.`;
 
         try {
           const result = await thoughtModelService.model.generateContent([
@@ -342,6 +340,14 @@ CRÍTICO: Si no hay suficiente información visual clara, responde con null en a
 
           // ACEPTAR TODO EL CONTENIDO - No hay contenido inválido
           if (frameAnalysis && frameAnalysis.traduccion_tecnica && frameAnalysis.traduccion_emocional) {
+            
+            // RECHAZAR frames con "null" - No engañar al usuario
+            if (frameAnalysis.traduccion_emocional === "null" || frameAnalysis.traduccion_emocional === null ||
+                frameAnalysis.traduccion_tecnica === "null" || frameAnalysis.traduccion_tecnica === null) {
+              console.log(`🚫 FRAME ${i + 1} - Gemini respondió "null", RECHAZANDO para no engañar al usuario`);
+              continue; // Saltar este frame
+            }
+            
             console.log(`🔍 FRAME ${i + 1} RESPUESTA GEMINI:`, {
               tecnica: frameAnalysis.traduccion_tecnica,
               emocional: frameAnalysis.traduccion_emocional
@@ -357,7 +363,7 @@ CRÍTICO: Si no hay suficiente información visual clara, responde con null en a
               frameIndex: i,
               realTime: frame.timeSeconds
             });
-            console.log(`✅ Frame ${i + 1} ACEPTADO - TODO CONTENIDO ES VÁLIDO`);
+            console.log(`✅ Frame ${i + 1} ACEPTADO - CONTENIDO REAL DE GEMINI`);
           } else {
             console.log(`🔍 FRAME ${i + 1} RESPUESTA INCOMPLETA:`, frameAnalysis);
             console.warn(`⚠️ Frame ${i + 1} no tiene traduccion_tecnica o traduccion_emocional`);
