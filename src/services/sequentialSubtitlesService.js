@@ -37,55 +37,9 @@ class SequentialSubtitlesService {
       }
     }
 
-    const prompt = `Eres un analista de lenguaje corporal canino de nivel experto. Tu tarea es analizar un ${mediaType} y generar una serie de subtítulos en tiempo real, divididos por momentos clave en el comportamiento del perro.
-
-Proceso de pensamiento:
-1. Observa el ${mediaType} y divídelo en segmentos lógicos, donde cada segmento representa un cambio significativo en la postura o acción del perro.
-2. Para cada segmento, identifica la marca de tiempo (ej. 00:03, 00:08, etc.).
-3. Genera una traducción técnica detallada y una traducción emocional amigable para ese segmento específico.
-4. Formatea la respuesta como una lista de objetos JSON, donde cada objeto contiene 'timestamp', 'traduccion_tecnica' y 'traduccion_emocional'.
-
-Ejemplo de formato de salida:
-[
-  {
-    "timestamp": "00:00 - 00:05",
-    "traduccion_tecnica": "El perro se encuentra en una postura de juego, agitando un juguete de un lado a otro. Este comportamiento indica una alta energía y excitación.",
-    "traduccion_emocional": "¡Guau! ¡Miren mi juguete! ¡Qué divertido es!"
-  },
-  {
-    "timestamp": "00:06 - 00:10",
-    "traduccion_tecnica": "El perro baja el pecho en una clara reverencia de juego, mirando hacia la cámara. Esta es una invitación directa a la interacción.",
-    "traduccion_emocional": "¡Mira lo que hago! ¡Ven a jugar conmigo, por favor!"
-  }
-]
-
-IMPORTANTE: 
-- Analiza el ${mediaType} completo y divide en 6-12 momentos clave
-- Cada momento debe ser significativo y diferente del anterior
-- ${isLongVideo ? '**CRÍTICO: Este video es LARGO - DEBES cubrir TODA la duración del video**' : 'Los timestamps deben ser realistas'}
-- Las traducciones técnicas deben ser precisas y educativas
-- Las traducciones emocionales deben ser divertidas y expresivas
-
-**DETECCIÓN DE QUIETUD:**
-- Si el perro se queda quieto o inmóvil, interpreta esto como comunicación:
-  * "Estoy observando y procesando la situación"
-  * "Me desinteresé de la actividad anterior" 
-  * "Estoy en modo de espera o descanso"
-  * "Necesito un momento para relajarme"
-  * "Estoy evaluando si continuar o cambiar de actividad"
-- Incluye estos momentos de quietud como subtítulos válidos
-
-${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
-- Este video tiene más de 15 segundos de duración
-- DEBES generar subtítulos que cubran TODA la duración del video
-- NO te limites a los primeros 13-15 segundos
-- Genera timestamps que lleguen hasta el final del video
-- Incluye momentos de transición, cambios de comportamiento y evolución
-- Si el video dura 37 segundos, tus timestamps deben llegar hasta 00:37
-- Si el video dura 60 segundos, tus timestamps deben llegar hasta 01:00
-- ANALIZA TODO EL CONTENIDO TEMPORAL DEL VIDEO` : ''}
-
-- Responde SOLO con el JSON, sin texto adicional`;
+    // ELIMINADO: El prompt anterior era una mentira gigante que pedía análisis completo basado en un thumbnail
+    // Ahora SOLO usamos análisis multi-frame real
+    console.log('🚫 PROMPT FALSO ELIMINADO - Solo análisis multi-frame real permitido');
 
     try {
       // Usar thoughtModelService pero con el prompt específico para subtítulos secuenciales
@@ -111,99 +65,15 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
       // Preparar media para Gemini
       const mediaPart = await this.prepareMediaForGemini(mediaData, mediaType);
       
-      // Si tenemos múltiples frames reales, usar análisis multi-frame
+      // SOLO análisis multi-frame real - NO más thumbnails falsos
       if (mediaPart.isMultiFrame && mediaPart.multiFrameData) {
         console.log('🎬 Usando análisis multi-frame REAL con', mediaPart.multiFrameData.length, 'frames');
-        return await this.generateSubtitlesFromRealFrames(mediaPart.multiFrameData, prompt);
+        return await this.generateSubtitlesFromRealFrames(mediaPart.multiFrameData);
       }
       
-      // Fallback: usar método tradicional
-      const result = await thoughtModelService.model.generateContent([
-        { text: prompt },
-        { inlineData: mediaPart.inlineData }
-      ]);
-      
-      const response = await result.response;
-      const text = response.text();
-      
-      // Intentar parsear la respuesta como JSON
-      try {
-        // Limpiar markdown si existe
-        let cleanText = text.trim();
-        if (cleanText.startsWith('```json')) {
-          cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        } else if (cleanText.startsWith('```')) {
-          cleanText = cleanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
-        }
-        
-        const jsonMatch = cleanText.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const subtitles = JSON.parse(jsonMatch[0]);
-          
-          // Validar que sea un array con la estructura correcta
-          if (Array.isArray(subtitles) && subtitles.length > 0) {
-            // Obtener duración real del video para post-procesamiento
-            let realVideoDuration = 0;
-            try {
-              const videoBlob = mediaData instanceof Blob ? mediaData : await fetch(mediaData).then(r => r.blob());
-              realVideoDuration = await this.getVideoDuration(videoBlob);
-              console.log(`🎬 Duración real del video: ${realVideoDuration}s`);
-            } catch (error) {
-              console.warn('⚠️ No se pudo obtener duración real del video');
-            }
-
-            // VALIDACIÓN ESTRICTA: Solo subtítulos con contenido real
-            const validatedSubtitles = subtitles
-              .filter(subtitle => subtitle.traduccion_tecnica && subtitle.traduccion_emocional)
-              .map((subtitle, index) => ({
-                id: `subtitle_${index + 1}`,
-                timestamp: subtitle.timestamp,
-                traduccion_tecnica: subtitle.traduccion_tecnica,
-                traduccion_emocional: subtitle.traduccion_emocional,
-                confidence: 85 + Math.random() * 15, // 85-100%
-                source: 'thought_model_sequential'
-              }));
-
-            if (validatedSubtitles.length === 0) {
-              throw new Error('No se generaron subtítulos válidos - rechazando contenido falso');
-            }
-
-            // POST-PROCESAMIENTO CRÍTICO: Asegurar cobertura completa del video
-            const processedSubtitles = this.ensureFullVideoCoverage(validatedSubtitles, realVideoDuration);
-            const finalDuration = this.calculateTotalDuration(processedSubtitles);
-            
-            // VALIDACIÓN FINAL HONESTA: Solo aceptar si hay contenido real suficiente
-            const coveragePercentage = realVideoDuration > 0 ? (finalDuration / realVideoDuration) * 100 : 100;
-            
-            if (coveragePercentage < 50) {
-              console.error(`❌ COBERTURA FINAL INSUFICIENTE: ${coveragePercentage.toFixed(1)}% - RECHAZANDO`);
-              throw new Error(`Análisis insuficiente: solo ${coveragePercentage.toFixed(1)}% del video tiene contenido real`);
-            }
-            
-            if (coveragePercentage < 80) {
-              console.warn(`⚠️ Cobertura parcial: ${coveragePercentage.toFixed(1)}% del video analizado`);
-            }
-            
-            console.log(`✅ COBERTURA FINAL VALIDADA: ${coveragePercentage.toFixed(1)}% del video (${finalDuration}s de ${realVideoDuration}s)`);
-
-            return {
-              subtitles: processedSubtitles,
-              totalDuration: finalDuration,
-              success: true,
-              source: 'thought_model_sequential',
-              coverage: {
-                percentage: coveragePercentage,
-                videoDuration: realVideoDuration,
-                subtitlesDuration: finalDuration
-              }
-            };
-          }
-        }
-      } catch (parseError) {
-        console.warn('⚠️ Error parseando JSON de subtítulos secuenciales:', parseError);
-      }
-      
-      throw new Error('Error parseando respuesta de subtítulos secuenciales');
+      // NO HAY FALLBACK - Si no hay frames reales, fallar honestamente
+      throw new Error('No hay frames reales disponibles - rechazando análisis basado en thumbnail único');
+      // CÓDIGO ELIMINADO: Ya no se usa análisis basado en thumbnail único
       
     } catch (error) {
       console.error('❌ Error generando subtítulos secuenciales:', error);
@@ -233,14 +103,16 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
           };
         }
       } else if (mediaType === 'video') {
+        // USAR ANÁLISIS MULTI-FRAME REAL en lugar de thumbnail falso
         const videoBlob = mediaData instanceof Blob ? mediaData : await fetch(mediaData).then(r => r.blob());
-        const thumbnail = await this.createVideoThumbnail(videoBlob);
+        
+        // Generar frames reales del video
+        const frames = await thoughtModelService.createMultipleVideoFrames(videoBlob, 8);
         
         return {
-          inlineData: {
-            data: thumbnail,
-            mimeType: 'image/jpeg'
-          }
+          isMultiFrame: true,
+          multiFrameData: frames,
+          inlineData: null // NO usar thumbnail falso
         };
       }
       
@@ -265,30 +137,7 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
     });
   }
 
-  // Crear thumbnail de video
-  async createVideoThumbnail(videoBlob) {
-    return new Promise((resolve, reject) => {
-      const video = document.createElement('video');
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      video.onloadedmetadata = () => {
-        video.currentTime = video.duration * 0.25;
-      };
-      
-      video.onseeked = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        
-        const thumbnail = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-        resolve(thumbnail);
-      };
-      
-      video.onerror = reject;
-      video.src = URL.createObjectURL(videoBlob);
-    });
-  }
+  // FUNCIÓN ELIMINADA: No más thumbnails falsos
 
   // Calcular duración total basada en los timestamps
   calculateTotalDuration(subtitles) {
@@ -305,8 +154,9 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
       return minutes * 60 + seconds;
     }
     
-    // Fallback: estimar basado en el número de subtítulos
-    return subtitles.length * 5;
+    // NO HAY FALLBACK FALSO - Si no se puede calcular, devolver 0
+    console.warn('⚠️ No se pudo calcular duración real de subtítulos');
+    return 0;
   }
 
   // Obtener subtítulo actual basado en el tiempo transcurrido
@@ -315,7 +165,7 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
     
     for (const subtitle of subtitles) {
       const timeRange = this.parseTimestamp(subtitle.timestamp);
-      if (currentTime >= timeRange.start && currentTime <= timeRange.end) {
+      if (timeRange && currentTime >= timeRange.start && currentTime <= timeRange.end) {
         return subtitle;
       }
     }
@@ -339,7 +189,9 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
       };
     }
     
-    return { start: 0, end: 5 }; // Fallback
+    // NO HAY FALLBACK FALSO - Si no se puede parsear, devolver null
+    console.warn('⚠️ No se pudo parsear timestamp:', timestamp);
+    return null;
   }
 
   // Obtener progreso de subtítulos (0-1)
@@ -406,8 +258,8 @@ ${isLongVideo ? `**INSTRUCCIONES CRÍTICAS PARA VIDEO LARGO:**
   // FUNCIÓN ELIMINADA: No más generación de contenido falso
   // El sistema ahora solo acepta análisis real de frames reales
 
-  // Generar subtítulos desde frames reales del video (MEJORADO PARA HONESTIDAD)
-  async generateSubtitlesFromRealFrames(frames, basePrompt) {
+  // Generar subtítulos desde frames reales del video (SOLO ANÁLISIS HONESTO)
+  async generateSubtitlesFromRealFrames(frames) {
     try {
       console.log('🎬 Analizando', frames.length, 'frames reales del video...');
       
@@ -509,15 +361,15 @@ CRÍTICO: Si no hay suficiente información visual clara, responde con null en a
           } else {
             console.warn(`⚠️ Frame ${i + 1} no generó contenido válido, OMITIENDO`);
           }
-
-          successfulAnalyses++;
-          console.log(`✅ Frame ${i + 1} analizado honestamente: "${frameAnalysis.traduccion_emocional?.substring(0, 50)}..."`);
           
         } catch (error) {
           console.error(`❌ Error analizando frame ${i + 1}:`, error);
           console.warn(`⚠️ Frame ${i + 1} falló completamente, NO se creará subtítulo falso`);
           // NO crear subtítulos falsos cuando hay errores
         }
+      }
+
+      successfulAnalyses = subtitles.length; // Contar solo los subtítulos realmente creados
       }
 
       console.log(`✅ Análisis honesto completado: ${successfulAnalyses}/${frames.length} frames analizados exitosamente`);

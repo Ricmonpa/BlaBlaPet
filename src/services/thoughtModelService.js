@@ -205,13 +205,9 @@ Responde en formato JSON con la siguiente estructura:
         console.log('🎬 Extrayendo frames reales del video para análisis honesto...');
         const frames = await this.createMultipleVideoFrames(videoBlob, 8);
         
-        // Retornar todos los frames para análisis completo
+        // Retornar SOLO frames reales - NO thumbnail único
         return {
-          inlineData: {
-            data: frames[0].base64,
-            mimeType: 'image/jpeg'
-          },
-          // Frames adicionales con timestamps reales
+          inlineData: null, // NO usar thumbnail único
           multiFrameData: frames,
           isMultiFrame: true
         };
