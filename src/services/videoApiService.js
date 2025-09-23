@@ -1,7 +1,7 @@
 /**
- * Servicio de API para videos - Híbrido JSON Server/Vercel Blob
+ * Servicio de API para videos - Híbrido JSON Server/Cloudinary
  * Desarrollo: JSON Server (localhost:3002)
- * Producción: Vercel Blob (/api/videos)
+ * Producción: Cloudinary + API endpoints
  */
 
 class VideoApiService {
@@ -15,14 +15,14 @@ class VideoApiService {
        window.location.hostname.includes('.github.io') ||
        window.location.hostname.includes('herokuapp.com'));
     
-    // En desarrollo usar JSON Server, en producción usar Vercel Blob
+    // En desarrollo usar JSON Server, en producción usar Cloudinary + API
     if (isProduction) {
-      // Producción: Vercel Blob - SIEMPRE SEGURO
-      this.baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://blabla-pet-web.vercel.app';
+      // Producción: Cloudinary + API endpoints
+      this.baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://blabla-pet-ai.vercel.app';
       this.videosEndpoint = `${this.baseUrl}/api/videos`;
       this.usersEndpoint = `${this.baseUrl}/api/users`;
       this.sharesEndpoint = `${this.baseUrl}/api/shares`;
-      console.log('🔧 VideoApiService configurado para PRODUCCIÓN (Vercel Blob):', this.baseUrl);
+      console.log('🔧 VideoApiService configurado para PRODUCCIÓN (Cloudinary):', this.baseUrl);
     } else {
       // Desarrollo: JSON Server - Solo en localhost
       this.baseUrl = 'http://localhost:3002';
@@ -95,7 +95,7 @@ class VideoApiService {
   }
 
   /**
-   * Limpiar URLs blob expiradas del localStorage
+   * Limpiar URLs blob expiradas y URLs de Vercel Blob no válidas del localStorage
    * @returns {Array} Videos locales válidos
    */
   cleanExpiredBlobUrls() {
@@ -107,8 +107,10 @@ class VideoApiService {
       localVideos.forEach(video => {
         // Verificar si es una URL blob
         const isBlobUrl = video.mediaUrl && video.mediaUrl.startsWith('blob:');
+        // Verificar si es una URL de Vercel Blob (que puede haber expirado)
+        const isVercelBlobUrl = video.mediaUrl && video.mediaUrl.includes('blob.vercel-storage.com');
         
-        // Solo remover URLs blob si el video es muy viejo (más de 1 hora)
+        // Remover URLs blob expiradas (más de 1 hora)
         if (isBlobUrl) {
           const videoDate = new Date(video.createdAt);
           const now = new Date();
@@ -122,20 +124,26 @@ class VideoApiService {
             console.log('⏰ Manteniendo video blob reciente:', video.id, `(${ageInHours.toFixed(1)}h)`);
             validVideos.push(video);
           }
-        } else {
-          // Mantener videos con URLs válidas (Vercel Blob, etc.)
+        } 
+        // Remover URLs de Vercel Blob (ya no funcionan después de la migración)
+        else if (isVercelBlobUrl) {
+          console.log('🚫 Removiendo video con URL de Vercel Blob (migrado a Cloudinary):', video.id);
+          removedCount++;
+        } 
+        // Mantener videos con URLs válidas (Cloudinary, etc.)
+        else {
           validVideos.push(video);
         }
       });
       
       if (removedCount > 0) {
-        console.log(`🧹 Limpiados ${removedCount} videos con URLs blob expiradas`);
+        console.log(`🧹 Limpiados ${removedCount} videos con URLs expiradas o obsoletas`);
         localStorage.setItem('localVideos', JSON.stringify(validVideos));
       }
       
       return validVideos;
     } catch (error) {
-      console.error('❌ Error limpiando URLs blob expiradas:', error);
+      console.error('❌ Error limpiando URLs expiradas:', error);
       return [];
     }
   }

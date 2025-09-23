@@ -206,16 +206,10 @@ const SharedFeed = ({ onVideoSelect }) => {
       }
     }
     
-    // Si es una URL de Vercel Blob, verificar accesibilidad
+    // Si es una URL de Vercel Blob, excluir (ya no funcionan después de la migración)
     if (mediaUrl && mediaUrl.includes('blob.vercel-storage.com')) {
-      const isAccessible = await testVercelBlobUrl(mediaUrl);
-      if (!isAccessible) {
-        console.log('🚫 URL de Vercel Blob no accesible:', video.id);
-        return false;
-      } else {
-        console.log('✅ URL de Vercel Blob accesible:', video.id);
-        return true;
-      }
+      console.log('🚫 Excluyendo video con URL de Vercel Blob (migrado a Cloudinary):', video.id);
+      return false;
     }
     
     // URLs válidas: HTTP/HTTPS, etc.
