@@ -160,14 +160,23 @@ const SharedFeed = ({ onVideoSelect }) => {
     }
   };
 
-  // Verificar si un video tiene una URL válida (no blob expirada)
+  // Verificar si un video tiene una URL válida
   const isValidVideoUrl = (video) => {
     const mediaUrl = video.mediaUrl || video.thumbnailUrl;
     
-    // Si es una URL blob, considerarla inválida (puede haber expirado)
+    // Si es una URL blob, verificar si es reciente (menos de 1 hora)
     if (mediaUrl && mediaUrl.startsWith('blob:')) {
-      console.log('🚫 Excluyendo video con URL blob:', video.id);
-      return false;
+      const videoDate = new Date(video.createdAt);
+      const now = new Date();
+      const ageInHours = (now - videoDate) / (1000 * 60 * 60);
+      
+      if (ageInHours > 1) {
+        console.log('🚫 Excluyendo video con URL blob expirada:', video.id, `(${ageInHours.toFixed(1)}h)`);
+        return false;
+      } else {
+        console.log('⏰ Permitiendo video blob reciente:', video.id, `(${ageInHours.toFixed(1)}h)`);
+        return true;
+      }
     }
     
     // URLs válidas: Vercel Blob, HTTP/HTTPS, etc.

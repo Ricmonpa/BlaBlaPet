@@ -108,10 +108,20 @@ class VideoApiService {
         // Verificar si es una URL blob
         const isBlobUrl = video.mediaUrl && video.mediaUrl.startsWith('blob:');
         
+        // Solo remover URLs blob si el video es muy viejo (más de 1 hora)
         if (isBlobUrl) {
-          // Las URLs blob expiran, así que las removemos
-          console.log('🚫 Removiendo video con URL blob expirada:', video.id);
-          removedCount++;
+          const videoDate = new Date(video.createdAt);
+          const now = new Date();
+          const ageInHours = (now - videoDate) / (1000 * 60 * 60);
+          
+          if (ageInHours > 1) {
+            console.log('🚫 Removiendo video con URL blob expirada (más de 1 hora):', video.id);
+            removedCount++;
+          } else {
+            // Mantener videos blob recientes (menos de 1 hora)
+            console.log('⏰ Manteniendo video blob reciente:', video.id, `(${ageInHours.toFixed(1)}h)`);
+            validVideos.push(video);
+          }
         } else {
           // Mantener videos con URLs válidas (Vercel Blob, etc.)
           validVideos.push(video);

@@ -43,15 +43,28 @@ const PetCard = ({ post }) => {
           return;
         }
         
-        // Solo intentar recargar una vez para URLs válidas
-        if (!video.hasAttribute('data-retry') && !isBlobUrl) {
+        // Verificar si es un video de Vercel Blob que falla
+        const isVercelBlob = video.src && video.src.includes('blob.vercel-storage.com');
+        const hasRetryAttempts = video.getAttribute('data-retry-count') || '0';
+        const retryCount = parseInt(hasRetryAttempts);
+        
+        if (isVercelBlob && retryCount < 1) {
+          console.log(`🔄 Reintentando video de Vercel Blob (intento ${retryCount + 1}/1)...`);
+          video.setAttribute('data-retry-count', (retryCount + 1).toString());
+          setTimeout(() => {
+            video.load();
+          }, 3000); // Esperar más tiempo para videos de Vercel
+        } else if (isVercelBlob && retryCount >= 1) {
+          console.log('🚫 Video de Vercel Blob falló después de 1 intento, ocultando');
+          video.style.display = 'none';
+        } else if (!isBlobUrl && !video.hasAttribute('data-retry')) {
           console.log('🔄 Intentando recargar video...');
           video.setAttribute('data-retry', 'true');
           setTimeout(() => {
             video.load();
           }, 1000);
-        } else if (isBlobUrl) {
-          console.log('🚫 URL blob inválida, no reintentando');
+        } else {
+          console.log('🚫 Video no se puede cargar, ocultando');
           video.style.display = 'none';
         }
       };
