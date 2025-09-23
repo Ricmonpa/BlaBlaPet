@@ -1,7 +1,7 @@
 import VideoCompressor from '../utils/videoCompressor.js';
 
 /**
- * Servicio para upload directo al Blob Store de Vercel
+ * Servicio para upload directo a Cloudinary
  * Con compresión agresiva como fallback para videos grandes
  */
 
@@ -11,88 +11,75 @@ class DirectBlobUploadService {
   }
 
   /**
-   * Obtener presigned URL para upload directo
+   * Subir archivo directamente a Cloudinary
    * @param {File} file - Archivo a subir
-   * @returns {Promise<Object>} URL de upload y metadata
+   * @param {Object} metadata - Metadata del archivo
+   * @returns {Promise<Object>} Resultado del upload
    */
-  async getUploadUrl(file) {
+  async uploadToCloudinary(file, metadata = {}) {
     try {
-      console.log('🔗 Obteniendo presigned URL para:', file.name);
+      console.log('📤 Subiendo archivo a Cloudinary...', file.name);
+      console.log('📁 Archivo:', { name: file.name, size: file.size, type: file.type });
+
+      const formData = new FormData();
+      formData.append('video', file);
       
-      // Enviar solo metadata, no el archivo
-      const response = await fetch(`${this.baseUrl}/api/get-upload-url`, {
+      // Agregar metadata como campos adicionales
+      if (metadata.petName) formData.append('petName', metadata.petName);
+      if (metadata.translation) formData.append('translation', metadata.translation);
+      if (metadata.emotionalDubbing) formData.append('emotionalDubbing', metadata.emotionalDubbing);
+      if (metadata.subtitles) formData.append('subtitles', JSON.stringify(metadata.subtitles));
+      if (metadata.totalDuration) formData.append('totalDuration', metadata.totalDuration);
+      if (metadata.isSequentialSubtitles) formData.append('isSequentialSubtitles', metadata.isSequentialSubtitles);
+      if (metadata.userId) formData.append('userId', metadata.userId);
+      if (metadata.isPublic !== undefined) formData.append('isPublic', metadata.isPublic);
+
+      const response = await fetch(`${this.baseUrl}/api/upload-video-cloudinary`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileName: file.name,
-          contentType: file.type,
-          fileSize: file.size
-        })
+        body: formData
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Error obteniendo presigned URL: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Error subiendo a Cloudinary: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Presigned URL obtenida:', result);
+      console.log('✅ Archivo subido exitosamente a Cloudinary:', result);
       
       return result;
     } catch (error) {
-      console.error('❌ Error obteniendo presigned URL:', error);
+      console.error('❌ Error subiendo a Cloudinary:', error);
       throw error;
     }
   }
 
   /**
-   * Subir archivo usando presigned URL de Vercel Blob
+   * Subir archivo usando Cloudinary (método principal)
    * @param {File} file - Archivo a subir
+   * @param {Object} metadata - Metadata del archivo
    * @returns {Promise<Object>} Resultado del upload
    */
-  async uploadFile(file) {
+  async uploadFile(file, metadata = {}) {
     try {
-      console.log('📤 Iniciando upload directo...', file.name);
+      console.log('📤 Iniciando upload a Cloudinary...', file.name);
       console.log('📁 Archivo:', { name: file.name, size: file.size, type: file.type });
 
-      // Obtener presigned URL
-      const uploadData = await this.getUploadUrl(file);
-      console.log('🔗 Presigned URL obtenida:', uploadData.uploadUrl);
-
-      // Subir archivo directamente usando PUT
-      console.log('📤 Subiendo archivo a Vercel Blob...');
-      const uploadResponse = await fetch(uploadData.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-          'Content-Length': file.size.toString(),
-          'x-content-length': file.size.toString(),
-          'Authorization': `Bearer ${uploadData.token}`,
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        console.error('❌ Error en upload:', errorText);
-        throw new Error(`Error subiendo archivo: ${uploadResponse.status} ${uploadResponse.statusText} - ${errorText}`);
-      }
-
-      console.log('✅ Archivo subido exitosamente a Vercel Blob');
+      // Usar el nuevo método de Cloudinary
+      const result = await this.uploadToCloudinary(file, metadata);
       
       return {
         success: true,
-        url: uploadData.url,
-        downloadUrl: uploadData.downloadUrl || uploadData.url,
-        pathname: uploadData.pathname,
+        url: result.url,
+        downloadUrl: result.url,
+        pathname: result.publicId,
         size: file.size,
         type: file.type,
+        cloudinary: result.cloudinary
       };
 
     } catch (error) {
-      console.error('❌ Error en upload directo:', error);
+      console.error('❌ Error en upload a Cloudinary:', error);
       throw error;
     }
   }
@@ -142,13 +129,13 @@ class DirectBlobUploadService {
         }
       }
 
-      // Intentar subir el archivo (comprimido o original)
+      // Intentar subir el archivo (comprimido o original) a Cloudinary
       let uploadResult;
       try {
-        uploadResult = await this.uploadFile(processedFile);
+        uploadResult = await this.uploadFile(processedFile, metadata);
       } catch (uploadError) {
         // Si falla el upload y no se había comprimido, intentar compresión
-        if (!wasCompressed && uploadError.message.includes('413')) {
+        if (!wasCompressed && (uploadError.message.includes('413') || uploadError.message.includes('too large'))) {
           console.log('🗜️ Upload falló por tamaño, forzando compresión...');
           
           try {
@@ -156,7 +143,7 @@ class DirectBlobUploadService {
               mode: 'aggressive' // Siempre agresivo en fallback
             });
             
-            uploadResult = await this.uploadFile(processedFile);
+            uploadResult = await this.uploadFile(processedFile, metadata);
             wasCompressed = true;
           } catch (fallbackError) {
             console.error('❌ Falló incluso con compresión máxima:', fallbackError);
@@ -167,55 +154,29 @@ class DirectBlobUploadService {
         }
       }
 
-      // Crear metadata del video
+      // El metadata ya viene del endpoint de Cloudinary, solo agregar información adicional
       const videoData = {
-        id: `video_${timestamp}_${Math.random().toString(36).slice(2, 8)}`,
-        petName: metadata.petName || 'Mascota',
-        translation: metadata.translation || '',
-        emotionalDubbing: metadata.emotionalDubbing || '',
-        mediaUrl: uploadResult.url,
-        mediaType: 'video',
-        thumbnailUrl: uploadResult.url,
-        userId: metadata.userId || 'user_anonymous',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        shareCount: 0,
-        likeCount: 0,
-        commentCount: 0,
-        isPublic: true,
-        tags: metadata.tags || [],
+        ...uploadResult.metadata, // Usar metadata de Cloudinary
+        cloudinary: uploadResult.cloudinary, // Información específica de Cloudinary
         metadata: {
-          duration: metadata.duration || 0,
+          ...uploadResult.metadata.metadata,
+          duration: metadata.duration || uploadResult.cloudinary?.duration || 0,
           fileSize: uploadResult.size,
           originalSize: videoFile.size,
           wasCompressed: wasCompressed,
           resolution: wasCompressed ? '480p' : (metadata.resolution || 'original'),
-          format: processedFile.type.includes('webm') ? 'webm' : 'mp4'
-        },
-        ...metadata
+          format: processedFile.type.includes('webm') ? 'webm' : 'mp4',
+          cloudinary: uploadResult.cloudinary
+        }
       };
 
-      // Guardar metadata en la base de datos
-      const response = await fetch(`${this.baseUrl}/api/videos`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(videoData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error guardando metadata: ${response.status} ${response.statusText}`);
-      }
-
-      const savedVideo = await response.json();
-      console.log('✅ Video y metadata guardados:', savedVideo.id);
+      console.log('✅ Video subido a Cloudinary exitosamente:', uploadResult.publicId);
       
       if (wasCompressed) {
         console.log('🗜️ Video fue comprimido para cumplir límites de tamaño');
       }
       
-      return savedVideo;
+      return videoData;
 
     } catch (error) {
       console.error('❌ Error subiendo video:', error);

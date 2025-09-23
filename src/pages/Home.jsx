@@ -106,84 +106,32 @@ const convertBlobToFile = async (blobData, mediaType) => {
       }));
     }
     
-    const signedUrlResponse = await fetch('/api/get-upload-url', {
-      method: 'POST',
-      body: formData  // Enviar FormData, no JSON
-    });
-
-    if (!signedUrlResponse.ok) {
-      const errorData = await signedUrlResponse.text();
-      console.error('❌ Error obteniendo signed URL:', signedUrlResponse.status, errorData);
-      throw new Error(`Error obteniendo signed URL: ${signedUrlResponse.status} - ${errorData}`);
-    }
-
-    const signedUrlData = await signedUrlResponse.json();
-    console.log('✅ Token temporal obtenido:', signedUrlData.token);
-    console.log('✅ Upload URL obtenida:', signedUrlData.uploadUrl);
-    console.log('📝 Filename:', signedUrlData.filename);
-
-    // Paso 2: Upload directo a Vercel Blob usando la signed URL
-    console.log('🚀 Subiendo archivo directamente a Vercel Blob...');
-    console.log('⏰ Timestamp inicio upload directo:', new Date().toISOString());
+    // NUEVO: Upload directo a Cloudinary
+    console.log('🚀 Subiendo archivo directamente a Cloudinary...');
+    console.log('⏰ Timestamp inicio upload Cloudinary:', new Date().toISOString());
     
-    const directUploadResponse = await fetch(signedUrlData.uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type,
-        'Content-Length': file.size.toString(),
-        'x-vercel-blob-token': signedUrlData.token,
-        'Cache-Control': 'public, max-age=31536000', // Cache por 1 año
-        'Access-Control-Allow-Origin': '*', // CORS para reproducción
-        'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-vercel-blob-token'
-      }
-    });
-
-    if (!directUploadResponse.ok) {
-      const errorData = await directUploadResponse.text();
-      console.error('❌ Error en upload directo:', directUploadResponse.status, errorData);
-      throw new Error(`Error en upload directo: ${directUploadResponse.status} - ${errorData}`);
-    }
-
-    console.log('✅ Upload directo exitoso');
-    console.log('⏰ Timestamp fin upload directo:', new Date().toISOString());
-    console.log('🔗 URL del video subido:', signedUrlData.uploadUrl);
-
-    // Paso 3: Guardar metadata en la base de datos
-    console.log('💾 Guardando metadata en base de datos...');
-    const metadataResponse = await fetch('/api/save-video-metadata', {
+    const cloudinaryResponse = await fetch('/api/upload-video-cloudinary', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        filename: signedUrlData.filename,
-        videoUrl: signedUrlData.uploadUrl,
-        petName: location.state?.translation?.split(' ')[0] || 'Video Subido',
-        translation: location.state?.translation || 'Análisis completado',
-        emotionalDubbing: location.state?.output_emocional || '',
-        subtitles: location.state?.subtitles || [],
-        totalDuration: location.state?.totalDuration || 0,
-        isSequentialSubtitles: location.state?.isSequentialSubtitles || false,
-        userId: 'uploaded_user',
-        isPublic: true
-      })
+      body: formData
     });
 
-    if (!metadataResponse.ok) {
-      const errorData = await metadataResponse.text();
-      console.error('❌ Error guardando metadata:', metadataResponse.status, errorData);
-      throw new Error(`Error guardando metadata: ${metadataResponse.status} - ${errorData}`);
+    if (!cloudinaryResponse.ok) {
+      const errorData = await cloudinaryResponse.text();
+      console.error('❌ Error en upload a Cloudinary:', cloudinaryResponse.status, errorData);
+      throw new Error(`Error en upload a Cloudinary: ${cloudinaryResponse.status} - ${errorData}`);
     }
 
-    const metadataData = await metadataResponse.json();
-    console.log('✅ Metadata guardada exitosamente');
+    const cloudinaryData = await cloudinaryResponse.json();
+    console.log('✅ Upload a Cloudinary exitoso');
+    console.log('⏰ Timestamp fin upload Cloudinary:', new Date().toISOString());
+    console.log('🔗 URL del video subido:', cloudinaryData.url);
+    console.log('📝 Public ID:', cloudinaryData.publicId);
 
     const uploadData = {
-      url: signedUrlData.uploadUrl,
-      filename: signedUrlData.filename,
-      metadata: metadataData.metadata
+      url: cloudinaryData.url,
+      filename: cloudinaryData.filename,
+      metadata: cloudinaryData.metadata,
+      cloudinary: cloudinaryData.cloudinary
     };
 
     const serverUrl = uploadData.url;
