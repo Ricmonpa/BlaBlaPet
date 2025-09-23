@@ -326,12 +326,13 @@ Responde en formato JSON:
           console.log(`✅ Frame ${i + 1} analizado`);
         }
         
-        // Combinar análisis de frames para crear traducción secuencial
-        const combinedAnalysis = this.combineFrameAnalyses(frameAnalyses);
+        // Usar directamente el análisis del primer frame (más confiable)
+        // El modelo de pensamiento ya analiza el comportamiento completo
+        const primaryAnalysis = frameAnalyses[0];
         
         clearTimeout(sequenceTimeout);
-        console.log('✅ Análisis de secuencia completado:', combinedAnalysis);
-        return combinedAnalysis;
+        console.log('✅ Análisis de secuencia completado (usando modelo de pensamiento):', primaryAnalysis);
+        return primaryAnalysis;
         
       } catch (error) {
         clearTimeout(sequenceTimeout);
@@ -425,85 +426,9 @@ Responde en formato JSON:
     });
   }
 
-  // Combinar análisis de múltiples frames
-  combineFrameAnalyses(frameAnalyses) {
-    // Detectar patrones de comunicación
-    const hasPlayBow = frameAnalyses.some(analysis => 
-      analysis.behavior.toLowerCase().includes('play bow') || 
-      analysis.behavior.toLowerCase().includes('pecho bajo') ||
-      analysis.behavior.toLowerCase().includes('patas extendidas') ||
-      analysis.behavior.toLowerCase().includes('cola arriba')
-    );
-    
-    const hasTailWagging = frameAnalyses.some(analysis =>
-      analysis.behavior.toLowerCase().includes('cola') ||
-      analysis.behavior.toLowerCase().includes('agitada') ||
-      analysis.behavior.toLowerCase().includes('movimiento')
-    );
-    
-    const hasPawRaising = frameAnalyses.some(analysis => 
-      analysis.behavior.toLowerCase().includes('pata') || 
-      analysis.behavior.toLowerCase().includes('manotazo') ||
-      analysis.behavior.toLowerCase().includes('levantada')
-    );
-    
-    const hasIntenseGaze = frameAnalyses.some(analysis =>
-      analysis.behavior.toLowerCase().includes('mirada') ||
-      analysis.behavior.toLowerCase().includes('ojos') ||
-      analysis.behavior.toLowerCase().includes('atento')
-    );
-    
-    const hasMouthOpen = frameAnalyses.some(analysis =>
-      analysis.behavior.toLowerCase().includes('boca') ||
-      analysis.behavior.toLowerCase().includes('lengua') ||
-      analysis.behavior.toLowerCase().includes('bab')
-    );
-    
-    // Determinar traducción basada en patrones detectados
-    let translation = "¡Hola humano! Estoy aquí contigo, ¿qué tal estás?";
-    let emotion = "feliz";
-    let confidence = 70;
-    
-    if (hasPlayBow) {
-      translation = "¡Oye humano! Baja y juega conmigo. No es pelea, es diversión. Dale, corre, salta, tráeme la pelota… ¡quiero fiesta contigo!";
-      emotion = "juguetón";
-      confidence = 95;
-    } else if (hasTailWagging && !hasPawRaising) {
-      translation = "¡Estoy súper feliz! ¡Mira mi cola! ¡Esto es pura emoción y alegría!";
-      emotion = "feliz";
-      confidence = 90;
-    } else if (hasPawRaising && hasIntenseGaze) {
-      translation = "¡Dame! ¡Dame! Ya di la pata, ¿no ves? ¡Quiero mi snack!";
-      emotion = "exigente";
-      confidence = 85;
-    } else if (hasIntenseGaze && hasMouthOpen) {
-      translation = "¡Comida, comida! ¡Quiero mi premio! ¡Dame algo rico!";
-      emotion = "expectante";
-      confidence = 80;
-    } else if (hasPawRaising) {
-      translation = "Mira, te doy la pata. ¿Me das algo rico? ¡Estoy listo para lo que sea!";
-      emotion = "insistente";
-      confidence = 75;
-    }
-    
-    // Si hay múltiples frames con diferentes emociones, crear secuencia
-    const emotions = frameAnalyses.map(f => f.emotion);
-    if (emotions.includes('juguetón') && emotions.includes('feliz')) {
-      translation = "¡Juguemos! ¡Estoy súper feliz! ¡Dale, corre, salta, tráeme la pelota!";
-    } else if (emotions.includes('exigente') && emotions.includes('feliz')) {
-      translation = "¡Dame! ¡Dame! ... ¡Uy que rico! ¡Estoy súper feliz!";
-    }
-    
-    return {
-      translation,
-      confidence,
-      emotion,
-      behavior: `Secuencia detectada: ${frameAnalyses.map(f => f.behavior).join(' → ')}`,
-      context: "Comunicación secuencial detectada - expresando emociones y necesidades",
-      success: true,
-      frameAnalyses: frameAnalyses
-    };
-  }
+  // FUNCIÓN ELIMINADA: combineFrameAnalyses
+  // Esta función sobrescribía las respuestas del modelo de pensamiento con traducciones hardcodeadas
+  // Ahora usamos directamente las respuestas inteligentes del modelo
 
   // Análisis de fallback para video (frame único)
   async analyzeSingleVideoFrame(videoBlob, prompt) {

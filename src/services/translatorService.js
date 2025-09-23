@@ -11,97 +11,9 @@ class TranslatorService {
     this.useSequentialSubtitles = true; // Usar subtítulos secuenciales por defecto
   }
 
-  // Detectar patrones específicos de comunicación de recompensa
-  detectRewardPattern(analysis) {
-    const behavior = analysis.behavior?.toLowerCase() || '';
-    const emotion = analysis.emotion?.toLowerCase() || '';
-    const context = analysis.context?.toLowerCase() || '';
-    
-    // NO detectar patrones de recompensa si hay señales de agresión
-    const aggressivePatterns = [
-      'agresivo', 'agresión', 'defensa', 'amenaza', 'gruñido', 'dientes',
-      'advertencia', 'dominancia', 'intimidación', 'miedo', 'tenso'
-    ];
-    
-    const hasAggressiveSignals = aggressivePatterns.some(pattern => 
-      behavior.includes(pattern) || emotion.includes(pattern) || context.includes(pattern)
-    );
-    
-    // Si hay señales de agresión, NO detectar patrones de recompensa
-    if (hasAggressiveSignals) {
-      console.log('🚫 Señales de agresión detectadas, ignorando patrones de recompensa');
-      return null;
-    }
-    
-    // Patrones específicos de exigencia de recompensa
-    const pawRaisingPatterns = [
-      'pata levantada', 'manotazo', 'dar la pata', 'pata en el aire',
-      'levantando pata', 'manotazos', 'patas levantadas'
-    ];
-    
-    const intenseGazePatterns = [
-      'mirada fija', 'ojos atentos', 'mirando intensamente', 'contacto visual',
-      'mirada directa', 'ojos bien abiertos', 'mirando fijamente'
-    ];
-    
-    const mouthOpenPatterns = [
-      'boca abierta', 'lengua visible', 'baba', 'humedad', 'salivación',
-      'hocico húmedo', 'boca ligeramente abierta'
-    ];
-    
-    const rewardContextPatterns = [
-      'esperando comida', 'esperando premio', 'esperando snack', 'recompensa',
-      'comida', 'snack', 'premio', 'alimento'
-    ];
-    
-    // Detectar patrones
-    const hasPawRaising = pawRaisingPatterns.some(pattern => behavior.includes(pattern));
-    const hasIntenseGaze = intenseGazePatterns.some(pattern => behavior.includes(pattern));
-    const hasMouthOpen = mouthOpenPatterns.some(pattern => behavior.includes(pattern));
-    const hasRewardContext = rewardContextPatterns.some(pattern => 
-      behavior.includes(pattern) || context.includes(pattern)
-    );
-    
-    // Determinar traducción específica
-    if (hasPawRaising && hasIntenseGaze && hasMouthOpen) {
-      return {
-        translation: "¡Dame! ¡Dame! Ya di la pata, ¿dónde está mi snack?",
-        confidence: 95,
-        emotion: "exigente",
-        pattern: "exigencia_completa"
-      };
-    } else if (hasPawRaising && hasIntenseGaze) {
-      return {
-        translation: "¡Comida, comida! ¡Mira cómo te doy la pata!",
-        confidence: 90,
-        emotion: "insistente",
-        pattern: "insistencia_con_pata"
-      };
-    } else if (hasIntenseGaze && hasMouthOpen) {
-      return {
-        translation: "¡Quiero mi premio! ¡Dame! ¡Dame!",
-        confidence: 85,
-        emotion: "expectante",
-        pattern: "expectativa_intensa"
-      };
-    } else if (hasPawRaising) {
-      return {
-        translation: "Mira, te doy la pata. ¿Me das algo rico?",
-        confidence: 80,
-        emotion: "solicitante",
-        pattern: "solicitud_con_pata"
-      };
-    } else if (hasRewardContext) {
-      return {
-        translation: "¡Comida! ¡Comida! ¡Comida!",
-        confidence: 75,
-        emotion: "deseoso",
-        pattern: "deseo_de_comida"
-      };
-    }
-    
-    return null; // No se detectó patrón específico
-  }
+  // FUNCIÓN ELIMINADA: detectRewardPattern
+  // Esta función sobrescribía las traducciones del modelo de pensamiento con patrones hardcodeados
+  // Ahora confiamos en la inteligencia del modelo para detectar patrones complejos
 
   // Generar subtítulos secuenciales para video
   async generateSequentialSubtitles(mediaData, mediaType = 'video') {
@@ -143,33 +55,8 @@ class TranslatorService {
           throw new Error('Modelo de Pensamiento no devolvió resultado válido');
         }
         
-        // Intentar detectar patrones específicos de recompensa
-        const rewardPattern = this.detectRewardPattern(thoughtResult);
-        
-        if (rewardPattern) {
-          console.log('🎯 Patrón de recompensa detectado:', rewardPattern.pattern);
-          
-          // Generar doblaje emocional
-          const emotionalDubbing = emotionalDubbingService.generateEmotionalDubbing(
-            rewardPattern.translation,
-            rewardPattern.emotion,
-            thoughtResult.context,
-            thoughtResult.behavior
-          );
-          
-          return {
-            ...thoughtResult,
-            translation: rewardPattern.translation,
-            emotionalDubbing: emotionalDubbing.emotionalDubbing,
-            emotionalTone: emotionalDubbing.tone,
-            emotionalStyle: emotionalDubbing.style,
-            confidence: rewardPattern.confidence,
-            emotion: rewardPattern.emotion,
-            pattern: rewardPattern.pattern,
-            source: 'thought_model_with_pattern_detection',
-            success: true
-          };
-        }
+        // LIBERADO: Ya no sobrescribimos las respuestas del modelo de pensamiento
+        // El modelo de pensamiento ya genera traducciones inteligentes y contextuales
         
         // Generar doblaje emocional para el resultado normal
         const emotionalDubbing = emotionalDubbingService.generateEmotionalDubbing(

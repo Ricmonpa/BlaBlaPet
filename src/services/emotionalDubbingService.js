@@ -115,13 +115,9 @@ class EmotionalDubbingService {
       // Generar doblaje emocional
       let emotionalDubbing = '';
 
-      // Si es un patrón de recompensa específico, usar traducciones especiales
-      if (this.isRewardPattern(technicalTranslation)) {
-        emotionalDubbing = this.generateRewardDubbing(emotion, context);
-      } else {
-        // Generar doblaje basado en la emoción y contexto
-        emotionalDubbing = this.generateContextualDubbing(technicalTranslation, emotionTone, contextTone);
-      }
+      // LIBERADO: Ya no sobrescribimos con traducciones hardcodeadas
+      // Usamos la traducción técnica como base y solo aplicamos estilo emocional
+      emotionalDubbing = this.generateContextualDubbing(technicalTranslation, emotionTone, contextTone);
 
       // Aplicar estilo del contexto
       emotionalDubbing = this.applyContextStyle(emotionalDubbing, contextTone);
@@ -147,65 +143,23 @@ class EmotionalDubbingService {
     }
   }
 
-  // Detectar si es un patrón de recompensa
-  isRewardPattern(translation) {
-    const rewardKeywords = [
-      'dame', 'comida', 'snack', 'premio', 'recompensa', 'pata', 'manotazo'
-    ];
-    return rewardKeywords.some(keyword => 
-      translation.toLowerCase().includes(keyword)
-    );
-  }
+  // FUNCIONES ELIMINADAS: isRewardPattern y generateRewardDubbing
+  // Estas funciones sobrescribían las traducciones del modelo con respuestas hardcodeadas
+  // Ahora confiamos en la inteligencia del modelo para generar traducciones contextuales
 
-  // Generar doblaje específico para recompensas
-  generateRewardDubbing(emotion, context) {
-    const rewardDubbings = {
-      'exigente': '¡Vamos, ya es hora de mi premio! ¡No me hagas esperar más!',
-      'insistente': '¡Por favor, por favor! ¡Mira qué bien te doy la pata!',
-      'expectante': '¡Estoy tan emocionado! ¡Será mi snack favorito!',
-      'solicitante': '¿Podrías ser tan amable de darme mi premio? ¡Te lo agradecería mucho!',
-      'deseoso': '¡Lo deseo tanto! ¡Sería un sueño hecho realidad!',
-      'default': '¡Quiero mi premio! ¡Soy un buen perro!'
-    };
-
-    return rewardDubbings[emotion] || rewardDubbings['default'];
-  }
-
-  // Generar doblaje contextual
+  // Generar doblaje contextual (SIMPLIFICADO)
   generateContextualDubbing(technicalTranslation, emotionTone, contextTone) {
-    // Convertir la traducción técnica en algo más emocional
-    let emotionalDubbing = technicalTranslation;
-
-    // Reemplazar frases técnicas por expresiones más emocionales
-    const replacements = {
-      'aléjate': '¡Por favor, mantén tu distancia!',
-      'juega conmigo': '¡Vamos a divertirnos juntos!',
-      'exploración': '¡Qué emoción explorar esto!',
-      'estoy feliz': '¡Estoy súper feliz!',
-      'quiero jugar': '¡No puedo esperar para jugar!',
-      'estoy triste': '¡Me siento un poco triste!',
-      'tengo hambre': '¡Mi pancita está rugiendo!',
-      'estoy cansado': '¡Necesito un descansito!',
-      'estoy emocionado': '¡Estoy súper emocionado!'
-    };
-
-    // Aplicar reemplazos
-    Object.entries(replacements).forEach(([technical, emotional]) => {
-      emotionalDubbing = emotionalDubbing.replace(
-        new RegExp(technical, 'gi'), 
-        emotional
-      );
-    });
-
-    // Si no se aplicaron reemplazos, usar el tono emocional
-    if (emotionalDubbing === technicalTranslation) {
-      const randomExample = emotionTone.examples[
-        Math.floor(Math.random() * emotionTone.examples.length)
-      ];
-      emotionalDubbing = `${randomExample} ${technicalTranslation}`;
+    // LIBERADO: Usar directamente la traducción del modelo de pensamiento
+    // Solo aplicamos un toque emocional sutil sin sobrescribir el contenido
+    
+    // Si la traducción ya es emocional, usarla tal como está
+    if (technicalTranslation.includes('¡') || technicalTranslation.includes('!')) {
+      return technicalTranslation;
     }
-
-    return emotionalDubbing;
+    
+    // Solo agregar un toque emocional sutil si es muy técnica
+    const emotionalPrefix = emotionTone.examples[0] || '¡Qué emoción!';
+    return `${emotionalPrefix} ${technicalTranslation}`;
   }
 
   // Aplicar estilo del contexto
