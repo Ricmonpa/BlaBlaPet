@@ -10,14 +10,13 @@ const convertBlobToFile = async (blobData, mediaType) => {
   try {
     console.log('🎬 Convirtiendo blob a archivo con compresión y upload directo...');
     
-    // Manejar Blob directamente - NO MÁS BLOB URLs
+    // Si es un blob URL, convertir a blob
     let blob;
-    if (blobData instanceof Blob) {
-      blob = blobData;
-    } else if (typeof blobData === 'string' && blobData.startsWith('blob:')) {
-      // Solo para compatibilidad con datos antiguos
+    if (typeof blobData === 'string' && blobData.startsWith('blob:')) {
       const response = await fetch(blobData);
       blob = await response.blob();
+    } else if (blobData instanceof Blob) {
+      blob = blobData;
     } else {
       throw new Error('Formato de datos no soportado');
     }
@@ -237,8 +236,56 @@ const Home = () => {
           console.log('🔍 DEBUG - location.state.media:', location.state.media);
           console.log('🔍 DEBUG - skipUpload flag:', location.state.skipUpload);
           
-          // SIEMPRE subir a Cloudinary - eliminar lógica de skipUpload
-          console.log('📤 Subiendo video a Cloudinary (sin skipUpload)...');
+          // Si skipUpload es true, guardar el video local en el feed
+          if (location.state.skipUpload) {
+            console.log('⏭️ Saltando upload - guardando video local en feed');
+            
+            // Crear entrada del video para el feed usando datos locales
+            const videoData = {
+              id: `video_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              petName: 'Tu Mascota',
+              translation: location.state.translation || 'Análisis completado',
+              emotionalDubbing: location.state.output_emocional || '',
+              mediaUrl: location.state.media?.localData || location.state.media?.data,
+              mediaType: 'video',
+              thumbnailUrl: location.state.media?.localData || location.state.media?.data,
+              userId: 'user_anonymous',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              shareCount: 0,
+              likeCount: 0,
+              commentCount: 0,
+              isPublic: true,
+              tags: ['video', 'analisis', 'local'],
+              // Subtítulos secuenciales
+              isSequentialSubtitles: location.state.isSequentialSubtitles || false,
+              subtitles: location.state.subtitles || [],
+              totalDuration: location.state.totalDuration || 30,
+              metadata: {
+                duration: location.state.totalDuration || 30,
+                fileSize: 0,
+                resolution: '360x640',
+                format: 'webm',
+                isLocal: true
+              }
+            };
+
+            // Guardar en localStorage para que aparezca en el feed
+            const existingVideos = JSON.parse(localStorage.getItem('localVideos') || '[]');
+            existingVideos.unshift(videoData);
+            localStorage.setItem('localVideos', JSON.stringify(existingVideos));
+            
+            console.log('✅ Video local guardado en feed:', videoData.id);
+            
+            return {
+              success: true,
+              url: videoData.mediaUrl,
+              fileName: 'video_local.webm',
+              size: 0,
+              isVideo: true,
+              message: 'Video local guardado en feed'
+            };
+          }
           
           // Convertir blob URL a archivo real solo si no se saltó
           console.log('🎬 Convirtiendo blob a archivo para upload directo...');

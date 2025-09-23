@@ -110,10 +110,20 @@ class VideoApiService {
         // Verificar si es una URL de Vercel Blob (que puede haber expirado)
         const isVercelBlobUrl = video.mediaUrl && video.mediaUrl.includes('blob.vercel-storage.com');
         
-        // Remover TODOS los videos blob (ya no los necesitamos con Cloudinary)
+        // Remover URLs blob expiradas (más de 1 hora)
         if (isBlobUrl) {
-          console.log('🚫 Removiendo video con URL blob (migrado a Cloudinary):', video.id);
-          removedCount++;
+          const videoDate = new Date(video.createdAt);
+          const now = new Date();
+          const ageInHours = (now - videoDate) / (1000 * 60 * 60);
+          
+          if (ageInHours > 1) {
+            console.log('🚫 Removiendo video con URL blob expirada (más de 1 hora):', video.id);
+            removedCount++;
+          } else {
+            // Mantener videos blob recientes (menos de 1 hora)
+            console.log('⏰ Manteniendo video blob reciente:', video.id, `(${ageInHours.toFixed(1)}h)`);
+            validVideos.push(video);
+          }
         } 
         // Remover URLs de Vercel Blob (ya no funcionan después de la migración)
         else if (isVercelBlobUrl) {

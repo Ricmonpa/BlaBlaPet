@@ -192,10 +192,18 @@ const SharedFeed = ({ onVideoSelect }) => {
     }
     
     // Si es una URL blob, verificar si es reciente (menos de 1 hora)
-    // Excluir TODOS los videos blob (ya no los necesitamos con Cloudinary)
     if (mediaUrl && mediaUrl.startsWith('blob:')) {
-      console.log('🚫 Excluyendo video con URL blob (migrado a Cloudinary):', video.id);
-      return false;
+      const videoDate = new Date(video.createdAt);
+      const now = new Date();
+      const ageInHours = (now - videoDate) / (1000 * 60 * 60);
+      
+      if (ageInHours > 1) {
+        console.log('🚫 Excluyendo video con URL blob expirada:', video.id, `(${ageInHours.toFixed(1)}h)`);
+        return false;
+      } else {
+        console.log('⏰ Permitiendo video blob reciente:', video.id, `(${ageInHours.toFixed(1)}h)`);
+        return true;
+      }
     }
     
     // Si es una URL de Vercel Blob, excluir (ya no funcionan después de la migración)
