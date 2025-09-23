@@ -63,7 +63,7 @@ const convertBlobToFile = async (blobData, mediaType) => {
     if (mediaType === 'video') {
       // Forzar MIME type correcto para videos
       if (processedBlob.type.includes('quicktime') || processedBlob.type.includes('webm')) {
-        correctMimeType = 'video/mp4'; // Vercel Blob prefiere MP4
+        correctMimeType = 'video/mp4'; // Cloudinary prefiere MP4
       } else if (!processedBlob.type.includes('video/')) {
         correctMimeType = 'video/mp4';
       }
@@ -77,38 +77,29 @@ const convertBlobToFile = async (blobData, mediaType) => {
       type: file.type
     });
 
-    // NUEVO: Upload directo con signed URL (evita límites de payload)
-    console.log('📤 Subiendo archivo usando upload directo con signed URL...');
+    // NUEVO: Upload directo a Cloudinary
+    console.log('🚀 Subiendo archivo directamente a Cloudinary...');
     console.log('📁 Archivo a subir:', {
       name: file.name,
       size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
       type: file.type
     });
     
-    // Paso 1: Obtener signed URL del servidor
-    console.log('🚀 Obteniendo signed URL del servidor...');
-    
-    // Crear FormData con el archivo real para handleUpload()
+    // Crear FormData con el archivo real para Cloudinary
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('video', file); // El backend espera 'video'
     
     // Agregar metadata como campos adicionales
     if (location.state) {
-      formData.append('metadata', JSON.stringify({
-        petName: location.state.translation?.split(' ')[0] || 'Video Subido',
-        translation: location.state.translation || 'Análisis completado',
-        emotionalDubbing: location.state.output_emocional || '',
-        subtitles: location.state.subtitles || [],
-        totalDuration: location.state.totalDuration || 0,
-        isSequentialSubtitles: location.state.isSequentialSubtitles || false,
-        userId: 'uploaded_user',
-        isPublic: true
-      }));
+      formData.append('petName', location.state.translation?.split(' ')[0] || 'Video Subido');
+      formData.append('translation', location.state.translation || 'Análisis completado');
+      formData.append('emotionalDubbing', location.state.output_emocional || '');
+      formData.append('subtitles', JSON.stringify(location.state.subtitles || []));
+      formData.append('totalDuration', location.state.totalDuration || 0);
+      formData.append('isSequentialSubtitles', location.state.isSequentialSubtitles || false);
+      formData.append('userId', 'uploaded_user');
+      formData.append('isPublic', true);
     }
-    
-    // NUEVO: Upload directo a Cloudinary
-    console.log('🚀 Subiendo archivo directamente a Cloudinary...');
-    console.log('⏰ Timestamp inicio upload Cloudinary:', new Date().toISOString());
     
     const cloudinaryResponse = await fetch('/api/upload-video-cloudinary', {
       method: 'POST',
@@ -138,7 +129,8 @@ const convertBlobToFile = async (blobData, mediaType) => {
 
     if (mediaType === 'video') {
       // Crear thumbnail del video
-      const thumbnail = await createVideoThumbnail(processedBlob);
+      // Cloudinary ya genera thumbnails, podemos usar el eager transform URL
+      const thumbnailUrl = uploadData.cloudinary?.eager?.[0]?.secure_url || serverUrl;
       
       return {
         file,
@@ -147,7 +139,7 @@ const convertBlobToFile = async (blobData, mediaType) => {
         size: file.size,
         originalSize: blob.size, // Tamaño original antes de compresión
         isVideo: true,
-        thumbnail,
+        thumbnail: thumbnailUrl, // Usar thumbnail de Cloudinary
         filePath: uploadData.filename,
         metadata: uploadData,
         videoId: uploadData.filename
@@ -236,56 +228,8 @@ const Home = () => {
           console.log('🔍 DEBUG - location.state.media:', location.state.media);
           console.log('🔍 DEBUG - skipUpload flag:', location.state.skipUpload);
           
-          // Si skipUpload es true, guardar el video local en el feed
-          if (location.state.skipUpload) {
-            console.log('⏭️ Saltando upload - guardando video local en feed');
-            
-            // Crear entrada del video para el feed usando datos locales
-            const videoData = {
-              id: `video_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-              petName: 'Tu Mascota',
-              translation: location.state.translation || 'Análisis completado',
-              emotionalDubbing: location.state.output_emocional || '',
-              mediaUrl: location.state.media?.localData || location.state.media?.data,
-              mediaType: 'video',
-              thumbnailUrl: location.state.media?.localData || location.state.media?.data,
-              userId: 'user_anonymous',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              shareCount: 0,
-              likeCount: 0,
-              commentCount: 0,
-              isPublic: true,
-              tags: ['video', 'analisis', 'local'],
-              // Subtítulos secuenciales
-              isSequentialSubtitles: location.state.isSequentialSubtitles || false,
-              subtitles: location.state.subtitles || [],
-              totalDuration: location.state.totalDuration || 30,
-              metadata: {
-                duration: location.state.totalDuration || 30,
-                fileSize: 0,
-                resolution: '360x640',
-                format: 'webm',
-                isLocal: true
-              }
-            };
-
-            // Guardar en localStorage para que aparezca en el feed
-            const existingVideos = JSON.parse(localStorage.getItem('localVideos') || '[]');
-            existingVideos.unshift(videoData);
-            localStorage.setItem('localVideos', JSON.stringify(existingVideos));
-            
-            console.log('✅ Video local guardado en feed:', videoData.id);
-            
-            return {
-              success: true,
-              url: videoData.mediaUrl,
-              fileName: 'video_local.webm',
-              size: 0,
-              isVideo: true,
-              message: 'Video local guardado en feed'
-            };
-          }
+          // SIEMPRE subir a Cloudinary en producción - eliminar lógica de skipUpload
+          console.log('📤 Subiendo video a Cloudinary (sin skipUpload)...');
           
           // Convertir blob URL a archivo real solo si no se saltó
           console.log('🎬 Convirtiendo blob a archivo para upload directo...');
@@ -309,7 +253,7 @@ const Home = () => {
               translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
               emotionalDubbing: location.state.output_emocional || location.state.translation,
               // Guardar el VIDEO COMPLETO, no solo thumbnail
-              mediaUrl: videoFile.url, // Video completo subido a Vercel Blob
+              mediaUrl: videoFile.url, // Video completo subido a Cloudinary
               mediaType: location.state.media?.type || 'video',
               userId: 'current_user', // Por ahora usar un ID fijo
               tags: ['nuevo', 'análisis'],
@@ -327,8 +271,8 @@ const Home = () => {
               isVideo: videoFile.isVideo,
               originalSize: videoFile.originalSize,
               thumbnail: videoFile.thumbnail,
-              // Mantener blob URL original para reproducción inmediata
-              originalVideoUrl: location.state.media?.data
+              // Mantener blob URL original para reproducción inmediata (ya no es blob URL)
+              originalVideoUrl: location.state.media?.data instanceof Blob ? URL.createObjectURL(location.state.media.data) : location.state.media?.data
             };
 
             // Guardar en la base de datos usando videoShareService
