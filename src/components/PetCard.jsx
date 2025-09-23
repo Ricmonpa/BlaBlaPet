@@ -48,15 +48,25 @@ const PetCard = ({ post }) => {
         const hasRetryAttempts = video.getAttribute('data-retry-count') || '0';
         const retryCount = parseInt(hasRetryAttempts);
         
-        if (isVercelBlob && retryCount < 1) {
-          console.log(`🔄 Reintentando video de Vercel Blob (intento ${retryCount + 1}/1)...`);
+        if (isVercelBlob && retryCount < 2) {
+          console.log(`🔄 Reintentando video de Vercel Blob (intento ${retryCount + 1}/2)...`);
           video.setAttribute('data-retry-count', (retryCount + 1).toString());
           setTimeout(() => {
             video.load();
-          }, 3000); // Esperar más tiempo para videos de Vercel
-        } else if (isVercelBlob && retryCount >= 1) {
-          console.log('🚫 Video de Vercel Blob falló después de 1 intento, ocultando');
+          }, 2000); // Esperar 2 segundos entre intentos
+        } else if (isVercelBlob && retryCount >= 2) {
+          console.log('🚫 Video de Vercel Blob falló después de 2 intentos, ocultando');
           video.style.display = 'none';
+          
+          // Marcar video como problemático para futuras referencias
+          if (post.id) {
+            const problematicVideos = JSON.parse(localStorage.getItem('problematicVideos') || '[]');
+            if (!problematicVideos.includes(post.id)) {
+              problematicVideos.push(post.id);
+              localStorage.setItem('problematicVideos', JSON.stringify(problematicVideos));
+              console.log('📝 Video marcado como problemático:', post.id);
+            }
+          }
         } else if (!isBlobUrl && !video.hasAttribute('data-retry')) {
           console.log('🔄 Intentando recargar video...');
           video.setAttribute('data-retry', 'true');

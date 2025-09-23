@@ -55,9 +55,21 @@ const convertBlobToFile = async (blobData, mediaType) => {
       }
     }
 
-    // Crear archivo con el blob procesado
+    // Crear archivo con el blob procesado y Content-Type correcto
     const fileName = `video_${Date.now()}.${mediaType === 'video' ? 'mp4' : 'jpg'}`;
-    const file = new File([processedBlob], fileName, { type: processedBlob.type });
+    
+    // Asegurar Content-Type correcto para videos
+    let correctMimeType = processedBlob.type;
+    if (mediaType === 'video') {
+      // Forzar MIME type correcto para videos
+      if (processedBlob.type.includes('quicktime') || processedBlob.type.includes('webm')) {
+        correctMimeType = 'video/mp4'; // Vercel Blob prefiere MP4
+      } else if (!processedBlob.type.includes('video/')) {
+        correctMimeType = 'video/mp4';
+      }
+    }
+    
+    const file = new File([processedBlob], fileName, { type: correctMimeType });
 
     console.log('📁 Archivo procesado:', {
       name: file.name,
@@ -119,7 +131,12 @@ const convertBlobToFile = async (blobData, mediaType) => {
       body: file,
       headers: {
         'Content-Type': file.type,
-        'x-vercel-blob-token': signedUrlData.token
+        'Content-Length': file.size.toString(),
+        'x-vercel-blob-token': signedUrlData.token,
+        'Cache-Control': 'public, max-age=31536000', // Cache por 1 año
+        'Access-Control-Allow-Origin': '*', // CORS para reproducción
+        'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-vercel-blob-token'
       }
     });
 

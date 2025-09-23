@@ -27,8 +27,14 @@ const SharedFeed = ({ onVideoSelect }) => {
       // Obtener videos desde la base de datos
       const publicVideos = await videoShareService.getPublicFeed();
       
-      // Filtrar videos con URLs válidas (excluir URLs blob expiradas)
-      const validVideos = publicVideos.filter(video => isValidVideoUrl(video));
+      // Filtrar videos con URLs válidas (excluir URLs blob expiradas y Vercel Blob inaccesibles)
+      const validVideos = [];
+      for (const video of publicVideos) {
+        const isValid = await isValidVideoUrl(video);
+        if (isValid) {
+          validVideos.push(video);
+        }
+      }
       console.log(`🔍 Filtrados ${publicVideos.length - validVideos.length} videos con URLs inválidas`);
       
       // Simular paginación (en una implementación real, esto vendría del servidor)
@@ -160,9 +166,30 @@ const SharedFeed = ({ onVideoSelect }) => {
     }
   };
 
+  // Verificar si una URL de Vercel Blob es accesible
+  const testVercelBlobUrl = async (url) => {
+    try {
+      const response = await fetch(url, { 
+        method: 'HEAD',
+        mode: 'cors'
+      });
+      return response.ok;
+    } catch (error) {
+      console.log('🔍 URL de Vercel Blob no accesible:', url, error.message);
+      return false;
+    }
+  };
+
   // Verificar si un video tiene una URL válida
-  const isValidVideoUrl = (video) => {
+  const isValidVideoUrl = async (video) => {
     const mediaUrl = video.mediaUrl || video.thumbnailUrl;
+    
+    // Verificar si el video está marcado como problemático
+    const problematicVideos = JSON.parse(localStorage.getItem('problematicVideos') || '[]');
+    if (problematicVideos.includes(video.id)) {
+      console.log('🚫 Excluyendo video marcado como problemático:', video.id);
+      return false;
+    }
     
     // Si es una URL blob, verificar si es reciente (menos de 1 hora)
     if (mediaUrl && mediaUrl.startsWith('blob:')) {
@@ -179,7 +206,19 @@ const SharedFeed = ({ onVideoSelect }) => {
       }
     }
     
-    // URLs válidas: Vercel Blob, HTTP/HTTPS, etc.
+    // Si es una URL de Vercel Blob, verificar accesibilidad
+    if (mediaUrl && mediaUrl.includes('blob.vercel-storage.com')) {
+      const isAccessible = await testVercelBlobUrl(mediaUrl);
+      if (!isAccessible) {
+        console.log('🚫 URL de Vercel Blob no accesible:', video.id);
+        return false;
+      } else {
+        console.log('✅ URL de Vercel Blob accesible:', video.id);
+        return true;
+      }
+    }
+    
+    // URLs válidas: HTTP/HTTPS, etc.
     return mediaUrl && (mediaUrl.startsWith('http') || mediaUrl.startsWith('https'));
   };
 
