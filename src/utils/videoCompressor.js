@@ -57,7 +57,7 @@ class VideoCompressor {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // Configurar video
+      // Configurar video - usar File directamente
       video.src = URL.createObjectURL(videoFile);
       video.muted = true;
       video.playsInline = true;

@@ -69,8 +69,8 @@ const Camera = () => {
 
     mediaRecorderRef.current.onstop = () => {
       const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      const videoUrl = URL.createObjectURL(blob);
-      setCapturedMedia({ type: 'video', data: videoUrl });
+      // NO CREAR URL BLOB - Subir directamente a Cloudinary
+      setCapturedMedia({ type: 'video', data: blob });
       setShowPreview(true);
     };
   }, [recordedChunks]);
@@ -106,9 +106,8 @@ const Camera = () => {
       };
       reader.readAsDataURL(file);
     } else {
-      // Para videos, crear URL de objeto
-      const videoUrl = URL.createObjectURL(file);
-      setCapturedMedia({ type: 'video', data: videoUrl });
+      // Para videos, usar el archivo directamente - NO CREAR URL BLOB
+      setCapturedMedia({ type: 'video', data: file });
       setShowPreview(true);
     }
   };
@@ -218,8 +217,8 @@ const Camera = () => {
               videoFile: videoFile,
               uploadedUrl: capturedMedia.uploadedUrl,
               videoId: capturedMedia.videoId,
-              // Flag para indicar que no necesita upload adicional
-              skipUpload: true
+              // Flag para indicar que necesita upload a Cloudinary
+              skipUpload: false
             }
           });
           return;
@@ -339,7 +338,7 @@ const Camera = () => {
             />
           ) : (
             <video 
-              src={capturedMedia.data} 
+              src={capturedMedia.data instanceof Blob ? URL.createObjectURL(capturedMedia.data) : capturedMedia.data} 
               controls 
               className="max-w-full max-h-full object-contain rounded-lg"
             />
