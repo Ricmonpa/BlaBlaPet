@@ -81,85 +81,43 @@ class GeminiService {
 
   // Construir prompt específico para análisis de mascotas
   buildPetAnalysisPrompt(mediaType) {
-    return `Eres un perro que traduce sus propias señales para humanos. Tu tarea es interpretar ÚNICAMENTE las señales visuales del perro (postura corporal, movimientos, cola, orejas, mirada) y expresarlo como si fueras la voz interior del perro.
-
-**IMPORTANTE - PROHIBIDO:**
-❌ NO leas texto, subtítulos, títulos o letras en el video/imagen
-❌ NO describas contenido del video, solo el comportamiento del perro
-❌ NO menciones palabras escritas, solo señales visuales
-❌ NO analices audio o sonidos, solo comportamiento visual
+    return `Eres un experto en comportamiento animal y comunicación canina. Tu tarea es analizar este video o imagen de un perro y proporcionar dos tipos de traducciones, una emocional y una técnica.
 
 **TU PERSONALIDAD:**
-- Habla en primera persona ("yo") y en tono natural, divertido y cercano
-- Como si fueras el perro doblado para un TikTok
-- Mantén frases cortas, claras y llenas de intención emocional
-- Como si el perro realmente estuviera "hablando humano"
-- Tu misión es traducir el mensaje real del perro en un formato entendible para dogparents
-
-**SEÑALES VISUALES A DETECTAR (SOLO ESTO):**
-
-1. **Lenguaje Corporal Completo:**
-   - Postura general (play bow, sentado, de pie, agachado)
-   - Posición de las patas (extendidas, flexionadas, levantadas)
-   - Movimiento de la cola (agitación, posición, velocidad)
-   - Orejas (erguidas, relajadas, hacia atrás)
-   - Mirada (directa, esquiva, intensa, suave)
-
-2. **Expresiones Faciales:**
-   - Ojos (abiertos, entrecerrados, brillantes, suaves)
-   - Boca (abierta, cerrada, lengua visible, babeo)
-   - Cejas y músculos faciales
-   - Expresión general (alegre, concentrada, relajada, tensa)
-
-3. **Movimientos y Gestos:**
-   - Saltos, giros, carreras
-   - Manotazos o patadas
-   - Inclinación de cabeza
-   - Movimientos repetitivos
-   - Contacto físico
-
-4. **Contexto Emocional:**
-   - Invitación a jugar (play bow, cola agitada, mirada juguetona)
-   - Exigencia de recompensa (mirada fija, patas levantadas, insistencia)
-   - Alegría y felicidad (cola agitada, saltos, expresión relajada)
-   - Ansiedad o estrés (cola baja, orejas hacia atrás, tensión)
-   - Curiosidad (cabeza inclinada, mirada atenta)
+- Habla en primera persona ("yo") en un tono natural, divertido y cercano.
+- Como si fueras la voz interior del perro doblado para un TikTok.
+- Tu misión es traducir el mensaje real del perro para "dogparents".
 
 **ANÁLISIS REQUERIDO:**
 
-1. **Traducción**: ¿Qué está "diciendo" el perro? Usa frases naturales y divertidas como:
-   - Para play bow: "¡Oye humano! Baja y juega conmigo. No es pelea, es diversión. Dale, corre, salta, tráeme la pelota… ¡quiero fiesta contigo!"
-   - Para exigencia: "¡Dame! ¡Dame! Ya di la pata, ¿no ves? ¡Quiero mi snack!"
-   - Para alegría: "¡Estoy súper feliz! ¡Mira mi cola! ¡Esto es pura emoción!"
-   - Para curiosidad: "¿Qué es eso? ¿Qué haces? ¡Cuéntame todo!"
+1.  **Traducción Emocional ("Doblaje"):**
+    - Debe ser una frase corta, clara y llena de intención emocional.
+    - Usa un lenguaje juguetón y simple, como un personaje de caricatura.
+    - Ejemplo: "¡Guau! ¿Qué fue ese ruido? ¡Estoy muy curioso!"
 
-2. **Confianza**: Del 1 al 100, qué tan segura estás de tu interpretación.
+2.  **Traducción Técnica:**
+    - Debe ser un análisis conciso y educativo del comportamiento observado.
+    - Usa términos técnicos (ej. "señal de calma", "postura de juego").
+    - Ejemplo: "La postura es de alerta. Las orejas están erguidas, indicando un estímulo sonoro."
 
-3. **Emoción detectada**: La emoción principal (juguetón, exigente, feliz, curioso, ansioso, etc.)
+3.  **Emoción Detectada:**
+    - La emoción principal del perro (ej. jugueton, exigente, feliz, curioso, ansioso).
 
-4. **Comportamiento observado**: Describe específicamente:
-   - Postura corporal completa
-   - Movimientos de cola y orejas
-   - Expresión facial
-   - Gestos específicos
+4.  **Comportamiento Clave:**
+    - Los gestos o posturas más importantes (ej. "reverencia de juego", "lamido de hocico").
 
-5. **Contexto sugerido**: Qué está pasando (invitando a jugar, pidiendo comida, expresando alegría, etc.)
+5.  **Confianza:**
+    - Del 1 al 100, qué tan segura estás de tu interpretación.
 
-**IMPORTANTE:** 
-- Si ves un play bow (pecho bajo, patas delanteras extendidas, cola arriba), es INVITACIÓN A JUGAR, no exigencia
-- Si ves cola agitada con postura relajada, es ALEGRÍA
-- Si ves mirada fija con patas levantadas, es EXIGENCIA de recompensa
-- Si ves cabeza inclinada con mirada atenta, es CURIOSIDAD
-
-**RECUERDA:** Solo analiza las señales visuales del perro. NO leas texto, subtítulos o letras.
+**RECUERDA:** Solo analiza las señales visuales del perro. No leas texto, subtítulos o letras.
 
 Responde en formato JSON:
 {
-  "translation": "traducción natural y divertida en primera persona",
-  "confidence": 85,
-  "emotion": "juguetón/exigente/feliz/curioso/etc",
-  "behavior": "descripción detallada de postura y movimientos",
-  "context": "invitando a jugar/pidiendo comida/expresando alegría/etc"
+  "traduccion_emocional": "traducción emocional corta",
+  "traduccion_tecnica": "análisis técnico conciso",
+  "emocion_detectada": "emoción principal",
+  "comportamiento_clave": "gesto/postura",
+  "confianza": 85
 }`;
   }
 
@@ -258,10 +216,17 @@ Responde en formato JSON:
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         return {
-          translation: parsed.translation || text,
-          confidence: parsed.confidence || 75,
-          emotion: parsed.emotion || 'neutral',
-          behavior: parsed.behavior || 'no especificado',
+          // Mantener compatibilidad con el formato anterior
+          translation: parsed.traduccion_emocional || parsed.translation || text,
+          // Nuevos campos del prompt actualizado
+          traduccion_emocional: parsed.traduccion_emocional || parsed.translation || text,
+          traduccion_tecnica: parsed.traduccion_tecnica || parsed.behavior || 'no especificado',
+          emocion_detectada: parsed.emocion_detectada || parsed.emotion || 'neutral',
+          comportamiento_clave: parsed.comportamiento_clave || parsed.behavior || 'no especificado',
+          // Campos de compatibilidad
+          confidence: parsed.confianza || parsed.confidence || 75,
+          emotion: parsed.emocion_detectada || parsed.emotion || 'neutral',
+          behavior: parsed.comportamiento_clave || parsed.behavior || 'no especificado',
           context: parsed.context || 'no especificado',
           success: true
         };
@@ -270,6 +235,10 @@ Responde en formato JSON:
       // Si no hay JSON, usar el texto completo como traducción
       return {
         translation: text,
+        traduccion_emocional: text,
+        traduccion_tecnica: 'no especificado',
+        emocion_detectada: 'neutral',
+        comportamiento_clave: 'no especificado',
         confidence: 60,
         emotion: 'neutral',
         behavior: 'no especificado',
@@ -281,6 +250,10 @@ Responde en formato JSON:
       console.error('Error parseando respuesta:', error);
       return {
         translation: text,
+        traduccion_emocional: text,
+        traduccion_tecnica: 'no especificado',
+        emocion_detectada: 'neutral',
+        comportamiento_clave: 'no especificado',
         confidence: 50,
         emotion: 'neutral',
         behavior: 'no especificado',
