@@ -32,13 +32,27 @@ const PetCard = ({ post }) => {
         });
         setVideoReady(false);
         
-        // Intentar recargar el video una vez
-        if (!video.hasAttribute('data-retry')) {
+        // Verificar si es una URL blob expirada
+        const isBlobUrl = video.src && video.src.startsWith('blob:');
+        const isExpiredBlob = isBlobUrl && e.target.error && e.target.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED;
+        
+        if (isExpiredBlob) {
+          console.log('🚫 URL blob expirada detectada, ocultando video');
+          video.style.display = 'none';
+          // No intentar recargar URLs blob expiradas
+          return;
+        }
+        
+        // Solo intentar recargar una vez para URLs válidas
+        if (!video.hasAttribute('data-retry') && !isBlobUrl) {
           console.log('🔄 Intentando recargar video...');
           video.setAttribute('data-retry', 'true');
           setTimeout(() => {
             video.load();
           }, 1000);
+        } else if (isBlobUrl) {
+          console.log('🚫 URL blob inválida, no reintentando');
+          video.style.display = 'none';
         }
       };
 
@@ -114,7 +128,14 @@ const PetCard = ({ post }) => {
                   mediaType: post.mediaType
                 }
               });
-              // Mostrar mensaje de error si el video no se puede cargar
+              
+              // Verificar si es una URL blob expirada
+              const isBlobUrl = e.target.src && e.target.src.startsWith('blob:');
+              if (isBlobUrl) {
+                console.log('🚫 URL blob expirada en onError, ocultando video');
+              }
+              
+              // Ocultar video si no se puede cargar
               e.target.style.display = 'none';
             }}
           />

@@ -95,6 +95,42 @@ class VideoApiService {
   }
 
   /**
+   * Limpiar URLs blob expiradas del localStorage
+   * @returns {Array} Videos locales válidos
+   */
+  cleanExpiredBlobUrls() {
+    try {
+      const localVideos = JSON.parse(localStorage.getItem('localVideos') || '[]');
+      const validVideos = [];
+      let removedCount = 0;
+      
+      localVideos.forEach(video => {
+        // Verificar si es una URL blob
+        const isBlobUrl = video.mediaUrl && video.mediaUrl.startsWith('blob:');
+        
+        if (isBlobUrl) {
+          // Las URLs blob expiran, así que las removemos
+          console.log('🚫 Removiendo video con URL blob expirada:', video.id);
+          removedCount++;
+        } else {
+          // Mantener videos con URLs válidas (Vercel Blob, etc.)
+          validVideos.push(video);
+        }
+      });
+      
+      if (removedCount > 0) {
+        console.log(`🧹 Limpiados ${removedCount} videos con URLs blob expiradas`);
+        localStorage.setItem('localVideos', JSON.stringify(validVideos));
+      }
+      
+      return validVideos;
+    } catch (error) {
+      console.error('❌ Error limpiando URLs blob expiradas:', error);
+      return [];
+    }
+  }
+
+  /**
    * Obtener todos los videos públicos (remotos + locales)
    * @returns {Promise<Array>} Lista de videos
    */
@@ -113,8 +149,8 @@ class VideoApiService {
         console.warn('⚠️ Error obteniendo videos remotos:', error.message);
       }
       
-      // Obtener videos locales
-      const localVideos = JSON.parse(localStorage.getItem('localVideos') || '[]');
+      // Obtener videos locales y limpiar URLs blob expiradas
+      const localVideos = this.cleanExpiredBlobUrls();
       
       // Combinar videos (locales primero para que aparezcan arriba)
       const allVideos = [...localVideos, ...remoteVideos];

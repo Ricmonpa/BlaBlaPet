@@ -27,11 +27,15 @@ const SharedFeed = ({ onVideoSelect }) => {
       // Obtener videos desde la base de datos
       const publicVideos = await videoShareService.getPublicFeed();
       
+      // Filtrar videos con URLs válidas (excluir URLs blob expiradas)
+      const validVideos = publicVideos.filter(video => isValidVideoUrl(video));
+      console.log(`🔍 Filtrados ${publicVideos.length - validVideos.length} videos con URLs inválidas`);
+      
       // Simular paginación (en una implementación real, esto vendría del servidor)
       const videosPerPage = 10;
       const startIndex = (pageNum - 1) * videosPerPage;
       const endIndex = startIndex + videosPerPage;
-      const pageVideos = publicVideos.slice(startIndex, endIndex);
+      const pageVideos = validVideos.slice(startIndex, endIndex);
 
       console.log(`✅ ${pageVideos.length} videos cargados de ${publicVideos.length} total`);
 
@@ -42,7 +46,7 @@ const SharedFeed = ({ onVideoSelect }) => {
         setVideos(prev => [...prev, ...pageVideos]);
       }
 
-      setHasMore(endIndex < publicVideos.length);
+      setHasMore(endIndex < validVideos.length);
       setPage(pageNum);
       setError(null);
 
@@ -154,6 +158,20 @@ const SharedFeed = ({ onVideoSelect }) => {
     if (onVideoSelect) {
       onVideoSelect(video);
     }
+  };
+
+  // Verificar si un video tiene una URL válida (no blob expirada)
+  const isValidVideoUrl = (video) => {
+    const mediaUrl = video.mediaUrl || video.thumbnailUrl;
+    
+    // Si es una URL blob, considerarla inválida (puede haber expirado)
+    if (mediaUrl && mediaUrl.startsWith('blob:')) {
+      console.log('🚫 Excluyendo video con URL blob:', video.id);
+      return false;
+    }
+    
+    // URLs válidas: Vercel Blob, HTTP/HTTPS, etc.
+    return mediaUrl && (mediaUrl.startsWith('http') || mediaUrl.startsWith('https'));
   };
 
   // Convertir video de la base de datos a formato de post
