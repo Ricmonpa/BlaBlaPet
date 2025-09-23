@@ -91,14 +91,20 @@ class GeminiService {
 **ANÁLISIS REQUERIDO:**
 
 1.  **Traducción Emocional ("Doblaje"):**
-    - Debe ser una frase corta, clara y llena de intención emocional.
+    - DEBE SER SOLO LA VOZ DIRECTA DEL PERRO, sin descripciones.
+    - NO uses frases como "El perro está diciendo" o "El perrito dice".
+    - Empieza directamente con lo que el perro "dice": "¡Hola!", "¡Qué emoción!", etc.
     - Usa un lenguaje juguetón y simple, como un personaje de caricatura.
-    - Ejemplo: "¡Guau! ¿Qué fue ese ruido? ¡Estoy muy curioso!"
+    - Ejemplo CORRECTO: "¡Guau! ¿Qué fue ese ruido? ¡Estoy muy curioso!"
+    - Ejemplo INCORRECTO: "El perro está diciendo: ¡Guau! ¿Qué fue ese ruido?"
 
 2.  **Traducción Técnica:**
-    - Debe ser un análisis conciso y educativo del comportamiento observado.
-    - Usa términos técnicos (ej. "señal de calma", "postura de juego").
-    - Ejemplo: "La postura es de alerta. Las orejas están erguidas, indicando un estímulo sonoro."
+    - DEBE SER SOLO ANÁLISIS TÉCNICO DEL COMPORTAMIENTO DEL PERRO.
+    - NO describas el entorno, objetos, personas o el contexto visual.
+    - Enfócate ÚNICAMENTE en: postura, orejas, cola, ojos, gestos, movimientos.
+    - Usa términos técnicos (ej. "señal de calma", "postura de juego", "orejas erguidas").
+    - Ejemplo CORRECTO: "Postura de alerta. Orejas erguidas, indicando atención. Pupilas dilatadas sugieren excitación."
+    - Ejemplo INCORRECTO: "La imagen muestra a un perro de raza Pit Bull en una habitación..."
 
 3.  **Emoción Detectada:**
     - La emoción principal del perro (ej. jugueton, exigente, feliz, curioso, ansioso).
@@ -111,12 +117,16 @@ class GeminiService {
 
 **RECUERDA:** Solo analiza las señales visuales del perro. No leas texto, subtítulos o letras.
 
+**CRÍTICO - FORMATO DE RESPUESTA:**
+- traduccion_emocional: SOLO la voz del perro, sin "El perro dice" o "El perrito está diciendo"
+- traduccion_tecnica: SOLO análisis técnico del comportamiento, sin descripciones del entorno
+
 Responde en formato JSON:
 {
-  "traduccion_emocional": "traducción emocional corta",
-  "traduccion_tecnica": "análisis técnico conciso",
-  "emocion_detectada": "emoción principal",
-  "comportamiento_clave": "gesto/postura",
+  "traduccion_emocional": "¡Hola! Estoy aquí contigo",
+  "traduccion_tecnica": "Postura relajada, orejas erguidas, mirada directa",
+  "emocion_detectada": "feliz",
+  "comportamiento_clave": "acercamiento amigable",
   "confianza": 85
 }`;
   }
