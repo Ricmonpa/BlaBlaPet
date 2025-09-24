@@ -1,5 +1,7 @@
 // Servicio para generar subtítulos secuenciales basado en momentos clave del comportamiento canino
 import thoughtModelService from './thoughtModelService.js';
+import cacheService from './cacheService.js';
+import batchProcessor from './batchProcessor.js';
 
 class SequentialSubtitlesService {
   constructor() {
@@ -24,6 +26,12 @@ class SequentialSubtitlesService {
 
   // Generar subtítulos usando el Modelo de Pensamiento
   async generateWithThoughtModel(mediaData, mediaType) {
+    // Verificar estado de cuota de API antes de proceder
+    const quotaStatus = await this.checkQuotaStatus();
+    if (!quotaStatus.available) {
+      throw new Error(quotaStatus.message);
+    }
+
     // Detectar duración del video para decidir estrategia de prompt
     let isLongVideo = false;
     if (mediaType === 'video') {
@@ -273,112 +281,25 @@ class SequentialSubtitlesService {
       const maxFrameTime = Math.max(...frames.map(f => f.timeSeconds));
       console.log(`🎬 Frame más tardío: ${maxFrameTime}s`);
       
-      const subtitles = [];
-      let successfulAnalyses = 0;
+      // Para videos largos, usar procesamiento inteligente
+      const stats = cacheService.getStats();
+      const needsOptimization = !cacheService.canMakeRequests(frames.length);
       
-      // Analizar cada frame individualmente para obtener análisis honesto
-      for (let i = 0; i < frames.length; i++) {
-        const frame = frames[i];
-        const nextFrame = frames[i + 1];
-        
-        // Crear timestamp range para este frame
-        const startTime = frame.timestamp;
-        const endTime = nextFrame ? nextFrame.timestamp : this.formatTime(frame.timeSeconds + 3);
-        const timestamp = `${startTime} - ${endTime}`;
-        
-        console.log(`📸 Analizando frame ${i + 1}/${frames.length}: ${timestamp} (${frame.timeSeconds}s)`);
-        
-        // TU PROMPT ORIGINAL RESTAURADO - Experto en lenguaje corporal canino
-        const framePrompt = `Eres un analista de lenguaje corporal canino de nivel experto. Tu tarea es analizar esta imagen específica de un video tomada en el momento ${timestamp} y generar una traducción experta del comportamiento del perro.
-
-Proceso de pensamiento:
-1. Observa la imagen y analiza la postura o acción del perro en este momento específico.
-2. Genera una traducción técnica detallada basada en tu expertise en comportamiento canino.
-3. Genera una traducción emocional amigable que represente lo que el perro estaría "diciendo".
-4. Formatea la respuesta como un objeto JSON con 'traduccion_tecnica' y 'traduccion_emocional'.
-
-Como experto en lenguaje corporal canino, interpreta:
-- Posturas corporales y su significado
-- Expresiones faciales y emociones
-- Movimientos de cola, orejas, y cuerpo
-- Intenciones y estados emocionales del perro
-- Comunicación no verbal canina
-
-Responde en formato JSON:
-{
-  "traduccion_tecnica": "Análisis experto del comportamiento canino observado en este momento",
-  "traduccion_emocional": "Lo que el perro estaría 'diciendo' basado en su lenguaje corporal"
-}
-
-Usa tu expertise completo en comportamiento canino para interpretar este momento específico del video.`;
-
-        try {
-          const result = await thoughtModelService.model.generateContent([
-            { text: framePrompt },
-            { inlineData: { data: frame.base64, mimeType: 'image/jpeg' } }
-          ]);
-
-          const response = await result.response;
-          const text = response.text();
-          
-          console.log(`🔍 FRAME ${i + 1} RESPUESTA RAW GEMINI:`, text);
-          
-          // Parsear respuesta
-          let frameAnalysis;
-          try {
-            const jsonMatch = text.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              frameAnalysis = JSON.parse(jsonMatch[0]);
-            } else {
-              throw new Error('No JSON found');
-            }
-          } catch (parseError) {
-            console.error(`❌ Error parseando frame ${i + 1}:`, parseError);
-            // Saltar este frame completamente
-            continue;
-          }
-
-          // ACEPTAR TODO EL CONTENIDO - No hay contenido inválido
-          if (frameAnalysis && frameAnalysis.traduccion_tecnica && frameAnalysis.traduccion_emocional) {
-            
-            // RECHAZAR frames con "null" - No engañar al usuario
-            if (frameAnalysis.traduccion_emocional === "null" || frameAnalysis.traduccion_emocional === null ||
-                frameAnalysis.traduccion_tecnica === "null" || frameAnalysis.traduccion_tecnica === null) {
-              console.log(`🚫 FRAME ${i + 1} - Gemini respondió "null", RECHAZANDO para no engañar al usuario`);
-              continue; // Saltar este frame
-            }
-            
-            console.log(`🔍 FRAME ${i + 1} RESPUESTA GEMINI:`, {
-              tecnica: frameAnalysis.traduccion_tecnica,
-              emocional: frameAnalysis.traduccion_emocional
-            });
-            
-            subtitles.push({
-              id: `subtitle_${i + 1}`,
-              timestamp: timestamp,
-              traduccion_tecnica: frameAnalysis.traduccion_tecnica,
-              traduccion_emocional: frameAnalysis.traduccion_emocional,
-              confidence: 95,
-              source: 'gemini_analysis',
-              frameIndex: i,
-              realTime: frame.timeSeconds
-            });
-            console.log(`✅ Frame ${i + 1} ACEPTADO - CONTENIDO REAL DE GEMINI`);
-          } else {
-            console.log(`🔍 FRAME ${i + 1} RESPUESTA INCOMPLETA:`, frameAnalysis);
-            console.warn(`⚠️ Frame ${i + 1} no tiene traduccion_tecnica o traduccion_emocional`);
-          }
-          
-        } catch (error) {
-          console.error(`❌ Error analizando frame ${i + 1}:`, error);
-          console.warn(`⚠️ Frame ${i + 1} falló completamente, NO se creará subtítulo falso`);
-          // NO crear subtítulos falsos cuando hay errores
-        }
+      let framesToProcess = frames;
+      
+      if (needsOptimization) {
+        console.log(`⚠️ Cuota limitada - optimizando procesamiento de ${frames.length} frames`);
+        framesToProcess = this.optimizeFramesForQuota(frames);
+        console.log(`🎬 Frames optimizados: ${framesToProcess.length} (de ${frames.length})`);
+      } else {
+        console.log(`✅ Cuota suficiente - procesando todos los ${frames.length} frames`);
       }
+      
+      // Usar procesamiento por lotes para videos largos
+      const subtitles = await this.processFramesInBatches(framesToProcess);
+      const successfulAnalyses = subtitles.length;
 
-      successfulAnalyses = subtitles.length; // Contar solo los subtítulos realmente creados
-
-      console.log(`✅ Análisis honesto completado: ${successfulAnalyses}/${frames.length} frames analizados exitosamente`);
+      console.log(`✅ Análisis honesto completado: ${successfulAnalyses}/${framesToProcess.length} frames analizados exitosamente`);
 
       // VALIDACIÓN CRÍTICA: Si no hay subtítulos válidos, FALLAR
       if (subtitles.length === 0) {
@@ -412,6 +333,206 @@ Usa tu expertise completo en comportamiento canino para interpretar este momento
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  // Optimizar frames manteniendo cobertura completa del video
+  optimizeFramesForQuota(frames) {
+    // Para una app tipo TikTok, necesitamos cobertura completa
+    // Solo optimizamos si realmente es necesario por cuota
+    
+    const stats = cacheService.getStats();
+    const remainingRequests = stats.remainingRequests;
+    
+    // Si tenemos suficientes requests, usar todos los frames
+    if (remainingRequests >= frames.length) {
+      console.log(`🎬 Usando todos los ${frames.length} frames (${remainingRequests} requests disponibles)`);
+      return frames;
+    }
+    
+    // Solo optimizar si estamos cerca del límite
+    if (remainingRequests < frames.length && remainingRequests > 0) {
+      console.log(`⚠️ Optimizando frames por cuota: ${frames.length} → ${remainingRequests}`);
+      
+      // Distribuir frames uniformemente para mantener cobertura
+      const optimizedFrames = [];
+      const step = frames.length / remainingRequests;
+      
+      for (let i = 0; i < remainingRequests; i++) {
+        const index = Math.floor(i * step);
+        optimizedFrames.push(frames[index]);
+      }
+      
+      return optimizedFrames;
+    }
+    
+    // Si no hay requests disponibles, usar frames mínimos estratégicos
+    console.log(`🚨 Cuota crítica - usando frames mínimos estratégicos`);
+    return [frames[0], frames[Math.floor(frames.length / 2)], frames[frames.length - 1]];
+  }
+
+  // Generar contenido con retry logic y cache para manejar cuota de API
+  async generateContentWithRetry(content, maxRetries = 3) {
+    // Verificar cache primero
+    const cacheKey = cacheService.generateCacheKey(content);
+    const cachedResult = cacheService.get(cacheKey);
+    if (cachedResult) {
+      console.log('🎯 Usando resultado del cache');
+      return cachedResult;
+    }
+
+    // Verificar si podemos hacer requests
+    if (!cacheService.canMakeRequest()) {
+      throw new Error('Límite diario de análisis alcanzado. Intenta mañana o actualiza tu plan de Gemini API.');
+    }
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`🔄 Intento ${attempt}/${maxRetries} de llamada a Gemini API`);
+        const result = await thoughtModelService.model.generateContent(content);
+        
+        // Incrementar contador y guardar en cache
+        cacheService.incrementRequestCount();
+        cacheService.set(cacheKey, result);
+        
+        console.log(`✅ Llamada exitosa en intento ${attempt}`);
+        return result;
+      } catch (error) {
+        console.warn(`⚠️ Intento ${attempt} falló:`, error.message);
+        
+        // Si es error de cuota, no reintentar
+        if (error.message.includes('quota') || error.message.includes('429')) {
+          throw error;
+        }
+        
+        // Si es el último intento, lanzar el error
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // Esperar antes del siguiente intento (backoff exponencial)
+        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+        console.log(`⏳ Esperando ${delay}ms antes del siguiente intento...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  // Verificar estado de cuota de API
+  async checkQuotaStatus() {
+    // Usar estadísticas del cache service
+    const stats = cacheService.getStats();
+    
+    if (!stats.canMakeRequest) {
+      const hoursUntilReset = Math.ceil(stats.timeUntilReset / (1000 * 60 * 60));
+      return { 
+        available: false, 
+        message: `Límite diario alcanzado (${stats.requestsToday}/${stats.dailyLimit}). Intenta en ${hoursUntilReset} horas.`,
+        retryAfter: stats.timeUntilReset
+      };
+    }
+    
+    // Hacer una llamada de prueba solo si no tenemos información del cache
+    try {
+      const result = await thoughtModelService.model.generateContent("test");
+      return { available: true, message: `API disponible (${stats.remainingRequests} requests restantes)` };
+    } catch (error) {
+      if (error.message.includes('quota') || error.message.includes('429')) {
+        return { 
+          available: false, 
+          message: "Cuota de API excedida. Intenta más tarde.",
+          retryAfter: this.extractRetryTime(error.message)
+        };
+      }
+      return { available: false, message: "Error de API: " + error.message };
+    }
+  }
+
+  // Extraer tiempo de retry del mensaje de error
+  extractRetryTime(errorMessage) {
+    const match = errorMessage.match(/retry in (\d+(?:\.\d+)?)s/);
+    return match ? parseFloat(match[1]) : 60; // Default 60 segundos
+  }
+
+  // Procesar frames en lotes para videos largos
+  async processFramesInBatches(frames) {
+    console.log(`🔄 Procesando ${frames.length} frames en lotes para video tipo TikTok`);
+    
+    const processFrame = async (frame, index) => {
+      const nextFrame = frames[index + 1];
+      const startTime = frame.timestamp;
+      const endTime = nextFrame ? nextFrame.timestamp : this.formatTime(frame.timeSeconds + 3);
+      const timestamp = `${startTime} - ${endTime}`;
+      
+      console.log(`📸 Procesando frame ${index + 1}/${frames.length}: ${timestamp} (${frame.timeSeconds}s)`);
+      
+      // Prompt optimizado para análisis rápido
+      const framePrompt = `Eres un analista de lenguaje corporal canino experto. Analiza esta imagen del momento ${timestamp} del video y genera una traducción del comportamiento del perro.
+
+Responde SOLO en formato JSON:
+{
+  "traduccion_tecnica": "Análisis técnico del comportamiento observado",
+  "traduccion_emocional": "Lo que el perro estaría 'diciendo' en palabras humanas"
+}`;
+
+      const result = await this.generateContentWithRetry([
+        { text: framePrompt },
+        { inlineData: { data: frame.base64, mimeType: 'image/jpeg' } }
+      ]);
+
+      const response = await result.response;
+      const text = response.text();
+      
+      // Parsear respuesta
+      let frameAnalysis;
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          frameAnalysis = JSON.parse(jsonMatch[0]);
+        } else {
+          throw new Error('No JSON found');
+        }
+      } catch (parseError) {
+        console.error(`❌ Error parseando frame ${index + 1}:`, parseError);
+        return null;
+      }
+
+      // Validar respuesta
+      if (frameAnalysis && frameAnalysis.traduccion_tecnica && frameAnalysis.traduccion_emocional) {
+        if (frameAnalysis.traduccion_emocional === "null" || frameAnalysis.traduccion_tecnica === "null") {
+          console.log(`🚫 Frame ${index + 1} - respuesta "null", saltando`);
+          return null;
+        }
+        
+        console.log(`✅ Frame ${index + 1} procesado exitosamente`);
+        return {
+          id: `subtitle_${index + 1}`,
+          timestamp: timestamp,
+          traduccion_tecnica: frameAnalysis.traduccion_tecnica,
+          traduccion_emocional: frameAnalysis.traduccion_emocional,
+          confidence: 95,
+          source: 'gemini_analysis',
+          frameIndex: index,
+          realTime: frame.timeSeconds
+        };
+      }
+      
+      return null;
+    };
+
+    // Usar el procesador por lotes
+    const subtitles = await batchProcessor.processFramesInBatches(
+      frames, 
+      processFrame,
+      (progress) => {
+        console.log(`📊 Progreso: ${progress.progress.toFixed(1)}% (${progress.processedFrames}/${progress.totalFrames} frames)`);
+      }
+    );
+
+    // Filtrar subtítulos nulos
+    const validSubtitles = subtitles.filter(subtitle => subtitle !== null);
+    
+    console.log(`✅ Procesamiento completado: ${validSubtitles.length} subtítulos válidos de ${frames.length} frames`);
+    return validSubtitles;
   }
 }
 

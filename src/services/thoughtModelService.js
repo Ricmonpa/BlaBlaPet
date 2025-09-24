@@ -306,12 +306,18 @@ Responde en formato JSON con la siguiente estructura:
         const duration = video.duration;
         console.log(`🎬 Video duration: ${duration}s - Extrayendo ${frameCount} frames para COBERTURA COMPLETA`);
         
-        // CRÍTICO: Ajustar frameCount basado en duración del video
+        // Extraer frames para cobertura completa del video (app tipo TikTok)
         let adjustedFrameCount = frameCount;
+        
+        // Para videos largos, mantener cobertura completa
         if (duration > 30) {
-          adjustedFrameCount = Math.min(12, Math.ceil(duration / 3)); // Un frame cada 3 segundos para videos largos
+          adjustedFrameCount = Math.min(12, Math.ceil(duration / 3)); // Un frame cada 3 segundos
         } else if (duration > 15) {
-          adjustedFrameCount = Math.min(10, Math.ceil(duration / 2)); // Un frame cada 2 segundos
+          adjustedFrameCount = Math.min(8, Math.ceil(duration / 2)); // Un frame cada 2 segundos
+        } else if (duration > 10) {
+          adjustedFrameCount = Math.min(6, Math.ceil(duration / 1.5)); // Un frame cada 1.5 segundos
+        } else {
+          adjustedFrameCount = Math.min(4, frameCount); // Para videos cortos, máximo 4 frames
         }
         
         console.log(`🎬 Frames ajustados: ${adjustedFrameCount} para video de ${duration}s`);
