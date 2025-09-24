@@ -63,6 +63,36 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No video file provided' });
     }
 
+    // Validar tipo MIME del archivo
+    const validVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo', 'video/avi'];
+    if (!validVideoTypes.includes(videoFile.mimetype)) {
+      console.log('⚠️ Tipo MIME no válido:', videoFile.mimetype);
+      // Intentar corregir el tipo MIME basado en la extensión
+      const extension = videoFile.originalFilename?.split('.').pop()?.toLowerCase();
+      let correctedMimeType = videoFile.mimetype;
+      
+      switch (extension) {
+        case 'mp4':
+          correctedMimeType = 'video/mp4';
+          break;
+        case 'webm':
+          correctedMimeType = 'video/webm';
+          break;
+        case 'mov':
+          correctedMimeType = 'video/quicktime';
+          break;
+        case 'avi':
+          correctedMimeType = 'video/x-msvideo';
+          break;
+        default:
+          console.log('🔧 Usando tipo MIME por defecto: video/mp4');
+          correctedMimeType = 'video/mp4';
+      }
+      
+      console.log('🔧 Tipo MIME corregido:', correctedMimeType);
+      videoFile.mimetype = correctedMimeType;
+    }
+
     // Validar tamaño del archivo
     const fileSizeMB = videoFile.size / (1024 * 1024);
     if (fileSizeMB > 100) {
@@ -91,6 +121,16 @@ export default async function handler(req, res) {
     // Upload to Cloudinary
     console.log('📤 Subiendo a Cloudinary...');
     console.log('⏰ Timestamp antes de upload:', new Date().toISOString());
+
+    // Validar que el buffer no esté vacío
+    if (fileBuffer.length === 0) {
+      return res.status(400).json({ 
+        error: 'Video file is empty or corrupted',
+        details: 'The uploaded file appears to be empty or corrupted. Please try recording again.'
+      });
+    }
+    
+    console.log('✅ Archivo válido para upload, tamaño:', fileBuffer.length, 'bytes');
 
     const uploadResult = await uploadVideoToCloudinary(fileBuffer, {
       // Opciones adicionales para Cloudinary
@@ -175,6 +215,12 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
+    console.error('💥 Error detallado en upload a Cloudinary:', {
+      message: error.message,
+      http_code: error.http_code,
+      name: error.name,
+      stack: error.stack
+    });
     console.error('💥 Error en upload a Cloudinary:', error);
     
     if (error.message?.includes('Request Entity Too Large')) {

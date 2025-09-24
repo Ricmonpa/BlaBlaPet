@@ -8,13 +8,18 @@ import directBlobUploadService from '../services/directBlobUploadService.js';
 
 const convertBlobToFile = async (blobData, mediaType) => {
   try {
-    console.log('🎬 Convirtiendo blob a archivo con compresión y upload directo...');
+    console.log('🎬 Convirtiendo blob a archivo para upload directo...');
     
     // Si es un blob URL, convertir a blob
     let blob;
     if (typeof blobData === 'string' && blobData.startsWith('blob:')) {
+      console.log('🔄 Convirtiendo blob URL a blob...');
       const response = await fetch(blobData);
+      if (!response.ok) {
+        throw new Error(`Error fetching blob: ${response.status} ${response.statusText}`);
+      }
       blob = await response.blob();
+      console.log('✅ Blob URL convertido exitosamente');
     } else if (blobData instanceof Blob) {
       blob = blobData;
     } else {
@@ -26,50 +31,31 @@ const convertBlobToFile = async (blobData, mediaType) => {
       type: blob.type
     });
 
-    // NUEVO: Comprimir video si es necesario
-    let processedBlob = blob;
-    if (mediaType === 'video' && needsCompression(blob)) {
-      console.log('🎬 Video necesita compresión, aplicando compresión básica...');
-      
-      // Compresión básica: reducir calidad del video
-      try {
-        // Crear un nuevo blob con menor calidad
-        const compressedBlob = new Blob([blob], { 
-          type: 'video/mp4' 
-        });
-        
-        // Si el blob sigue siendo muy grande, crear una versión más pequeña
-        if (compressedBlob.size > 2 * 1024 * 1024) { // Reducido de 4MB a 2MB
-          console.log('🎬 Aplicando compresión MUY agresiva...');
-          // Crear un blob más pequeño truncando el contenido
-          const chunkSize = Math.floor(blob.size * 0.4); // Reducir a 40% (más agresivo)
-          const compressedData = blob.slice(0, chunkSize);
-          processedBlob = new Blob([compressedData], { type: 'video/mp4' });
-          console.log('✅ Video comprimido:', (processedBlob.size / 1024 / 1024).toFixed(2), 'MB');
-        } else {
-          processedBlob = compressedBlob;
-        }
-      } catch (error) {
-        console.error('❌ Error en compresión, usando original:', error);
-        processedBlob = blob;
-      }
+    // Validar que el blob sea válido
+    if (blob.size === 0) {
+      throw new Error('Blob vacío o corrupto');
     }
 
-    // Crear archivo con el blob procesado y Content-Type correcto
-    const fileName = `video_${Date.now()}.${mediaType === 'video' ? 'mp4' : 'jpg'}`;
-    
-    // Asegurar Content-Type correcto para videos
-    let correctMimeType = processedBlob.type;
-    if (mediaType === 'video') {
-      // Forzar MIME type correcto para videos
-      if (processedBlob.type.includes('quicktime') || processedBlob.type.includes('webm')) {
-        correctMimeType = 'video/mp4'; // Cloudinary prefiere MP4
-      } else if (!processedBlob.type.includes('video/')) {
-        correctMimeType = 'video/mp4';
+    // Asegurar que el tipo MIME sea correcto para Cloudinary
+    let mimeType = blob.type;
+    if (!mimeType || mimeType === 'application/octet-stream') {
+      if (mediaType === 'video') {
+        mimeType = 'video/mp4'; // Default a MP4 para videos
+      } else {
+        mimeType = 'image/jpeg'; // Default a JPEG para imágenes
       }
+      console.log('🔧 Tipo MIME corregido a:', mimeType);
     }
+
+    // Crear archivo con el blob y tipo MIME correcto
+    const timestamp = Date.now();
+    const extension = mediaType === 'video' ? 'mp4' : 'jpg';
+    const fileName = `video_${timestamp}.${extension}`;
     
-    const file = new File([processedBlob], fileName, { type: correctMimeType });
+    const file = new File([blob], fileName, { 
+      type: mimeType,
+      lastModified: timestamp
+    });
 
     console.log('📁 Archivo procesado:', {
       name: file.name,
@@ -77,102 +63,64 @@ const convertBlobToFile = async (blobData, mediaType) => {
       type: file.type
     });
 
-    // NUEVO: Upload directo a Cloudinary
-    console.log('🚀 Subiendo archivo directamente a Cloudinary...');
-    console.log('📁 Archivo a subir:', {
-      name: file.name,
-      size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-      type: file.type
-    });
-    
-    // Crear FormData con el archivo real para Cloudinary
-    const formData = new FormData();
-    formData.append('video', file); // El backend espera 'video'
-    
-    // Agregar metadata como campos adicionales
-    if (location.state) {
-      formData.append('petName', location.state.translation?.split(' ')[0] || 'Video Subido');
-      formData.append('translation', location.state.translation || 'Análisis completado');
-      formData.append('emotionalDubbing', location.state.output_emocional || '');
-      formData.append('subtitles', JSON.stringify(location.state.subtitles || []));
-      formData.append('totalDuration', location.state.totalDuration || 0);
-      formData.append('isSequentialSubtitles', location.state.isSequentialSubtitles || false);
-      formData.append('userId', 'uploaded_user');
-      formData.append('isPublic', true);
-    }
-    
-    const cloudinaryResponse = await fetch('/api/upload-video-cloudinary', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!cloudinaryResponse.ok) {
-      const errorData = await cloudinaryResponse.text();
-      console.error('❌ Error en upload a Cloudinary:', cloudinaryResponse.status, errorData);
-      throw new Error(`Error en upload a Cloudinary: ${cloudinaryResponse.status} - ${errorData}`);
+    // Validar que el archivo sea válido para upload
+    if (file.size === 0) {
+      throw new Error('Archivo vacío después de procesamiento');
     }
 
-    const cloudinaryData = await cloudinaryResponse.json();
-    console.log('✅ Upload a Cloudinary exitoso');
-    console.log('⏰ Timestamp fin upload Cloudinary:', new Date().toISOString());
-    console.log('🔗 URL del video subido:', cloudinaryData.url);
-    console.log('📝 Public ID:', cloudinaryData.publicId);
+    // Si el archivo es muy grande, usar compresión real
+    if (mediaType === 'video' && file.size > 50 * 1024 * 1024) { // 50MB
+      console.log('⚠️ Archivo muy grande para Cloudinary, aplicando compresión...');
+      
+      // Usar el servicio de compresión real
+      try {
+        const { compressVideo } = await import('../utils/videoCompression.js');
+        const compressedFile = await compressVideo(file, {
+          quality: 0.6, // Calidad media
+          maxWidth: 1280,
+          maxHeight: 720
+        });
+        
+        console.log('✅ Video comprimido:', {
+          original: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+          compressed: (compressedFile.size / 1024 / 1024).toFixed(2) + ' MB'
+        });
+        
+        return {
+          file: compressedFile,
+          url: URL.createObjectURL(compressedFile),
+          fileName: compressedFile.name,
+          size: compressedFile.size,
+          isVideo: true
+        };
+      } catch (compressionError) {
+        console.warn('⚠️ Error en compresión, usando archivo original:', compressionError.message);
+      }
+    }
 
-    const uploadData = {
-      url: cloudinaryData.url,
-      filename: cloudinaryData.filename,
-      metadata: cloudinaryData.metadata,
-      cloudinary: cloudinaryData.cloudinary
+    return {
+      file,
+      url: URL.createObjectURL(file),
+      fileName: file.name,
+      size: file.size,
+      isVideo: mediaType === 'video'
     };
 
-    const serverUrl = uploadData.url;
-
-    if (mediaType === 'video') {
-      // Crear thumbnail del video
-      // Cloudinary ya genera thumbnails, podemos usar el eager transform URL
-      const thumbnailUrl = uploadData.cloudinary?.eager?.[0]?.secure_url || serverUrl;
-      
-      return {
-        file,
-        url: serverUrl,
-        fileName: uploadData.filename,
-        size: file.size,
-        originalSize: blob.size, // Tamaño original antes de compresión
-        isVideo: true,
-        thumbnail: thumbnailUrl, // Usar thumbnail de Cloudinary
-        filePath: uploadData.filename,
-        metadata: uploadData,
-        videoId: uploadData.filename
-      };
-    } else {
-      return {
-        file,
-        url: serverUrl,
-        fileName: uploadData.filename,
-        size: file.size,
-        isVideo: false,
-        filePath: uploadData.filename,
-        metadata: uploadData
-      };
-    }
-
   } catch (error) {
-    console.error('❌ Error en upload directo:', error);
-    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error en convertBlobToFile:', error);
     
-    // FALLBACK: Usar imagen estática de Unsplash si falla el upload
+    // Fallback: crear un archivo de imagen de prueba
     console.log('🔄 Usando fallback a imagen estática...');
-    const fallbackUrl = 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop';
     
     return {
       file: null,
-      url: fallbackUrl,
+      url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop',
       fileName: 'fallback.jpg',
       size: 0,
       isVideo: false
     };
   }
-};
+};;
 
 // Función para crear thumbnail de video
 const createVideoThumbnail = (videoBlob) => {

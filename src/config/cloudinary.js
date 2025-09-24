@@ -30,6 +30,89 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
     // Reconfigurar Cloudinary en cada llamada para asegurar que las variables estén disponibles
     configureCloudinary();
     
+    console.log('📤 Iniciando upload a Cloudinary...');
+    console.log('📊 Buffer size:', fileBuffer.length, 'bytes');
+    console.log('🔧 Opciones:', options);
+    
+    // Validar que el buffer sea válido
+    if (!fileBuffer || fileBuffer.length === 0) {
+      throw new Error('File buffer is empty or invalid');
+    }
+    
+    // Crear base64 string con formato correcto
+    const base64String = fileBuffer.toString('base64');
+    console.log('✅ Base64 generado, longitud:', base64String.length);
+    
+    // Configurar opciones de upload optimizadas para videos
+    const uploadOptions = {
+      resource_type: 'video',
+      folder: 'yo-pett-videos',
+      public_id: `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      chunk_size: 6000000, // 6MB chunks para videos largos
+      timeout: 300000, // 5 minutos timeout
+      use_filename: true,
+      unique_filename: true,
+      eager: [
+        { width: 320, height: 240, crop: 'scale' }, // Thumbnail pequeño
+        { width: 640, height: 480, crop: 'scale' }  // Thumbnail mediano
+      ],
+      eager_async: true,
+      eager_transformation: [
+        { quality: 'auto' }, // Calidad automática
+        { format: 'mp4' }    // Forzar formato MP4
+      ],
+      ...options
+    };
+    
+    console.log('🚀 Enviando a Cloudinary con opciones:', uploadOptions);
+    
+    const uploadResult = await cloudinary.uploader.upload(
+      `data:video/mp4;base64,${base64String}`,
+      uploadOptions
+    );
+
+    console.log('✅ Upload exitoso a Cloudinary');
+    console.log('🔗 URL:', uploadResult.secure_url);
+    console.log('🆔 Public ID:', uploadResult.public_id);
+
+    return {
+      success: true,
+      url: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
+      assetId: uploadResult.asset_id,
+      format: uploadResult.format,
+      width: uploadResult.width,
+      height: uploadResult.height,
+      duration: uploadResult.duration,
+      bytes: uploadResult.bytes,
+      eager: uploadResult.eager // Thumbnails generados
+    };
+  } catch (error) {
+    console.error('❌ Error detallado en upload a Cloudinary:', {
+      message: error.message,
+      http_code: error.http_code,
+      name: error.name,
+      details: error
+    });
+    
+    // Proporcionar mensajes de error más específicos
+    if (error.http_code === 400) {
+      throw new Error(`Invalid video format or corrupted file: ${error.message}`);
+    } else if (error.http_code === 401) {
+      throw new Error('Invalid Cloudinary credentials');
+    } else if (error.http_code === 413) {
+      throw new Error('Video file too large for upload');
+    } else if (error.message?.includes('timeout')) {
+      throw new Error('Upload timeout - video might be too large');
+    } else {
+      throw new Error(`Cloudinary upload failed: ${error.message}`);
+    }
+  }
+};) => {
+  try {
+    // Reconfigurar Cloudinary en cada llamada para asegurar que las variables estén disponibles
+    configureCloudinary();
+    
     const uploadResult = await cloudinary.uploader.upload(
       `data:video/mp4;base64,${fileBuffer.toString('base64')}`,
       {
