@@ -6,7 +6,7 @@ class CacheService {
   constructor() {
     this.cache = new Map();
     this.requestCount = 0;
-    this.dailyLimit = 48; // Límite más realista para cuota gratuita (dejando margen)
+    this.dailyLimit = 190; // Límite para gemini-2.0-flash (200 - margen) // Límite más realista para cuota gratuita (dejando margen)
     this.resetTime = this.getNextResetTime();
     this.priorityQueue = []; // Cola de requests pendientes cuando se agota la cuota
   }
