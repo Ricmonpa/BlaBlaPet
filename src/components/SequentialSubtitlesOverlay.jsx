@@ -79,20 +79,8 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     const video = videoRef?.current;
     console.log('🎬 Video ref:', video);
     if (!video) {
-      console.log('❌ No hay video ref - usando simulación de tiempo');
-      // Si no hay video ref, simular progreso de tiempo
-      const interval = setInterval(() => {
-        setCurrentTime(prev => {
-          const newTime = prev + 0.5; // Incrementar cada 500ms
-          if (newTime >= totalDuration) {
-            clearInterval(interval);
-            return 0; // Reiniciar
-          }
-          return newTime;
-        });
-      }, 500);
-      
-      return () => clearInterval(interval);
+      console.log('❌ No hay video ref - componente deshabilitado');
+      return; // No simular, simplemente no funcionar
     }
 
     const handleTimeUpdate = () => {
@@ -132,8 +120,8 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     };
   }, [videoRef]);
 
-  // Mostrar el overlay si hay subtítulos disponibles, incluso si no hay currentSubtitle
-  if (!subtitles || subtitles.length === 0) return null;
+  // Mostrar el overlay solo si hay subtítulos disponibles Y hay video ref
+  if (!subtitles || subtitles.length === 0 || !videoRef?.current) return null;
 
   return (
     <div className="absolute inset-0 flex flex-col justify-end p-2 pointer-events-none">
