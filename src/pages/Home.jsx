@@ -109,16 +109,10 @@ const convertBlobToFile = async (blobData, mediaType) => {
   } catch (error) {
     console.error('❌ Error en convertBlobToFile:', error);
     
-    // Fallback: crear un archivo de imagen de prueba
-    console.log('🔄 Usando fallback a imagen estática...');
+    // Fallback: NO retornar archivo null, mejor lanzar error
+    console.log('🔄 Blob URL expirada o corrupta, no se puede procesar');
     
-    return {
-      file: null,
-      url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=600&fit=crop',
-      fileName: 'fallback.jpg',
-      size: 0,
-      isVideo: false
-    };
+    throw new Error(`No se puede procesar el video: ${error.message}. Por favor, graba un nuevo video.`);
   }
 };;
 
@@ -200,6 +194,11 @@ const Home = () => {
             location.state.media?.type || 'video'
           );
           console.log('✅ DEBUG - convertBlobToFile completado:', videoFile);
+          
+          // Validar que el archivo sea válido antes de subir
+          if (!videoFile.file) {
+            throw new Error('No se puede procesar el video. El archivo está expirado o corrupto. Por favor, graba un nuevo video.');
+          }
           
           // Subir el archivo a Cloudinary y obtener URL permanente
           console.log('☁️ Subiendo archivo a Cloudinary...');

@@ -92,6 +92,11 @@ class DirectBlobUploadService {
    */
   async uploadVideo(videoFile, metadata = {}) {
     try {
+      // Validar que el archivo no sea null
+      if (!videoFile) {
+        throw new Error('No se puede subir: archivo de video no válido o expirado. Por favor, graba un nuevo video.');
+      }
+      
       const timestamp = Date.now();
       let processedFile = videoFile;
       let wasCompressed = false;
