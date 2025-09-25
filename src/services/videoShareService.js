@@ -296,6 +296,58 @@ async storeVideoAndGenerateUrl(post) {
   }
 
   /**
+   * Limpiar videos con URLs blob expiradas de la base de datos
+   * @returns {Promise<number>} Número de videos eliminados
+   */
+  async cleanupExpiredBlobVideos() {
+    try {
+      console.log('🧹 Iniciando limpieza de videos con URLs blob expiradas...');
+      
+      const baseUrl = this.isProduction ? window.location.origin : 'http://localhost:3002';
+      const endpoint = this.isProduction ? '/api/videos/cleanup-blob' : '/videos/cleanup-blob';
+      
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ Limpieza completada: ${result.deletedCount} videos eliminados`);
+      
+      return result.deletedCount || 0;
+      
+    } catch (error) {
+      console.error('❌ Error limpiando videos blob expirados:', error);
+      
+      // Fallback: limpiar desde localStorage
+      const allVideos = this.getAllVideosFromStorage();
+      const videosToKeep = {};
+      let deletedCount = 0;
+      
+      for (const [videoId, video] of Object.entries(allVideos)) {
+        const mediaUrl = video.mediaUrl || video.thumbnailUrl;
+        
+        // Mantener videos con URLs válidas (no blob)
+        if (mediaUrl && !mediaUrl.startsWith('blob:')) {
+          videosToKeep[videoId] = video;
+        } else {
+          deletedCount++;
+          console.log(`🗑️ Video ${videoId} eliminado por URL blob expirada`);
+        }
+      }
+      
+      // Guardar solo los videos válidos
+      localStorage.setItem(this.storageKey, JSON.stringify(videosToKeep));
+      
+      return deletedCount;
+    }
+  }
+
+  /**
    * Obtener estadísticas de videos
    * @returns {Object} Estadísticas
    */

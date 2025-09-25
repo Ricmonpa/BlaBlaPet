@@ -168,6 +168,20 @@ const Home = () => {
     console.log('  - location.state?.isSequentialSubtitles:', location.state?.isSequentialSubtitles);
     console.log('  - Condición completa:', location.state?.translation || location.state?.output_emocional || location.state?.isSequentialSubtitles);
     
+    // Limpiar videos con URLs blob expiradas al cargar la página
+    const cleanupExpiredVideos = async () => {
+      try {
+        const deletedCount = await videoShareService.cleanupExpiredBlobVideos();
+        if (deletedCount > 0) {
+          console.log(`🧹 Limpieza completada: ${deletedCount} videos con URLs blob expiradas eliminados`);
+        }
+      } catch (error) {
+        console.error('❌ Error en limpieza de videos:', error);
+      }
+    };
+    
+    cleanupExpiredVideos();
+    
     // Solo procesar si hay datos válidos (no null/undefined)
     if (location.state && (location.state.translation || location.state.output_emocional || location.state.isSequentialSubtitles)) {
       const handleVideoSave = async () => {
@@ -179,29 +193,39 @@ const Home = () => {
           // SIEMPRE subir a Cloudinary en producción - eliminar lógica de skipUpload
           console.log('📤 Subiendo video a Cloudinary (sin skipUpload)...');
           
-          // Convertir blob URL a archivo real solo si no se saltó
+          // Convertir blob URL a archivo real para upload a Cloudinary
           console.log('🎬 Convirtiendo blob a archivo para upload directo...');
           const videoFile = await convertBlobToFile(
             location.state.media?.data, 
             location.state.media?.type || 'video'
           );
           console.log('✅ DEBUG - convertBlobToFile completado:', videoFile);
-
-          // Solo guardar si la subida fue exitosa (no es fallback de Unsplash)
-          console.log('🔍 DEBUG - Condiciones para guardar video:');
-          console.log('  - videoFile.url:', videoFile.url);
-          console.log('  - includes unsplash:', videoFile.url?.includes('unsplash.com'));
-          console.log('  - videoFile.isVideo:', videoFile.isVideo);
-          console.log('  - Condición completa:', videoFile.url && !videoFile.url.includes('unsplash.com') && videoFile.isVideo);
           
-          if (videoFile.url && !videoFile.url.includes('unsplash.com') && videoFile.isVideo) {
+          // Subir el archivo a Cloudinary y obtener URL permanente
+          console.log('☁️ Subiendo archivo a Cloudinary...');
+          const uploadResult = await directBlobUploadService.uploadVideo(videoFile.file, {
+            petName: 'Tu Mascota',
+            userId: 'current_user',
+            tags: ['nuevo', 'análisis'],
+            isPublic: true
+          });
+          console.log('✅ Upload a Cloudinary completado:', uploadResult);
+
+          // Solo guardar si la subida a Cloudinary fue exitosa
+          console.log('🔍 DEBUG - Condiciones para guardar video:');
+          console.log('  - uploadResult.url:', uploadResult.url);
+          console.log('  - uploadResult.success:', uploadResult.success);
+          console.log('  - videoFile.isVideo:', videoFile.isVideo);
+          console.log('  - Condición completa:', uploadResult.url && videoFile.isVideo);
+          
+          if (uploadResult.url && videoFile.isVideo) {
             // Crear objeto de video para la base de datos
             const newVideo = {
               petName: 'Tu Mascota',
               translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
               emotionalDubbing: location.state.output_emocional || location.state.translation,
-              // Guardar el VIDEO COMPLETO, no solo thumbnail
-              mediaUrl: videoFile.url, // Video completo subido a Cloudinary
+              // Guardar el VIDEO COMPLETO con URL de Cloudinary
+              mediaUrl: uploadResult.url, // URL permanente de Cloudinary
               mediaType: location.state.media?.type || 'video',
               userId: 'current_user', // Por ahora usar un ID fijo
               tags: ['nuevo', 'análisis'],
@@ -213,18 +237,20 @@ const Home = () => {
               subtitles: location.state.subtitles || null,
               totalDuration: location.state.totalDuration || 30,
               // Metadatos del archivo real
-              fileSize: videoFile.size,
+              fileSize: uploadResult.size || videoFile.size,
               fileName: videoFile.fileName,
               // Información adicional para videos
               isVideo: videoFile.isVideo,
               originalSize: videoFile.originalSize,
               thumbnail: videoFile.thumbnail,
+              // Información de Cloudinary
+              cloudinary: uploadResult.cloudinary,
               // Mantener blob URL original para reproducción inmediata (ya no es blob URL)
               originalVideoUrl: location.state.media?.data instanceof Blob ? URL.createObjectURL(location.state.media.data) : location.state.media?.data
             };
 
             // Guardar en la base de datos usando videoShareService
-            console.log('💾 Guardando video en base de datos con URL:', videoFile.url);
+            console.log('💾 Guardando video en base de datos con URL de Cloudinary:', uploadResult.url);
             const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
             console.log('✅ Video guardado en la base de datos:', videoUrl);
             console.log('🔍 Video object guardado:', newVideo);
@@ -235,6 +261,7 @@ const Home = () => {
               detail: { 
                 newVideo: newVideo,
                 videoUrl: videoUrl,
+                cloudinaryUrl: uploadResult.url,
                 timestamp: Date.now()
               }
             });
