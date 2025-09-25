@@ -17,13 +17,26 @@ const Profile = () => {
   // Cargar videos del usuario
   useEffect(() => {
     loadUserVideos();
+    
+    // Escuchar eventos de actualización del feed para refrescar el perfil
+    const handleFeedUpdate = () => {
+      console.log('🔄 Feed actualizado, recargando videos del perfil...');
+      loadUserVideos();
+    };
+    
+    window.addEventListener('feedUpdate', handleFeedUpdate);
+    
+    return () => {
+      window.removeEventListener('feedUpdate', handleFeedUpdate);
+    };
   }, []);
 
   const loadUserVideos = async () => {
     try {
       setLoading(true);
       // Obtener videos del usuario desde la base de datos
-      const videos = await videoShareService.getUserVideos();
+      const videos = await videoShareService.getUserVideos('current_user');
+      console.log('📱 Videos cargados en perfil:', videos.length);
       setUserVideos(videos);
     } catch (error) {
       console.error('Error cargando videos del usuario:', error);

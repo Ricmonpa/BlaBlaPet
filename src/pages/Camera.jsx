@@ -171,7 +171,7 @@ const Camera = () => {
           // Upload asíncrono - el usuario no espera esto
           directBlobUploadService.uploadVideo(videoFile, {
             petName: 'Mascota',
-            userId: 'user_anonymous',
+            userId: 'current_user', // Usar ID consistente para el perfil
             tags: ['video', 'analisis'],
             forAnalysis: false // Usar compresión agresiva para almacenamiento
           }).then(uploadResult => {

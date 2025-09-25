@@ -380,13 +380,33 @@ async storeVideoAndGenerateUrl(post) {
 
   /**
    * Obtener todos los videos del usuario para el perfil
-   * @returns {Array} Array de videos del usuario
+   * @param {string} userId - ID del usuario (opcional, por defecto 'current_user')
+   * @returns {Promise<Array>} Array de videos del usuario
    */
-  getUserVideos() {
+  async getUserVideos(userId = 'current_user') {
+    try {
+      // Primero intentar obtener desde la base de datos
+      const baseUrl = this.isProduction ? window.location.origin : 'http://localhost:3002';
+      const endpoint = this.isProduction ? '/api/videos' : '/videos';
+      
+      const response = await fetch(`${baseUrl}${endpoint}?userId=${userId}`);
+      if (response.ok) {
+        const videos = await response.json();
+        console.log('✅ Videos del usuario obtenidos desde base de datos:', videos.length);
+        return videos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+    } catch (error) {
+      console.error('❌ Error obteniendo videos del usuario desde base de datos:', error);
+    }
+    
+    // Fallback a localStorage
+    console.log('🔄 Fallback a localStorage para videos del usuario');
     const allVideos = this.getAllVideosFromStorage();
-    return Object.values(allVideos).sort((a, b) => 
-      new Date(b.createdAt) - new Date(a.createdAt)
-    );
+    const userVideos = Object.values(allVideos)
+      .filter(video => video.userId === userId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    return userVideos;
   }
 
   /**
