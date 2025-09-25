@@ -27,6 +27,23 @@ const SharedFeed = ({ onVideoSelect }) => {
       // Obtener videos desde la base de datos
       const publicVideos = await videoShareService.getPublicFeed();
       
+      // Verificar si hay videos con URLs blob expiradas
+      const blobVideos = publicVideos.filter(video => {
+        const mediaUrl = video.mediaUrl || video.thumbnailUrl;
+        return mediaUrl && mediaUrl.startsWith('blob:');
+      });
+      
+      // Si hay videos blob, intentar migrar/limpiar
+      if (blobVideos.length > 0) {
+        console.log(`🔄 Detectados ${blobVideos.length} videos con URLs blob, iniciando migración...`);
+        try {
+          await videoShareService.migrateBlobVideos();
+          console.log('✅ Migración de videos blob completada');
+        } catch (error) {
+          console.warn('⚠️ Error en migración de videos blob:', error.message);
+        }
+      }
+      
       // Filtrar videos con URLs válidas (excluir URLs blob expiradas y Vercel Blob inaccesibles)
       const validVideos = [];
       for (const video of publicVideos) {
@@ -191,7 +208,19 @@ const SharedFeed = ({ onVideoSelect }) => {
       return false;
     }
     
-    // Si es una URL blob, verificar si es reciente (menos de 1 hora)
+    // PRIORIDAD 1: URLs de Cloudinary (siempre válidas)
+    if (mediaUrl && mediaUrl.includes('cloudinary.com')) {
+      console.log('☁️ Video con URL de Cloudinary válida:', video.id);
+      return true;
+    }
+    
+    // PRIORIDAD 2: URLs HTTP/HTTPS válidas (excluyendo Vercel Blob)
+    if (mediaUrl && mediaUrl.startsWith('http') && !mediaUrl.includes('blob.vercel-storage.com')) {
+      console.log('🌐 Video con URL HTTP válida:', video.id);
+      return true;
+    }
+    
+    // PRIORIDAD 3: URLs blob - solo si son recientes (menos de 1 hora)
     if (mediaUrl && mediaUrl.startsWith('blob:')) {
       const videoDate = new Date(video.createdAt);
       const now = new Date();
@@ -206,14 +235,15 @@ const SharedFeed = ({ onVideoSelect }) => {
       }
     }
     
-    // Si es una URL de Vercel Blob, excluir (ya no funcionan después de la migración)
+    // Excluir URLs de Vercel Blob (ya no funcionan después de la migración)
     if (mediaUrl && mediaUrl.includes('blob.vercel-storage.com')) {
       console.log('🚫 Excluyendo video con URL de Vercel Blob (migrado a Cloudinary):', video.id);
       return false;
     }
     
-    // URLs válidas: HTTP/HTTPS, etc.
-    return mediaUrl && (mediaUrl.startsWith('http') || mediaUrl.startsWith('https'));
+    // Sin URL válida
+    console.log('❌ Video sin URL válida:', video.id, mediaUrl);
+    return false;
   };
 
   // Convertir video de la base de datos a formato de post

@@ -15,7 +15,9 @@
     "test:sharing": "node scripts/test-sharing.js",
     "test:cloudinary": "node scripts/test-cloudinary.js",
     "test:upload": "node scripts/test-upload-flow.js",
-    "migrate:cloudinary": "node scripts/migrate-to-cloudinary.js"
+    "test:feed": "node scripts/test-video-feed.js",
+    "migrate:cloudinary": "node scripts/migrate-to-cloudinary.js",
+    "migrate:blob": "node scripts/migrate-blob-to-cloudinary.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

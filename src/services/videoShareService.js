@@ -348,6 +348,37 @@ async storeVideoAndGenerateUrl(post) {
   }
 
   /**
+   * Migrar videos blob a Cloudinary (eliminar videos con URLs blob expiradas)
+   * @returns {Promise<Object>} Resultado de la migración
+   */
+  async migrateBlobVideos() {
+    try {
+      console.log('🔄 Iniciando migración de videos blob...');
+      
+      const baseUrl = this.isProduction ? window.location.origin : 'http://localhost:3002';
+      const endpoint = this.isProduction ? '/api/videos/migrate-blob' : '/videos/migrate-blob';
+      
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error HTTP: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`✅ Migración completada: ${result.deletedCount} videos eliminados`);
+      
+      return result;
+      
+    } catch (error) {
+      console.error('❌ Error migrando videos blob:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Obtener estadísticas de videos
    * @returns {Object} Estadísticas
    */
