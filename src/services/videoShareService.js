@@ -296,34 +296,14 @@ async storeVideoAndGenerateUrl(post) {
   }
 
   /**
-   * Limpiar videos con URLs blob expiradas de la base de datos
+   * Limpiar videos con URLs blob expiradas desde localStorage
    * @returns {Promise<number>} Número de videos eliminados
    */
   async cleanupExpiredBlobVideos() {
     try {
       console.log('🧹 Iniciando limpieza de videos con URLs blob expiradas...');
       
-      const baseUrl = this.isProduction ? window.location.origin : 'http://localhost:3002';
-      const endpoint = this.isProduction ? '/api/videos/cleanup-blob' : '/videos/cleanup-blob';
-      
-      const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log(`✅ Limpieza completada: ${result.deletedCount} videos eliminados`);
-      
-      return result.deletedCount || 0;
-      
-    } catch (error) {
-      console.error('❌ Error limpiando videos blob expirados:', error);
-      
-      // Fallback: limpiar desde localStorage
+      // Limpiar desde localStorage
       const allVideos = this.getAllVideosFromStorage();
       const videosToKeep = {};
       let deletedCount = 0;
@@ -343,38 +323,12 @@ async storeVideoAndGenerateUrl(post) {
       // Guardar solo los videos válidos
       localStorage.setItem(this.storageKey, JSON.stringify(videosToKeep));
       
+      console.log(`✅ Limpieza completada: ${deletedCount} videos eliminados`);
       return deletedCount;
-    }
-  }
-
-  /**
-   * Migrar videos blob a Cloudinary (eliminar videos con URLs blob expiradas)
-   * @returns {Promise<Object>} Resultado de la migración
-   */
-  async migrateBlobVideos() {
-    try {
-      console.log('🔄 Iniciando migración de videos blob...');
-      
-      const baseUrl = this.isProduction ? window.location.origin : 'http://localhost:3002';
-      const endpoint = this.isProduction ? '/api/videos/migrate-blob' : '/videos/migrate-blob';
-      
-      const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log(`✅ Migración completada: ${result.deletedCount} videos eliminados`);
-      
-      return result;
       
     } catch (error) {
-      console.error('❌ Error migrando videos blob:', error);
-      throw error;
+      console.error('❌ Error limpiando videos blob expirados:', error);
+      return 0;
     }
   }
 

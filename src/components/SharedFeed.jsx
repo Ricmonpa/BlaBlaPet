@@ -27,22 +27,7 @@ const SharedFeed = ({ onVideoSelect }) => {
       // Obtener videos desde la base de datos
       const publicVideos = await videoShareService.getPublicFeed();
       
-      // Verificar si hay videos con URLs blob expiradas
-      const blobVideos = publicVideos.filter(video => {
-        const mediaUrl = video.mediaUrl || video.thumbnailUrl;
-        return mediaUrl && mediaUrl.startsWith('blob:');
-      });
-      
-      // Si hay videos blob, intentar migrar/limpiar
-      if (blobVideos.length > 0) {
-        console.log(`🔄 Detectados ${blobVideos.length} videos con URLs blob, iniciando migración...`);
-        try {
-          await videoShareService.migrateBlobVideos();
-          console.log('✅ Migración de videos blob completada');
-        } catch (error) {
-          console.warn('⚠️ Error en migración de videos blob:', error.message);
-        }
-      }
+      // Los videos blob expirados se filtrarán automáticamente en isValidVideoUrl
       
       // Filtrar videos con URLs válidas (excluir URLs blob expiradas y Vercel Blob inaccesibles)
       const validVideos = [];
