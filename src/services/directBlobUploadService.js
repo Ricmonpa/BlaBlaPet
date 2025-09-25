@@ -164,7 +164,7 @@ class DirectBlobUploadService {
         ...uploadResult.metadata, // Usar metadata de Cloudinary
         cloudinary: uploadResult.cloudinary, // Información específica de Cloudinary
         metadata: {
-          ...uploadResult.metadata.metadata,
+          ...uploadResult.metadata?.metadata || {}, // Usar metadata anidado si existe
           duration: metadata.duration || uploadResult.cloudinary?.duration || 0,
           fileSize: uploadResult.size,
           originalSize: videoFile.size,
