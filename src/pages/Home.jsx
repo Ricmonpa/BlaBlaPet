@@ -216,19 +216,20 @@ const Home = () => {
 
           // Solo guardar si la subida a Cloudinary fue exitosa
           console.log('🔍 DEBUG - Condiciones para guardar video:');
-          console.log('  - uploadResult.url:', uploadResult.url);
-          console.log('  - uploadResult.success:', uploadResult.success);
+          console.log('  - uploadResult:', uploadResult);
+          console.log('  - uploadResult.cloudinary:', uploadResult.cloudinary);
+          console.log('  - hasCloudinaryData:', uploadResult.cloudinary && uploadResult.cloudinary.publicId);
           console.log('  - videoFile.isVideo:', videoFile.isVideo);
-          console.log('  - Condición completa:', uploadResult.url && videoFile.isVideo);
+          console.log('  - Condición completa:', uploadResult.cloudinary && uploadResult.cloudinary.publicId && videoFile.isVideo);
           
-          if (uploadResult.url && videoFile.isVideo) {
+          if (uploadResult.cloudinary && uploadResult.cloudinary.publicId && videoFile.isVideo) {
             // Crear objeto de video para la base de datos
             const newVideo = {
               petName: 'Tu Mascota',
               translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
               emotionalDubbing: location.state.output_emocional || location.state.translation,
               // Guardar el VIDEO COMPLETO con URL de Cloudinary
-              mediaUrl: uploadResult.url, // URL permanente de Cloudinary
+              mediaUrl: uploadResult.cloudinary.secure_url || uploadResult.cloudinary.url, // URL de Cloudinary
               mediaType: location.state.media?.type || 'video',
               userId: 'current_user', // Por ahora usar un ID fijo
               tags: ['nuevo', 'análisis'],
@@ -253,7 +254,7 @@ const Home = () => {
             };
 
             // Guardar en la base de datos usando videoShareService
-            console.log('💾 Guardando video en base de datos con URL de Cloudinary:', uploadResult.url);
+            console.log('💾 Guardando video en base de datos con URL de Cloudinary:', uploadResult.cloudinary.secure_url || uploadResult.cloudinary.url);
             const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
             console.log('✅ Video guardado en la base de datos:', videoUrl);
             console.log('🔍 Video object guardado:', newVideo);
