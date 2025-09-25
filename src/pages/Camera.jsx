@@ -69,8 +69,12 @@ const Camera = () => {
 
     mediaRecorderRef.current.onstop = () => {
       const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      const videoUrl = URL.createObjectURL(blob);
-      setCapturedMedia({ type: 'video', data: videoUrl });
+      // GUARDAR EL BLOB ORIGINAL, no solo la URL
+      setCapturedMedia({ 
+        type: 'video', 
+        data: URL.createObjectURL(blob),
+        blob: blob  // Mantener el blob original para evitar expiración
+      });
       setShowPreview(true);
     };
   }, [recordedChunks]);

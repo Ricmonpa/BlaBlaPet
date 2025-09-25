@@ -6,13 +6,16 @@ import videoShareService from '../services/videoShareService.js';
 import { compressVideo, needsCompression } from '../utils/videoCompression.js';
 import directBlobUploadService from '../services/directBlobUploadService.js';
 
-const convertBlobToFile = async (blobData, mediaType) => {
+const convertBlobToFile = async (blobData, mediaType, originalBlob = null) => {
   try {
     console.log('🎬 Convirtiendo blob a archivo para upload directo...');
     
-    // Si es un blob URL, convertir a blob
+    // PRIORIDAD 1: Usar blob original si está disponible (evita expiración)
     let blob;
-    if (typeof blobData === 'string' && blobData.startsWith('blob:')) {
+    if (originalBlob instanceof Blob) {
+      console.log('✅ Usando blob original (sin expiración)...');
+      blob = originalBlob;
+    } else if (typeof blobData === 'string' && blobData.startsWith('blob:')) {
       console.log('🔄 Convirtiendo blob URL a blob...');
       const response = await fetch(blobData);
       if (!response.ok) {
@@ -191,7 +194,8 @@ const Home = () => {
           console.log('🎬 Convirtiendo blob a archivo para upload directo...');
           const videoFile = await convertBlobToFile(
             location.state.media?.data, 
-            location.state.media?.type || 'video'
+            location.state.media?.type || 'video',
+            location.state.media?.blob  // Pasar el blob original si está disponible
           );
           console.log('✅ DEBUG - convertBlobToFile completado:', videoFile);
           
