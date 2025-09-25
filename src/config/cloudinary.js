@@ -108,43 +108,6 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
       throw new Error(`Cloudinary upload failed: ${error.message}`);
     }
   }
-};) => {
-  try {
-    // Reconfigurar Cloudinary en cada llamada para asegurar que las variables estén disponibles
-    configureCloudinary();
-    
-    const uploadResult = await cloudinary.uploader.upload(
-      `data:video/mp4;base64,${fileBuffer.toString('base64')}`,
-      {
-        resource_type: 'video',
-        folder: 'yo-pett-videos',
-        public_id: `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-        chunk_size: 6000000, // 6MB chunks para videos largos
-        eager: [
-          { width: 320, height: 240, crop: 'scale' }, // Thumbnail pequeño
-          { width: 640, height: 480, crop: 'scale' }  // Thumbnail mediano
-        ],
-        eager_async: true,
-        ...options
-      }
-    );
-
-    return {
-      success: true,
-      url: uploadResult.secure_url,
-      publicId: uploadResult.public_id,
-      assetId: uploadResult.asset_id,
-      format: uploadResult.format,
-      width: uploadResult.width,
-      height: uploadResult.height,
-      duration: uploadResult.duration,
-      bytes: uploadResult.bytes,
-      eager: uploadResult.eager // Thumbnails generados
-    };
-  } catch (error) {
-    console.error('Error uploading to Cloudinary:', error);
-    throw error;
-  }
 };
 
 // Función para eliminar video de Cloudinary
