@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Título dinámico -->
+    <title id="page-title">Cargando video...</title>
+    
+    <!-- Metadatos Open Graph dinámicos -->
+    <meta property="og:title" id="og-title" content="Cargando video..." />
+    <meta property="og:description" id="og-description" content="Cargando descripción..." />
+    <meta property="og:image" id="og-image" content="" />
+    <meta property="og:url" id="og-url" content="" />
+    <meta property="og:type" content="video.other" />
+    <meta property="og:site_name" content="Yo Pett" />
+    <meta property="og:locale" content="es_ES" />
+    
+    <!-- Metadatos Twitter -->
+    <meta name="twitter:card" content="player" />
+    <meta name="twitter:title" id="twitter-title" content="Cargando video..." />
+    <meta name="twitter:description" id="twitter-description" content="Cargando descripción..." />
+    <meta name="twitter:image" id="twitter-image" content="" />
+    <meta name="twitter:player" id="twitter-player" content="" />
+    <meta name="twitter:player:width" content="400" />
+    <meta name="twitter:player:height" content="600" />
+    
+    <!-- Metadatos adicionales para WhatsApp -->
+    <meta property="og:image:width" content="400" />
+    <meta property="og:image:height" content="600" />
+    <meta property="og:image:type" content="image/jpeg" />
+    
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        text-align: center;
+      }
+      .loading {
+        font-size: 18px;
+      }
+      .error {
+        color: #ff6b6b;
+      }
+      .video-info {
+        max-width: 600px;
+        padding: 20px;
+      }
+      .video-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #4ecdc4;
+      }
+      .video-description {
+        font-size: 18px;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+      .redirect-notice {
+        font-size: 14px;
+        color: #ccc;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="video-info">
+      <div id="loading" class="loading">
+        <div>🐕 Cargando video...</div>
+        <div class="redirect-notice">Redirigiendo a Yo Pett...</div>
+      </div>
+      
+      <div id="error" class="error" style="display: none;">
+        <h1>😿 Video no encontrado</h1>
+        <p>El video que buscas no existe o ha expirado</p>
+      </div>
+      
+      <div id="video-content" style="display: none;">
+        <h1 id="video-title" class="video-title">¡Mira lo que dice mi mascota! 🐕</h1>
+        <p id="video-description" class="video-description">"Traducción de la mascota..."</p>
+        <div class="redirect-notice">Redirigiendo a Yo Pett...</div>
+      </div>
+    </div>
+
+    <script>
+      // Obtener ID del video de la URL
+      const videoId = window.location.pathname.split('/').pop();
+      
+      // Función para actualizar metadatos
+      function updateMetaTags(video) {
+        const title = `¡Mira lo que dice ${video.petName || 'mi mascota'}! 🐕`;
+        const description = video.translation || video.emotionalDubbing || 'Análisis de comportamiento de mascota';
+        const image = video.mediaUrl;
+        const url = window.location.href;
+        
+        // Actualizar elementos del DOM
+        document.getElementById('page-title').textContent = title;
+        document.getElementById('og-title').setAttribute('content', title);
+        document.getElementById('og-description').setAttribute('content', description);
+        document.getElementById('og-image').setAttribute('content', image);
+        document.getElementById('og-url').setAttribute('content', url);
+        
+        document.getElementById('twitter-title').setAttribute('content', title);
+        document.getElementById('twitter-description').setAttribute('content', description);
+        document.getElementById('twitter-image').setAttribute('content', image);
+        document.getElementById('twitter-player').setAttribute('content', url);
+        
+        // Actualizar contenido visible
+        document.getElementById('video-title').textContent = title;
+        document.getElementById('video-description').textContent = `"${description}"`;
+        
+        // Mostrar contenido del video
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('video-content').style.display = 'block';
+      }
+      
+      // Función para mostrar error
+      function showError() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+      }
+      
+      // Simular obtención de datos del video
+      // En una implementación real, esto vendría de una API
+      setTimeout(() => {
+        // Datos de ejemplo - en producción esto vendría del servidor
+        const mockVideo = {
+          petName: 'Luna',
+          translation: '¡Hola! Quiero jugar contigo. ¿Puedes lanzarme la pelota?',
+          mediaUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'
+        };
+        
+        if (videoId && videoId !== '') {
+          updateMetaTags(mockVideo);
+          
+          // Redireccionar a la app real después de un delay
+          setTimeout(() => {
+            window.location.href = '/#/video/' + videoId;
+          }, 2000);
+        } else {
+          showError();
+        }
+      }, 500);
+    </script>
+  </body>
+</html>

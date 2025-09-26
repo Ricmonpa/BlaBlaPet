@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Upload Directo</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .upload-area { border: 2px dashed #ccc; padding: 20px; text-align: center; margin: 20px 0; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>Test Upload Directo - Vercel Blob</h1>
+    
+    <div class="upload-area">
+        <input type="file" id="fileInput" accept="video/*" />
+        <button onclick="testUpload()">Subir Video</button>
+    </div>
+    
+    <div id="logs"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            logs.appendChild(div);
+            console.log(message);
+        }
+
+        async function testUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                log('Por favor selecciona un archivo', 'error');
+                return;
+            }
+
+            log(`Iniciando upload de: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+
+            try {
+                // Paso 1: Obtener presigned URL (solo metadata)
+                log('Obteniendo presigned URL...');
+                
+                const urlResponse = await fetch('/api/get-upload-url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fileName: file.name,
+                        contentType: file.type,
+                        fileSize: file.size
+                    })
+                });
+
+                if (!urlResponse.ok) {
+                    const errorText = await urlResponse.text();
+                    throw new Error(`Error obteniendo URL: ${urlResponse.status}: ${errorText}`);
+                }
+
+                const urlData = await urlResponse.json();
+                log(`✅ Presigned URL obtenida: ${urlData.uploadUrl}`);
+
+                // Paso 2: Subir archivo directamente a Vercel Blob
+                log('Subiendo archivo directamente a Vercel Blob...');
+                
+                const uploadResponse = await fetch(urlData.uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type,
+                        'Content-Length': file.size.toString(),
+                        'x-content-length': file.size.toString(),
+                        'Authorization': `Bearer ${urlData.token}`,
+                    },
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorText = await uploadResponse.text();
+                    throw new Error(`Error subiendo: ${uploadResponse.status}: ${errorText}`);
+                }
+
+                log('✅ Upload exitoso!', 'success');
+                log(`URL final: ${urlData.url}`, 'success');
+                
+                // Mostrar el video si es posible
+                if (urlData.url) {
+                    const video = document.createElement('video');
+                    video.src = urlData.url;
+                    video.controls = true;
+                    video.style.maxWidth = '100%';
+                    document.body.appendChild(video);
+                }
+
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
