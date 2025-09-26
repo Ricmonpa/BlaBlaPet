@@ -209,7 +209,9 @@ export default async function handler(req, res) {
         assetId: uploadResult.assetId,
         format: uploadResult.format,
         duration: uploadResult.duration,
-        thumbnails: uploadResult.eager
+        thumbnails: uploadResult.eager,
+        url: uploadResult.url,
+        secure_url: uploadResult.secure_url
       },
       message: 'Video uploaded to Cloudinary successfully'
     });
