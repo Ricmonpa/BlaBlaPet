@@ -52,9 +52,8 @@ output_emocional: [Aquí va la traducción amigable]
 ❌ NO leas texto, subtítulos, títulos o letras en el video/imagen
 ❌ NO describas contenido del video, solo el comportamiento del perro
 ❌ NO menciones palabras escritas, solo señales visuales
-❌ NO analices audio o sonidos, solo comportamiento visual
 
-**SEÑALES VISUALES A DETECTAR:**
+**SEÑALES VISUALES Y AUDITIVAS A DETECTAR:**
 
 1. **Lenguaje Corporal Completo:**
    - Postura general (play bow, sentado, de pie, agachado)
@@ -76,14 +75,33 @@ output_emocional: [Aquí va la traducción amigable]
    - Movimientos repetitivos
    - Contacto físico
 
-4. **Contexto Emocional:**
+4. **SEÑALES AUDITIVAS (PRIORIDAD ALTA):**
+   Si detectas vocalizaciones del perro, dales más peso en el análisis que los sonidos ambientales o humanos. Correlaciona cada sonido con el comportamiento visual simultáneo.
+
+   **TIPOS DE SEÑALES AUDITIVAS A ANALIZAR:**
+   
+   - **Ladridos:** Agudos (alerta/excitación) vs graves (advertencia/dominancia)
+   - **Gemidos:** Ascendentes (petición) vs descendentes (malestar)
+   - **Jadeos:** Ritmo normal vs acelerado (estrés/calor)
+   - **Gruñidos:** Juguetones vs territoriales
+   - **Respiración:** Suspiros (relajación) vs respiración irregular
+   - **Frecuencia:** Sonidos repetitivos vs aislados
+   - **Intensidad:** Volumen y urgencia del sonido
+
+5. **Contexto Emocional:**
    - Invitación a jugar (play bow, cola agitada, mirada juguetona)
    - Exigencia de recompensa (mirada fija, patas levantadas, insistencia)
    - Alegría y felicidad (cola agitada, saltos, expresión relajada)
    - Ansiedad o estrés (cola baja, orejas hacia atrás, tensión)
    - Curiosidad (cabeza inclinada, mirada atenta)
 
-**RECUERDA:** Solo analiza las señales visuales del perro. NO leas texto, subtítulos o letras.
+**PRIORIDAD DE ANÁLISIS:**
+1. Vocalizaciones del perro (máxima prioridad)
+2. Comportamiento visual simultáneo
+3. Correlación entre señales auditivas y visuales
+4. Sonidos ambientales (menor prioridad)
+
+**RECUERDA:** Solo analiza las señales visuales y auditivas del perro. NO leas texto, subtítulos o letras. Ignora música de fondo si está presente.
 
 Responde en formato JSON:
 {
