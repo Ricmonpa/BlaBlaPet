@@ -11,11 +11,13 @@ Yo Pett es una aplicación tipo TikTok para dog-parents que permite grabar/subir
 - 📱 Feed de contenido tipo TikTok
 - 🌐 Soporte multiidioma (ES/EN)
 - 📱 Diseño mobile-first
+- 🏷️ **Watermark automático** - Logo de Yo Pett en todos los videos (como TikTok)
 
 ## Stack Tecnológico
 - **Frontend**: React + Vite
 - **Styling**: Tailwind CSS v4
 - **IA**: Gemini 1.5 Flash (Google AI)
+- **Media**: Cloudinary (procesamiento de videos/imágenes + watermark automático)
 - **Idiomas**: ES/EN (auto-detección + configuración manual)
 
 ## Paleta de Colores
@@ -40,13 +42,25 @@ El "cerebro IA" interpretará el lenguaje de las mascotas mediante prompts como:
 1. **Fase 1**: ✅ UI/UX base con "cerebro" simulado
 2. **Fase 2**: ✅ Integración con Gemini IA
 3. **Fase 2.5**: ✅ **Sistema de Doblaje Emocional** implementado
-4. **Fase 3**: 🔄 Portabilidad a móviles
+4. **Fase 2.7**: ✅ **Watermark automático** con Cloudinary implementado
+5. **Fase 3**: 🔄 Portabilidad a móviles
 
 ### Configuración de Gemini IA
 1. Obtener API key de Google AI Studio: https://makersuite.google.com/app/apikey
 2. Crear archivo `.env` basado en `env.example`
 3. Agregar tu API key: `VITE_GEMINI_API_KEY=tu_api_key_aqui`
 4. Ejecutar `npm run dev` para probar la integración
+
+### Configuración de Cloudinary (Watermark)
+1. Crear cuenta en Cloudinary: https://cloudinary.com
+2. Subir logo de Yo Pett con nombre: `yo-pett-logo`
+3. Configurar variables de entorno:
+   ```env
+   REACT_APP_CLOUDINARY_CLOUD_NAME=tu_cloud_name
+   REACT_APP_CLOUDINARY_API_KEY=tu_api_key
+   REACT_APP_CLOUDINARY_API_SECRET=tu_api_secret
+   ```
+4. Ver documentación completa: `docs/WATERMARK_IMPLEMENTATION.md`
 
 ## Comandos de Desarrollo
 ```bash
