@@ -6,7 +6,7 @@
 class VideoCompressor {
   constructor() {
     this.maxDuration = 5 * 60; // 5 minutos en segundos
-    this.maxSizeBytes = 10 * 1024 * 1024; // 10MB límite objetivo
+    this.maxSizeBytes = 3 * 1024 * 1024; // 3MB límite objetivo
     
     // Configuraciones por modo (más conservadoras para evitar corrupción)
     this.modes = {
