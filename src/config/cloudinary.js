@@ -55,12 +55,12 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
       // 🏷️ WATERMARK AUTOMÁTICO - Logo de Yo Pett en todos los videos
       transformation: [
         {
-          overlay: 'yo-pett-logo', // Nombre del logo subido en Cloudinary
-          gravity: 'south_east',   // Posición: esquina inferior derecha
-          width: 120,              // Tamaño del logo (ajustable)
+          overlay: 'yo-pett-logo', // Logo ubicado en la raíz de Cloudinary
+          gravity: 'south_east',            // Posición: esquina inferior derecha
+          width: 120,                       // Tamaño del logo (ajustable)
           height: 120,
-          opacity: 30,             // Transparencia 30% (ajustable)
-          crop: 'scale'            // Escalar proporcionalmente
+          opacity: 30,                      // Transparencia 30% (ajustable)
+          crop: 'scale'                     // Escalar proporcionalmente
         }
       ],
       eager: [
