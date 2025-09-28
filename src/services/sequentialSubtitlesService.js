@@ -486,31 +486,37 @@ Genera subtítulos para momentos clave del video. Responde SOLO en formato JSON:
     {
       "timestamp": "00:05 - 00:10", 
       "traduccion_tecnica": "Análisis técnico del comportamiento en este momento",
-      "traduccion_emocional": "Lo que el perro estaría 'diciendo' en palabras humanas"
+  "traduccion_emocional": "Lo que el perro estaría 'diciendo' en palabras humanas"
     }
   ]
 }`;
 
-    const result = await this.generateContentWithRetry([
+      const result = await this.generateContentWithRetry([
       { text: videoPrompt },
       { inlineData: { data: videoData.data, mimeType: videoData.mimeType } }
-    ]);
+      ]);
 
-    const response = await result.response;
-    const text = response.text();
-    
-    // Parsear respuesta
+      const response = await result.response;
+      const text = response.text();
+      
+      // Parsear respuesta
     let videoAnalysis;
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
         videoAnalysis = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No JSON found');
-      }
-    } catch (parseError) {
+        } else {
+          throw new Error('No JSON found');
+        }
+      } catch (parseError) {
       console.error(`❌ Error parseando análisis de video:`, parseError);
-      return [];
+      return {
+        subtitles: [],
+        totalDuration: 0,
+        success: false,
+        source: 'video_analysis_parse_error',
+        error: parseError.message
+      };
     }
 
     // Procesar subtítulos
@@ -526,10 +532,31 @@ Genera subtítulos para momentos clave del video. Responde SOLO en formato JSON:
       }));
       
       console.log(`✅ Video completo procesado: ${subtitles.length} subtítulos generados`);
-      return subtitles;
+      
+      // Calcular duración total basada en el último timestamp
+      const totalDuration = this.calculateTotalDuration(subtitles);
+      
+      return {
+        subtitles: subtitles,
+        totalDuration: totalDuration,
+        success: true,
+        source: 'video_analysis_with_audio',
+        analysisStats: {
+          totalSubtitles: subtitles.length,
+          audioProcessed: true,
+          videoProcessed: true
+        }
+      };
     }
     
-    return [];
+    console.warn('⚠️ No se encontraron subtítulos en la respuesta de Gemini');
+    return {
+      subtitles: [],
+      totalDuration: 0,
+      success: false,
+      source: 'video_analysis_error',
+      error: 'No subtitles found in Gemini response'
+    };
   }
 }
 
