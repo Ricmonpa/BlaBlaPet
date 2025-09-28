@@ -11,7 +11,7 @@
  */
 export async function compressVideo(videoBlob, options = {}) {
   const {
-    maxSizeMB = 4, // Máximo 4MB (dentro del límite de Vercel)
+    maxSizeMB = 5, // Máximo 5MB (límite optimizado para funcionalidad)
     quality = 0.7, // Calidad de compresión (0.1 - 1.0)
     maxWidth = 720, // Ancho máximo
     maxHeight = 1280 // Alto máximo
@@ -128,17 +128,17 @@ export async function compressVideoAggressive(videoBlob) {
   
   // Intentar compresión normal primero
   let compressedBlob = await compressVideo(videoBlob, {
-    maxSizeMB: 3,
+    maxSizeMB: 5,
     quality: 0.6,
     maxWidth: 640,
     maxHeight: 1136
   });
   
   // Si aún es muy grande, comprimir más
-  if (compressedBlob.size > 3 * 1024 * 1024) {
+  if (compressedBlob.size > 5 * 1024 * 1024) {
     console.log('🎬 Aplicando compresión adicional...');
     compressedBlob = await compressVideo(compressedBlob, {
-      maxSizeMB: 2,
+      maxSizeMB: 4,
       quality: 0.4,
       maxWidth: 480,
       maxHeight: 854

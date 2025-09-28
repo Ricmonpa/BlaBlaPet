@@ -120,10 +120,16 @@ class DirectBlobUploadService {
             mode: compressionMode
           });
           
-          console.log(`🗜️ Compresión en modo ${compressionMode}:`, {
-            original: (videoFile.size / 1024 / 1024).toFixed(2) + ' MB',
-            compressed: (processedFile.size / 1024 / 1024).toFixed(2) + ' MB'
-          });
+        console.log(`🗜️ Compresión en modo ${compressionMode}:`, {
+          original: (videoFile.size / 1024 / 1024).toFixed(2) + ' MB',
+          compressed: (processedFile.size / 1024 / 1024).toFixed(2) + ' MB',
+          config: {
+            videoBitrate: '600kbps',
+            audioBitrate: '64kbps',
+            audioSampleRate: '22kHz',
+            maxSize: '5MB'
+          }
+        });
           wasCompressed = true;
           
           console.log('✅ Video comprimido exitosamente');

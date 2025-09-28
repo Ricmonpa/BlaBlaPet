@@ -6,19 +6,25 @@
 class VideoCompressor {
   constructor() {
     this.maxDuration = 5 * 60; // 5 minutos en segundos
-    this.maxSizeBytes = 3 * 1024 * 1024; // 3MB límite objetivo
+    this.maxSizeBytes = 5 * 1024 * 1024; // 5MB límite objetivo
     
-    // Configuraciones por modo (más conservadoras para evitar corrupción)
+    // Configuraciones por modo optimizadas para funcionalidad
     this.modes = {
-      // Modo agresivo - para almacenamiento
+      // Modo agresivo - para almacenamiento con audio preservado
       aggressive: {
-        targetBitrate: 500, // kbps más alto para evitar corrupción
+        targetBitrate: 600, // kbps para preservar gestos visuales
+        audioBitrate: 64,   // kbps suficiente para análisis IA
+        audioSampleRate: 22050, // 22kHz para detectar vocalizaciones
+        audioChannels: 1,   // Mono es suficiente para perros
         maxWidth: 480,
-        fps: 20 // FPS más alto para mejor calidad
+        fps: 20
       },
       // Modo análisis - para que Gemini pueda ver bien
       analysis: {
-        targetBitrate: 1000, // kbps alto para máxima calidad
+        targetBitrate: 600, // kbps para preservar gestos visuales
+        audioBitrate: 64,   // kbps suficiente para análisis IA
+        audioSampleRate: 22050, // 22kHz para detectar vocalizaciones
+        audioChannels: 1,   // Mono es suficiente para perros
         maxWidth: 720, // HD para mejor análisis
         fps: 25
       }
@@ -97,16 +103,24 @@ class VideoCompressor {
       
       // Bitrate mínimo para evitar corrupción
       const safeBitrate = Math.max(config.targetBitrate * 1000, 300000); // Mínimo 300kbps
+      const audioBitrate = config.audioBitrate * 1000; // Convertir a bps
       
       try {
         recorderOptions = {
           mimeType: mimeType,
-          videoBitsPerSecond: safeBitrate
+          videoBitsPerSecond: safeBitrate,
+          audioBitsPerSecond: audioBitrate
         };
         
         // Probar si la configuración es soportada
         const testRecorder = new MediaRecorder(stream, recorderOptions);
         testRecorder.stop();
+        
+        console.log('🎵 Configuración de audio:', {
+          audioBitrate: config.audioBitrate + 'kbps',
+          sampleRate: config.audioSampleRate + 'Hz',
+          channels: config.audioChannels
+        });
         
       } catch (error) {
         console.warn('⚠️ Configuración avanzada no soportada, usando básica');
