@@ -73,15 +73,20 @@ class SequentialSubtitlesService {
       // Preparar media para Gemini
       const mediaPart = await this.prepareMediaForGemini(mediaData, mediaType);
       
-      // SOLO análisis multi-frame real - NO más thumbnails falsos
+      // USAR VIDEO COMPLETO CON AUDIO en lugar de frames
+      if (!mediaPart.isMultiFrame && mediaPart.inlineData) {
+        console.log('🎬 Usando análisis de VIDEO COMPLETO CON AUDIO');
+        return await this.processVideoWithAudio(mediaPart.inlineData);
+      }
+      
+      // FALLBACK: Si por alguna razón no se puede usar video completo, usar frames
       if (mediaPart.isMultiFrame && mediaPart.multiFrameData) {
-        console.log('🎬 Usando análisis multi-frame REAL con', mediaPart.multiFrameData.length, 'frames');
+        console.log('🎬 Fallback: Usando análisis multi-frame REAL con', mediaPart.multiFrameData.length, 'frames');
         return await this.generateSubtitlesFromRealFrames(mediaPart.multiFrameData);
       }
       
-      // NO HAY FALLBACK - Si no hay frames reales, fallar honestamente
-      throw new Error('No hay frames reales disponibles - rechazando análisis basado en thumbnail único');
-      // CÓDIGO ELIMINADO: Ya no se usa análisis basado en thumbnail único
+      // NO HAY FALLBACK - Si no hay video ni frames, fallar honestamente
+      throw new Error('No hay video completo ni frames disponibles - rechazando análisis');
       
     } catch (error) {
       console.error('❌ Error generando subtítulos secuenciales:', error);
@@ -111,22 +116,26 @@ class SequentialSubtitlesService {
           };
         }
       } else if (mediaType === 'video') {
-        // USAR ANÁLISIS MULTI-FRAME REAL en lugar de thumbnail falso
+        // ENVIAR VIDEO COMPLETO CON AUDIO en lugar de solo frames
         const videoBlob = mediaData instanceof Blob ? mediaData : await fetch(mediaData).then(r => r.blob());
         
-        console.log('🎬 ANALIZANDO VIDEO ORIGINAL:', {
+        console.log('🎬 ANALIZANDO VIDEO COMPLETO CON AUDIO:', {
           size: (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
           type: videoBlob.type,
-          isOriginal: mediaData instanceof Blob ? 'SÍ - Blob original' : 'NO - URL remota'
+          isOriginal: mediaData instanceof Blob ? 'SÍ - Blob original' : 'NO - URL remota',
+          audioIncluded: 'SÍ - Video completo con audio'
         });
         
-        // Generar frames reales del video ORIGINAL
-        const frames = await thoughtModelService.createMultipleVideoFrames(videoBlob, 8);
+        // Convertir video completo a base64 para enviar a Gemini
+        const videoBase64 = await this.blobToBase64(videoBlob);
         
         return {
-          isMultiFrame: true,
-          multiFrameData: frames,
-          inlineData: null // NO usar thumbnail falso
+          isMultiFrame: false, // Cambiado a false para indicar que enviamos video completo
+          multiFrameData: null, // No usamos frames
+          inlineData: {
+            data: videoBase64,
+            mimeType: videoBlob.type // Mantener el tipo original del video
+          }
         };
       }
       
@@ -453,86 +462,74 @@ class SequentialSubtitlesService {
     return match ? parseFloat(match[1]) : 60; // Default 60 segundos
   }
 
-  // Procesar frames en lotes para videos largos
-  async processFramesInBatches(frames) {
-    console.log(`🔄 Procesando ${frames.length} frames en lotes para video tipo TikTok`);
+  // Procesar video completo con audio
+  async processVideoWithAudio(videoData) {
+    console.log(`🎬 Procesando video completo con audio para análisis completo`);
     
-    const processFrame = async (frame, index) => {
-      const nextFrame = frames[index + 1];
-      const startTime = frame.timestamp;
-      const endTime = nextFrame ? nextFrame.timestamp : this.formatTime(frame.timeSeconds + 3);
-      const timestamp = `${startTime} - ${endTime}`;
-      
-      console.log(`📸 Procesando frame ${index + 1}/${frames.length}: ${timestamp} (${frame.timeSeconds}s)`);
-      
-      // Prompt optimizado para análisis rápido
-      const framePrompt = `Eres un analista de lenguaje corporal canino experto. Analiza esta imagen del momento ${timestamp} del video y genera una traducción del comportamiento del perro.
+    // Prompt optimizado para análisis de video completo con audio
+    const videoPrompt = `Eres un analista de lenguaje corporal canino experto. Analiza este video COMPLETO (con audio) del perro y genera subtítulos secuenciales basados en momentos clave del comportamiento.
 
-Responde SOLO en formato JSON:
+IMPORTANTE: Este es un VIDEO COMPLETO con audio, no una imagen estática. Debes analizar:
+1. Comportamiento visual a lo largo del tiempo
+2. TODAS las vocalizaciones del perro (ladridos, gruñidos, gemidos, jadeos)
+3. Correlación entre señales visuales y auditivas
+4. Cambios en el comportamiento a lo largo del video
+
+Genera subtítulos para momentos clave del video. Responde SOLO en formato JSON:
 {
-  "traduccion_tecnica": "Análisis técnico del comportamiento observado",
-  "traduccion_emocional": "Lo que el perro estaría 'diciendo' en palabras humanas"
+  "subtitles": [
+    {
+      "timestamp": "00:00 - 00:05",
+      "traduccion_tecnica": "Análisis técnico del comportamiento en este momento",
+      "traduccion_emocional": "Lo que el perro estaría 'diciendo' en palabras humanas"
+    },
+    {
+      "timestamp": "00:05 - 00:10", 
+      "traduccion_tecnica": "Análisis técnico del comportamiento en este momento",
+      "traduccion_emocional": "Lo que el perro estaría 'diciendo' en palabras humanas"
+    }
+  ]
 }`;
 
-      const result = await this.generateContentWithRetry([
-        { text: framePrompt },
-        { inlineData: { data: frame.base64, mimeType: 'image/jpeg' } }
-      ]);
+    const result = await this.generateContentWithRetry([
+      { text: videoPrompt },
+      { inlineData: { data: videoData.data, mimeType: videoData.mimeType } }
+    ]);
 
-      const response = await result.response;
-      const text = response.text();
-      
-      // Parsear respuesta
-      let frameAnalysis;
-      try {
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          frameAnalysis = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('No JSON found');
-        }
-      } catch (parseError) {
-        console.error(`❌ Error parseando frame ${index + 1}:`, parseError);
-        return null;
-      }
-
-      // Validar respuesta
-      if (frameAnalysis && frameAnalysis.traduccion_tecnica && frameAnalysis.traduccion_emocional) {
-        if (frameAnalysis.traduccion_emocional === "null" || frameAnalysis.traduccion_tecnica === "null") {
-          console.log(`🚫 Frame ${index + 1} - respuesta "null", saltando`);
-          return null;
-        }
-        
-        console.log(`✅ Frame ${index + 1} procesado exitosamente`);
-        return {
-          id: `subtitle_${index + 1}`,
-          timestamp: timestamp,
-          traduccion_tecnica: frameAnalysis.traduccion_tecnica,
-          traduccion_emocional: frameAnalysis.traduccion_emocional,
-          confidence: 95,
-          source: 'gemini_analysis',
-          frameIndex: index,
-          realTime: frame.timeSeconds
-        };
-      }
-      
-      return null;
-    };
-
-    // Usar el procesador por lotes
-    const subtitles = await batchProcessor.processFramesInBatches(
-      frames, 
-      processFrame,
-      (progress) => {
-        console.log(`📊 Progreso: ${progress.progress.toFixed(1)}% (${progress.processedFrames}/${progress.totalFrames} frames)`);
-      }
-    );
-
-    // Filtrar subtítulos nulos
-    const validSubtitles = subtitles.filter(subtitle => subtitle !== null);
+    const response = await result.response;
+    const text = response.text();
     
-    console.log(`✅ Procesamiento completado: ${validSubtitles.length} subtítulos válidos de ${frames.length} frames`);
-    return validSubtitles;
+    // Parsear respuesta
+    let videoAnalysis;
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        videoAnalysis = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found');
+      }
+    } catch (parseError) {
+      console.error(`❌ Error parseando análisis de video:`, parseError);
+      return [];
+    }
+
+    // Procesar subtítulos
+    if (videoAnalysis && videoAnalysis.subtitles && Array.isArray(videoAnalysis.subtitles)) {
+      const subtitles = videoAnalysis.subtitles.map((subtitle, index) => ({
+        id: `subtitle_${index + 1}`,
+        timestamp: subtitle.timestamp,
+        traduccion_tecnica: subtitle.traduccion_tecnica,
+        traduccion_emocional: subtitle.traduccion_emocional,
+        confidence: 95,
+        source: 'gemini_video_analysis',
+        frameIndex: index
+      }));
+      
+      console.log(`✅ Video completo procesado: ${subtitles.length} subtítulos generados`);
+      return subtitles;
+    }
+    
+    return [];
   }
 }
 

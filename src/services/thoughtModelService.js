@@ -216,18 +216,25 @@ Responde en formato JSON con la siguiente estructura:
           };
         }
       } else if (mediaType === 'video') {
-        // Para videos, extraer frame clave o usar thumbnail
+        // ENVIAR VIDEO COMPLETO CON AUDIO en lugar de solo frames
         const videoBlob = mediaData instanceof Blob ? mediaData : await fetch(mediaData).then(r => r.blob());
         
-        // Para videos, usar análisis multi-frame REAL
-        console.log('🎬 Extrayendo frames reales del video para análisis honesto...');
-        const frames = await this.createMultipleVideoFrames(videoBlob, 8);
+        console.log('🎬 ENVIANDO VIDEO COMPLETO CON AUDIO para análisis completo:', {
+          size: (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+          type: videoBlob.type,
+          audioIncluded: 'SÍ - Video completo con audio'
+        });
         
-        // Retornar SOLO frames reales - NO thumbnail único
+        // Convertir video completo a base64 para enviar a Gemini
+        const videoBase64 = await this.blobToBase64(videoBlob);
+        
         return {
-          inlineData: null, // NO usar thumbnail único
-          multiFrameData: frames,
-          isMultiFrame: true
+          inlineData: {
+            data: videoBase64,
+            mimeType: videoBlob.type // Mantener el tipo original del video
+          },
+          multiFrameData: null, // No usamos frames
+          isMultiFrame: false // Indicar que enviamos video completo
         };
       }
       
