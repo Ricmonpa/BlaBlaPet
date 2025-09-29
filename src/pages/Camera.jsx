@@ -31,7 +31,12 @@ const Camera = () => {
 
   // Función para cambiar entre cámara frontal y trasera
   const switchCamera = useCallback(() => {
-    setFacingMode(prevMode => prevMode === "user" ? "environment" : "user");
+    console.log("Cambiando cámara...");
+    setFacingMode(prevMode => {
+      const newMode = prevMode === "user" ? "environment" : "user";
+      console.log("Nueva cámara:", newMode);
+      return newMode;
+    });
   }, []);
 
   // Manejar captura de foto
@@ -422,6 +427,7 @@ const Camera = () => {
       {/* Camera View */}
       <div className="flex-1 relative">
         <Webcam
+          key={facingMode}
           ref={webcamRef}
           audio={true}
           screenshotFormat="image/jpeg"
