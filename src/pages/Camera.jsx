@@ -20,13 +20,19 @@ const Camera = () => {
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef(null);
+  const [facingMode, setFacingMode] = useState("user"); // "user" para frontal, "environment" para trasera
 
   // Configuración de video
   const videoConstraints = {
     width: 720,
     height: 1280,
-    facingMode: "user"
+    facingMode: facingMode
   };
+
+  // Función para cambiar entre cámara frontal y trasera
+  const switchCamera = useCallback(() => {
+    setFacingMode(prevMode => prevMode === "user" ? "environment" : "user");
+  }, []);
 
   // Manejar captura de foto
   const capturePhoto = useCallback(() => {
@@ -449,7 +455,10 @@ const Camera = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
-          <button className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+          <button 
+            onClick={switchCamera}
+            className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
