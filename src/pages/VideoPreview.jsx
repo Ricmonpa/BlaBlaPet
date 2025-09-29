@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import videoShareService from '../services/videoShareService.js';
 import SequentialSubtitlesOverlay from '../components/SequentialSubtitlesOverlay.jsx';
+import DogVoicePlayer from '../components/DogVoicePlayer.jsx';
 
 const VideoPreview = () => {
   const { videoId } = useParams();
@@ -9,6 +10,8 @@ const VideoPreview = () => {
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -40,6 +43,40 @@ const VideoPreview = () => {
     videoShareService.incrementShareCount(videoId);
 
   }, [videoId]);
+
+  // Event listeners para el video
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(videoElement.currentTime);
+    };
+
+    const handlePlay = () => {
+      setIsVideoPlaying(true);
+    };
+
+    const handlePause = () => {
+      setIsVideoPlaying(false);
+    };
+
+    const handleEnded = () => {
+      setIsVideoPlaying(false);
+    };
+
+    videoElement.addEventListener('timeupdate', handleTimeUpdate);
+    videoElement.addEventListener('play', handlePlay);
+    videoElement.addEventListener('pause', handlePause);
+    videoElement.addEventListener('ended', handleEnded);
+
+    return () => {
+      videoElement.removeEventListener('timeupdate', handleTimeUpdate);
+      videoElement.removeEventListener('play', handlePlay);
+      videoElement.removeEventListener('pause', handlePause);
+      videoElement.removeEventListener('ended', handleEnded);
+    };
+  }, [video]);
 
   /**
    * Actualizar metadatos Open Graph en el head del documento
@@ -187,6 +224,17 @@ const VideoPreview = () => {
             videoRef={videoRef}
             totalDuration={video.totalDuration}
           />
+        )}
+
+        {/* Reproductor de voz de perro */}
+        {video.isSequentialSubtitles && video.subtitles && video.mediaType === 'video' && (
+          <div className="absolute top-4 right-4 max-w-sm">
+            <DogVoicePlayer 
+              subtitles={video.subtitles}
+              currentTime={currentTime}
+              isVideoPlaying={isVideoPlaying}
+            />
+          </div>
         )}
 
         {/* Gradient overlay */}
