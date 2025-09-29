@@ -11,11 +11,11 @@ class DogVoiceService {
     this.isEnabled = true;
     this.isPlaying = false;
     
-    // Configuración optimizada para voces de perros
+    // Configuración optimizada para voz de Dug (Up)
     this.dogVoiceConfig = {
-      rate: 1.2,    // 20% más rápido (energía de perro)
-      pitch: 1.3,  // 30% más agudo (tono juguetón)
-      volume: 0.8, // 80% volumen (no muy fuerte)
+      rate: 1.4,    // 40% más rápido (energía de Dug)
+      pitch: 1.6,   // 60% más agudo (entusiasmo de Dug)
+      volume: 0.9,  // 90% volumen (expresividad de Dug)
       lang: 'es-ES' // Español
     };
     
@@ -39,27 +39,27 @@ class DogVoiceService {
   }
 
   /**
-   * Seleccionar la mejor voz para perros (femenina/aguda)
+   * Seleccionar la mejor voz para perros (masculina como Dug)
    */
   selectBestDogVoice() {
-    // Filtrar voces femeninas en español
-    const femaleVoices = this.voices.filter(voice => 
+    // Filtrar voces masculinas en español (como Dug)
+    const maleVoices = this.voices.filter(voice => 
       voice.lang.startsWith('es') && 
-      (voice.name.toLowerCase().includes('female') || 
-       voice.name.toLowerCase().includes('woman') ||
-       voice.name.toLowerCase().includes('mujer') ||
-       voice.name.toLowerCase().includes('femenina'))
+      (voice.name.toLowerCase().includes('male') || 
+       voice.name.toLowerCase().includes('man') ||
+       voice.name.toLowerCase().includes('hombre') ||
+       voice.name.toLowerCase().includes('masculino'))
     );
 
-    if (femaleVoices.length > 0) {
-      this.currentVoice = femaleVoices[0];
-      console.log('🎤 Voz de perro seleccionada:', this.currentVoice.name);
+    if (maleVoices.length > 0) {
+      this.currentVoice = maleVoices[0];
+      console.log('🎤 Voz de Dug seleccionada:', this.currentVoice.name);
     } else {
       // Fallback a cualquier voz en español
       const spanishVoices = this.voices.filter(voice => voice.lang.startsWith('es'));
       if (spanishVoices.length > 0) {
         this.currentVoice = spanishVoices[0];
-        console.log('🎤 Voz de perro (fallback):', this.currentVoice.name);
+        console.log('🎤 Voz de Dug (fallback):', this.currentVoice.name);
       }
     }
   }
@@ -163,10 +163,10 @@ class DogVoiceService {
   }
 
   /**
-   * Probar voz con texto de ejemplo
+   * Probar voz con texto de ejemplo (estilo Dug)
    */
   testVoice() {
-    const testText = "¡Hola! Soy un perro muy feliz y juguetón. ¿Quieres jugar conmigo?";
+    const testText = "¡Hola! Soy Dug, el perro más feliz del mundo. ¡Me encanta jugar y soy muy bueno en esto!";
     this.speak(testText);
   }
 }
