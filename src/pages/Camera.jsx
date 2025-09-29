@@ -29,11 +29,9 @@ const Camera = () => {
     try {
       setIsLoadingCamera(true);
       
-      // Detener stream anterior si existe
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-        setStream(null);
-      }
+      // Detener streams existentes
+      const existingStreams = await navigator.mediaDevices.enumerateDevices();
+      // Esto es más seguro que depender del estado stream
 
       const constraints = {
         video: {
@@ -46,7 +44,14 @@ const Camera = () => {
 
       console.log(`Obteniendo stream para cámara: ${facingMode}`);
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
-      setStream(newStream);
+      
+      // Detener stream anterior si existe
+      setStream(prevStream => {
+        if (prevStream) {
+          prevStream.getTracks().forEach(track => track.stop());
+        }
+        return newStream;
+      });
       
       // Asignar stream al video element
       if (videoRef.current) {
@@ -59,33 +64,10 @@ const Camera = () => {
       return newStream;
     } catch (error) {
       console.error('Error accediendo a la cámara:', error);
-      // Si falla con facingMode específico, intentar sin especificar
-      try {
-        const fallbackConstraints = {
-          video: {
-            width: 720,
-            height: 1280
-          },
-          audio: true
-        };
-        console.log('Intentando con constraints de fallback...');
-        const fallbackStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-        setStream(fallbackStream);
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = fallbackStream;
-          videoRef.current.play().catch(console.error);
-        }
-        
-        setIsLoadingCamera(false);
-        return fallbackStream;
-      } catch (fallbackError) {
-        console.error('Error en fallback:', fallbackError);
-        setIsLoadingCamera(false);
-        return null;
-      }
+      setIsLoadingCamera(false);
+      return null;
     }
-  }, [stream]);
+  }, []); // Sin dependencias para evitar loops
 
   // Función para cambiar entre cámara frontal y trasera
   const switchCamera = useCallback(() => {
@@ -93,15 +75,18 @@ const Camera = () => {
     setFacingMode(prevMode => {
       const newMode = prevMode === "user" ? "environment" : "user";
       console.log("Nueva cámara:", newMode);
-      getCameraStream(newMode);
+      // Llamar directamente sin depender del callback
+      setTimeout(() => {
+        getCameraStream(newMode);
+      }, 100);
       return newMode;
     });
-  }, [getCameraStream]);
+  }, []);
 
   // Inicializar cámara al montar el componente
   useEffect(() => {
     console.log('Inicializando cámara...');
-    getCameraStream(facingMode);
+    getCameraStream("user"); // Inicializar siempre con cámara frontal
     
     // Cleanup al desmontar
     return () => {
@@ -109,7 +94,7 @@ const Camera = () => {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [getCameraStream, facingMode]);
+  }, []); // Solo ejecutar una vez al montar
 
   // Configuración de video (mantener para compatibilidad)
   const videoConstraints = {
