@@ -53,14 +53,19 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
     dogVoiceService.speak(subtitle.traduccion_emocional);
   };
 
-  // Monitorear tiempo del video
+  // Monitorear tiempo del video con debounce
   useEffect(() => {
     if (!isVoiceEnabled || !isVideoPlaying) return;
 
-    const activeSubtitle = findActiveSubtitle(currentTime);
-    if (activeSubtitle && activeSubtitle.traduccion_emocional) {
-      speakSubtitle(activeSubtitle);
-    }
+    // Debounce para evitar llamadas múltiples
+    const timeoutId = setTimeout(() => {
+      const activeSubtitle = findActiveSubtitle(currentTime);
+      if (activeSubtitle && activeSubtitle.traduccion_emocional) {
+        speakSubtitle(activeSubtitle);
+      }
+    }, 100); // 100ms de debounce
+
+    return () => clearTimeout(timeoutId);
   }, [isVoiceEnabled, isVideoPlaying, currentTime, subtitles]);
 
   // Limpiar al desmontar

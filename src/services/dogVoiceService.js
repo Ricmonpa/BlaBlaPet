@@ -10,6 +10,8 @@ class DogVoiceService {
     this.currentVoice = null;
     this.isEnabled = true;
     this.isPlaying = false;
+    this.lastSpeakTime = 0;
+    this.lastSpokenText = '';
     
     // Configuración optimizada para voz de Dug (Up)
     this.dogVoiceConfig = {
@@ -72,39 +74,79 @@ class DogVoiceService {
   speak(text, options = {}) {
     if (!this.isEnabled || !text) return;
 
-    // Detener cualquier voz anterior
-    this.stop();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Aplicar configuración de voz de perro
-    utterance.rate = options.rate || this.dogVoiceConfig.rate;
-    utterance.pitch = options.pitch || this.dogVoiceConfig.pitch;
-    utterance.volume = options.volume || this.dogVoiceConfig.volume;
-    utterance.lang = this.dogVoiceConfig.lang;
-    
-    if (this.currentVoice) {
-      utterance.voice = this.currentVoice;
+    // DEBOUNCE: Evitar llamadas múltiples en 500ms
+    const now = Date.now();
+    if (now - this.lastSpeakTime < 500) {
+      console.log('🚫 Llamada muy rápida, ignorando');
+      return;
     }
 
-    // Eventos
-    utterance.onstart = () => {
-      this.isPlaying = true;
-      console.log('🎤 Perro hablando:', text);
-    };
+    // CONTROL DE ESTADO: Solo una voz a la vez
+    if (this.isPlaying) {
+      console.log('🚫 Ya hay una voz activa, ignorando');
+      return;
+    }
 
-    utterance.onend = () => {
-      this.isPlaying = false;
-      console.log('🎤 Perro terminó de hablar');
-    };
+    // VALIDACIÓN DE TEXTO: Evitar textos duplicados o muy cortos
+    if (text === this.lastSpokenText) {
+      console.log('🚫 Texto duplicado, ignorando');
+      return;
+    }
 
-    utterance.onerror = (event) => {
-      this.isPlaying = false;
-      console.error('❌ Error en voz de perro:', event.error);
-    };
+    if (text.length < 3) {
+      console.log('🚫 Texto muy corto, ignorando');
+      return;
+    }
 
-    // Reproducir
-    this.synthesis.speak(utterance);
+    // CANCELACIÓN FORZADA: Detener TODAS las voces anteriores
+    this.synthesis.cancel();
+    this.synthesis.pause();
+    this.synthesis.resume();
+    
+    // Esperar un momento para cancelación completa
+    setTimeout(() => {
+      // Verificar que no hay voces activas
+      if (this.synthesis.speaking) {
+        console.warn('⚠️ Aún hay voces activas, cancelando...');
+        this.synthesis.cancel();
+        return;
+      }
+
+      // Actualizar estado
+      this.lastSpeakTime = now;
+      this.lastSpokenText = text;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Aplicar configuración de voz de perro
+      utterance.rate = options.rate || this.dogVoiceConfig.rate;
+      utterance.pitch = options.pitch || this.dogVoiceConfig.pitch;
+      utterance.volume = options.volume || this.dogVoiceConfig.volume;
+      utterance.lang = this.dogVoiceConfig.lang;
+      
+      if (this.currentVoice) {
+        utterance.voice = this.currentVoice;
+      }
+
+      // Eventos
+      utterance.onstart = () => {
+        this.isPlaying = true;
+        console.log('🎤 Perro hablando:', text);
+      };
+
+      utterance.onend = () => {
+        this.isPlaying = false;
+        console.log('🎤 Perro terminó de hablar');
+      };
+
+      utterance.onerror = (event) => {
+        this.isPlaying = false;
+        console.error('❌ Error en voz de perro:', event.error);
+      };
+
+      // Reproducir
+      this.synthesis.speak(utterance);
+    }, 150); // 150ms de delay para cancelación completa
   }
 
   /**
@@ -112,7 +154,10 @@ class DogVoiceService {
    */
   stop() {
     this.synthesis.cancel();
+    this.synthesis.pause();
+    this.synthesis.resume();
     this.isPlaying = false;
+    this.lastSpokenText = ''; // Limpiar texto anterior
   }
 
   /**
