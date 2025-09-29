@@ -63,7 +63,7 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
       if (activeSubtitle && activeSubtitle.traduccion_emocional) {
         speakSubtitle(activeSubtitle);
       }
-    }, 100); // 100ms de debounce
+    }, 50); // 50ms de debounce (reducido)
 
     return () => clearTimeout(timeoutId);
   }, [isVoiceEnabled, isVideoPlaying, currentTime, subtitles]);

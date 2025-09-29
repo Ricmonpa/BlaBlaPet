@@ -74,9 +74,9 @@ class DogVoiceService {
   speak(text, options = {}) {
     if (!this.isEnabled || !text) return;
 
-    // DEBOUNCE: Evitar llamadas múltiples en 500ms
+    // DEBOUNCE: Evitar llamadas múltiples en 200ms (reducido)
     const now = Date.now();
-    if (now - this.lastSpeakTime < 500) {
+    if (now - this.lastSpeakTime < 200) {
       console.log('🚫 Llamada muy rápida, ignorando');
       return;
     }
@@ -87,31 +87,24 @@ class DogVoiceService {
       return;
     }
 
-    // VALIDACIÓN DE TEXTO: Evitar textos duplicados o muy cortos
+    // VALIDACIÓN DE TEXTO: Evitar textos duplicados (más permisivo)
     if (text === this.lastSpokenText) {
       console.log('🚫 Texto duplicado, ignorando');
       return;
     }
 
-    if (text.length < 3) {
+    if (text.length < 2) {
       console.log('🚫 Texto muy corto, ignorando');
       return;
     }
 
-    // CANCELACIÓN FORZADA: Detener TODAS las voces anteriores
-    this.synthesis.cancel();
-    this.synthesis.pause();
-    this.synthesis.resume();
+    // CANCELACIÓN SUAVE: Solo cancelar si hay voces activas
+    if (this.synthesis.speaking) {
+      this.synthesis.cancel();
+    }
     
-    // Esperar un momento para cancelación completa
+    // Esperar un momento para cancelación
     setTimeout(() => {
-      // Verificar que no hay voces activas
-      if (this.synthesis.speaking) {
-        console.warn('⚠️ Aún hay voces activas, cancelando...');
-        this.synthesis.cancel();
-        return;
-      }
-
       // Actualizar estado
       this.lastSpeakTime = now;
       this.lastSpokenText = text;
@@ -146,7 +139,7 @@ class DogVoiceService {
 
       // Reproducir
       this.synthesis.speak(utterance);
-    }, 150); // 150ms de delay para cancelación completa
+    }, 50); // 50ms de delay (reducido)
   }
 
   /**
