@@ -21,14 +21,18 @@ const Camera = () => {
   const fileInputRef = useRef(null);
   const [facingMode, setFacingMode] = useState("user"); // "user" para frontal, "environment" para trasera
   const [stream, setStream] = useState(null);
+  const [isLoadingCamera, setIsLoadingCamera] = useState(true);
   const videoRef = useRef(null);
 
   // Función para obtener el stream de la cámara
   const getCameraStream = useCallback(async (facingMode) => {
     try {
+      setIsLoadingCamera(true);
+      
       // Detener stream anterior si existe
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
+        setStream(null);
       }
 
       const constraints = {
@@ -40,18 +44,46 @@ const Camera = () => {
         audio: true
       };
 
+      console.log(`Obteniendo stream para cámara: ${facingMode}`);
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(newStream);
       
       // Asignar stream al video element
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
+        // Forzar el play del video
+        videoRef.current.play().catch(console.error);
       }
       
+      setIsLoadingCamera(false);
       return newStream;
     } catch (error) {
       console.error('Error accediendo a la cámara:', error);
-      return null;
+      // Si falla con facingMode específico, intentar sin especificar
+      try {
+        const fallbackConstraints = {
+          video: {
+            width: 720,
+            height: 1280
+          },
+          audio: true
+        };
+        console.log('Intentando con constraints de fallback...');
+        const fallbackStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+        setStream(fallbackStream);
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = fallbackStream;
+          videoRef.current.play().catch(console.error);
+        }
+        
+        setIsLoadingCamera(false);
+        return fallbackStream;
+      } catch (fallbackError) {
+        console.error('Error en fallback:', fallbackError);
+        setIsLoadingCamera(false);
+        return null;
+      }
     }
   }, [stream]);
 
@@ -68,6 +100,7 @@ const Camera = () => {
 
   // Inicializar cámara al montar el componente
   useEffect(() => {
+    console.log('Inicializando cámara...');
     getCameraStream(facingMode);
     
     // Cleanup al desmontar
@@ -76,7 +109,7 @@ const Camera = () => {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [getCameraStream, facingMode]);
 
   // Configuración de video (mantener para compatibilidad)
   const videoConstraints = {
@@ -486,6 +519,16 @@ const Camera = () => {
           muted
           className="w-full h-full object-cover"
         />
+        
+        {/* Loading indicator */}
+        {isLoadingCamera && (
+          <div className="absolute inset-0 bg-black flex items-center justify-center">
+            <div className="text-white text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+              <p className="text-sm">Cargando cámara...</p>
+            </div>
+          </div>
+        )}
 
         {/* Recording indicator */}
         {isRecording && (
