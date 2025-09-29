@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SequentialSubtitlesOverlay from './SequentialSubtitlesOverlay.jsx';
 import ShareModal from './ShareModal.jsx';
+import FloatingVoiceButton from './FloatingVoiceButton.jsx';
 
 const PetCard = ({ post }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
 
@@ -93,6 +96,40 @@ const PetCard = ({ post }) => {
     }
   }, [post.mediaUrl, post.mediaType, post.metadata?.isLocal]);
 
+  // Event listeners para voz (solo para videos con subtítulos)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || post.mediaType !== 'video' || !post.isSequentialSubtitles) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(video.currentTime);
+    };
+
+    const handlePlay = () => {
+      setIsVideoPlaying(true);
+    };
+
+    const handlePause = () => {
+      setIsVideoPlaying(false);
+    };
+
+    const handleEnded = () => {
+      setIsVideoPlaying(false);
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    video.addEventListener('ended', handleEnded);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      video.removeEventListener('ended', handleEnded);
+    };
+  }, [post.mediaType, post.isSequentialSubtitles]);
+
   // Debug logging para subtítulos secuenciales
   if (post.isSequentialSubtitles) {
     console.log('🎬 PetCard recibió video con subtítulos secuenciales:', {
@@ -170,6 +207,15 @@ const PetCard = ({ post }) => {
             subtitles={post.subtitles}
             videoRef={videoRef}
             totalDuration={post.totalDuration}
+          />
+        )}
+
+        {/* Botón flotante de voz */}
+        {post.isSequentialSubtitles && post.subtitles && post.mediaType === 'video' && (
+          <FloatingVoiceButton 
+            subtitles={post.subtitles}
+            currentTime={currentTime}
+            isVideoPlaying={isVideoPlaying}
           />
         )}
       </div>
