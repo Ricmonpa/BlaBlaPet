@@ -1,6 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Webcam from 'react-webcam';
 import translatorService from '../services/translatorService';
 import directBlobUploadService from '../services/directBlobUploadService';
 import BottomNavigation from '../components/BottomNavigation';
@@ -21,13 +20,40 @@ const Camera = () => {
   const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef(null);
   const [facingMode, setFacingMode] = useState("user"); // "user" para frontal, "environment" para trasera
+  const [stream, setStream] = useState(null);
+  const videoRef = useRef(null);
 
-  // Configuración de video
-  const videoConstraints = {
-    width: 720,
-    height: 1280,
-    facingMode: facingMode
-  };
+  // Función para obtener el stream de la cámara
+  const getCameraStream = useCallback(async (facingMode) => {
+    try {
+      // Detener stream anterior si existe
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      const constraints = {
+        video: {
+          width: 720,
+          height: 1280,
+          facingMode: facingMode
+        },
+        audio: true
+      };
+
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      setStream(newStream);
+      
+      // Asignar stream al video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = newStream;
+      }
+      
+      return newStream;
+    } catch (error) {
+      console.error('Error accediendo a la cámara:', error);
+      return null;
+    }
+  }, [stream]);
 
   // Función para cambiar entre cámara frontal y trasera
   const switchCamera = useCallback(() => {
@@ -35,14 +61,39 @@ const Camera = () => {
     setFacingMode(prevMode => {
       const newMode = prevMode === "user" ? "environment" : "user";
       console.log("Nueva cámara:", newMode);
+      getCameraStream(newMode);
       return newMode;
     });
+  }, [getCameraStream]);
+
+  // Inicializar cámara al montar el componente
+  useEffect(() => {
+    getCameraStream(facingMode);
+    
+    // Cleanup al desmontar
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
   }, []);
+
+  // Configuración de video (mantener para compatibilidad)
+  const videoConstraints = {
+    width: 720,
+    height: 1280,
+    facingMode: facingMode
+  };
 
   // Manejar captura de foto
   const capturePhoto = useCallback(() => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      context.drawImage(videoRef.current, 0, 0);
+      const imageSrc = canvas.toDataURL('image/jpeg');
       setCapturedMedia({ type: 'photo', data: imageSrc });
       setShowPreview(true);
     }
@@ -50,13 +101,13 @@ const Camera = () => {
 
   // Manejar inicio de grabación
   const startRecording = useCallback(() => {
-    if (webcamRef.current && mediaRecorderRef.current) {
+    if (stream && mediaRecorderRef.current) {
       setRecordedChunks([]);
       mediaRecorderRef.current.start();
       setIsRecording(true);
       setRecordingTime(0);
     }
-  }, []);
+  }, [stream]);
 
   // Manejar fin de grabación
   const stopRecording = useCallback(() => {
@@ -66,29 +117,31 @@ const Camera = () => {
     }
   }, [isRecording]);
 
-  // Configurar MediaRecorder
-  const onUserMedia = useCallback((stream) => {
-    mediaRecorderRef.current = new MediaRecorder(stream, {
-      mimeType: 'video/webm'
-    });
-    
-    mediaRecorderRef.current.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        setRecordedChunks((prev) => [...prev, event.data]);
-      }
-    };
-
-    mediaRecorderRef.current.onstop = () => {
-      const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      // GUARDAR EL BLOB ORIGINAL, no solo la URL
-      setCapturedMedia({ 
-        type: 'video', 
-        data: URL.createObjectURL(blob),
-        blob: blob  // Mantener el blob original para evitar expiración
+  // Configurar MediaRecorder cuando cambie el stream
+  useEffect(() => {
+    if (stream) {
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType: 'video/webm'
       });
-      setShowPreview(true);
-    };
-  }, [recordedChunks]);
+      
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          setRecordedChunks((prev) => [...prev, event.data]);
+        }
+      };
+
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        // GUARDAR EL BLOB ORIGINAL, no solo la URL
+        setCapturedMedia({ 
+          type: 'video', 
+          data: URL.createObjectURL(blob),
+          blob: blob  // Mantener el blob original para evitar expiración
+        });
+        setShowPreview(true);
+      };
+    }
+  }, [stream, recordedChunks]);
 
   // Manejar eventos del botón de captura
   const handleCaptureStart = () => {
@@ -426,13 +479,11 @@ const Camera = () => {
 
       {/* Camera View */}
       <div className="flex-1 relative">
-        <Webcam
-          key={facingMode}
-          ref={webcamRef}
-          audio={true}
-          screenshotFormat="image/jpeg"
-          videoConstraints={videoConstraints}
-          onUserMedia={onUserMedia}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
           className="w-full h-full object-cover"
         />
 
