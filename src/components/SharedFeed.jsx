@@ -112,6 +112,24 @@ const SharedFeed = ({ onVideoSelect }) => {
     };
   }, []);
 
+  // Configurar eventos touch NO passive para permitir preventDefault
+  useEffect(() => {
+    const container = document.querySelector('.feed-container-touch');
+    if (!container) return;
+
+    const options = { passive: false };
+    
+    container.addEventListener('touchstart', handleTouchStart, options);
+    container.addEventListener('touchmove', handleTouchMove, options);
+    container.addEventListener('touchend', handleTouchEnd, options);
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [touchStart]);
+
   // Manejar swipe vertical tipo TikTok
   const handleSwipe = (direction) => {
     if (direction === 'up' && currentIndex < videos.length - 1) {
@@ -390,15 +408,12 @@ const SharedFeed = ({ onVideoSelect }) => {
 
       {/* Feed Container - Sistema TikTok (Swipe Vertical) - ÁREA DONDE NO FUNCIONA PULL-TO-REFRESH */}
       <div 
-        className="flex-1 relative overflow-hidden"
+        className="flex-1 relative overflow-hidden feed-container-touch"
         style={{
           touchAction: 'pan-y',
           overscrollBehavior: 'none',
           WebkitOverflowScrolling: 'touch'
         }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         onKeyDown={handleKeyDown}
         tabIndex={0}
       >

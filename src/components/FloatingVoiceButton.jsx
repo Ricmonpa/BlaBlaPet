@@ -83,14 +83,28 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
     }
   }, [isVideoPlaying]);
 
-  const toggleVoice = () => {
+  const toggleVoice = (e) => {
+    // Prevenir que el evento se propague al video o al contenedor
+    e.stopPropagation();
+    e.preventDefault();
+    
     const newEnabled = !isVoiceEnabled;
+    console.log(`🎤 Toggle voz de perro: ${newEnabled ? 'ACTIVADO' : 'DESACTIVADO'}`);
     setIsVoiceEnabled(newEnabled);
     
     if (!newEnabled) {
       dogVoiceService.stop();
       setIsPlaying(false);
+    } else {
+      // Probar voz al activar
+      console.log('🎤 Probando voz de perro...');
+      dogVoiceService.testVoice();
     }
+  };
+
+  const handlePointerDown = (e) => {
+    // Prevenir que el touch/click se propague
+    e.stopPropagation();
   };
 
   // Solo mostrar si hay subtítulos secuenciales
@@ -99,14 +113,23 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
   return (
     <button
       onClick={toggleVoice}
-      className={`absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 ${
+      onPointerDown={handlePointerDown}
+      onTouchStart={(e) => e.stopPropagation()}
+      className={`absolute top-4 right-4 z-50 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${
         isVoiceEnabled 
-          ? 'bg-green-500 text-white hover:bg-green-600' 
-          : 'bg-gray-500 text-white hover:bg-gray-600'
+          ? 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-300' 
+          : 'bg-gray-700 text-white hover:bg-gray-600 ring-2 ring-gray-500'
       }`}
+      style={{
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent'
+      }}
       title={isVoiceEnabled ? 'Desactivar voz de perro' : 'Activar voz de perro'}
+      aria-label={isVoiceEnabled ? 'Desactivar voz de perro' : 'Activar voz de perro'}
     >
-      {isVoiceEnabled ? '🎤' : '🔇'}
+      <span className="text-xl" role="img" aria-label={isVoiceEnabled ? 'Micrófono activo' : 'Sonido desactivado'}>
+        {isVoiceEnabled ? '🎤' : '🔇'}
+      </span>
     </button>
   );
 };
