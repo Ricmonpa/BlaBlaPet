@@ -154,17 +154,19 @@ const Camera = () => {
     }
   }, [stream, recordedChunks]);
 
-  // Manejar eventos del botón de captura
+  // Manejar eventos del botón de captura - Modo TikTok
   const handleCaptureStart = () => {
     if (captureMode === 'photo') {
       capturePhoto();
     } else {
+      // Para video: iniciar grabación al presionar
       startRecording();
     }
   };
 
   const handleCaptureEnd = () => {
     if (captureMode === 'video' && isRecording) {
+      // Para video: detener grabación al soltar
       stopRecording();
     }
   };
@@ -513,11 +515,12 @@ const Camera = () => {
           </div>
         )}
 
-        {/* Recording indicator */}
+        {/* Recording indicator - Mejorado para TikTok */}
         {isRecording && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-full flex items-center space-x-2">
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg">
             <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-            <span>{formatTime(recordingTime)}</span>
+            <span className="font-medium">{formatTime(recordingTime)}</span>
+            <span className="text-xs opacity-75">GRABANDO</span>
           </div>
         )}
 
@@ -568,22 +571,31 @@ const Camera = () => {
 
         {/* Camera button and controls */}
         <div className="flex items-center justify-center space-x-8">
-          {/* Main capture button */}
-          <button
-            onMouseDown={handleCaptureStart}
-            onMouseUp={handleCaptureEnd}
-            onTouchStart={handleCaptureStart}
-            onTouchEnd={handleCaptureEnd}
-            className={`w-20 h-20 rounded-full border-4 border-white flex items-center justify-center transition-all ${
-              isRecording ? 'bg-red-500 scale-110' : 'bg-white'
-            }`}
-          >
-            {isRecording ? (
-              <div className="w-8 h-8 bg-white rounded"></div>
-            ) : (
-              <div className="w-12 h-12 rounded-full" style={{ backgroundColor: '#db195d' }}></div>
+          {/* Main capture button - Modo TikTok */}
+          <div className="relative">
+            <button
+              onMouseDown={handleCaptureStart}
+              onMouseUp={handleCaptureEnd}
+              onTouchStart={handleCaptureStart}
+              onTouchEnd={handleCaptureEnd}
+              className={`w-20 h-20 rounded-full border-4 border-white flex items-center justify-center transition-all duration-200 ${
+                isRecording 
+                  ? 'bg-red-500 scale-110 border-red-300' 
+                  : 'bg-white hover:scale-105'
+              }`}
+            >
+              {isRecording ? (
+                <div className="w-8 h-8 bg-white rounded-sm"></div>
+              ) : (
+                <div className="w-12 h-12 rounded-full" style={{ backgroundColor: '#db195d' }}></div>
+              )}
+            </button>
+            
+            {/* Anillo de grabación */}
+            {isRecording && (
+              <div className="absolute inset-0 rounded-full border-4 border-red-400 animate-ping"></div>
             )}
-          </button>
+          </div>
 
           {/* Gallery button */}
           <button 
