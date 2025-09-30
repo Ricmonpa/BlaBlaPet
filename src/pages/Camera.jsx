@@ -112,61 +112,78 @@ const Camera = () => {
 
   // Manejar inicio de grabación
   const startRecording = useCallback(() => {
+    console.log('Iniciando grabación...');
     if (stream && mediaRecorderRef.current) {
       setRecordedChunks([]);
-      mediaRecorderRef.current.start();
+      mediaRecorderRef.current.start(100); // Grabar en chunks de 100ms
       setIsRecording(true);
       setRecordingTime(0);
+      console.log('Grabación iniciada');
+    } else {
+      console.error('No hay stream o MediaRecorder disponible');
     }
   }, [stream]);
 
   // Manejar fin de grabación
   const stopRecording = useCallback(() => {
+    console.log('Deteniendo grabación...');
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      console.log('Grabación detenida');
     }
   }, [isRecording]);
 
   // Configurar MediaRecorder cuando cambie el stream
   useEffect(() => {
     if (stream) {
+      // Limpiar chunks anteriores
+      setRecordedChunks([]);
+      
+      // Crear MediaRecorder con el stream actual
       mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'video/webm'
+        mimeType: 'video/webm;codecs=vp8'
       });
       
       mediaRecorderRef.current.ondataavailable = (event) => {
+        console.log('Datos de video recibidos:', event.data.size);
         if (event.data.size > 0) {
           setRecordedChunks((prev) => [...prev, event.data]);
         }
       };
 
       mediaRecorderRef.current.onstop = () => {
+        console.log('Grabación detenida, procesando video...');
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        // GUARDAR EL BLOB ORIGINAL, no solo la URL
+        console.log('Video creado:', blob.size, 'bytes');
+        
         setCapturedMedia({ 
           type: 'video', 
           data: URL.createObjectURL(blob),
-          blob: blob  // Mantener el blob original para evitar expiración
+          blob: blob
         });
         setShowPreview(true);
       };
     }
-  }, [stream, recordedChunks]);
+  }, [stream]);
 
   // Manejar eventos del botón de captura - Modo TikTok
   const handleCaptureStart = () => {
+    console.log('Botón presionado - Modo:', captureMode);
     if (captureMode === 'photo') {
       capturePhoto();
     } else {
       // Para video: iniciar grabación al presionar
+      console.log('Iniciando grabación de video...');
       startRecording();
     }
   };
 
   const handleCaptureEnd = () => {
+    console.log('Botón soltado - Grabando:', isRecording);
     if (captureMode === 'video' && isRecording) {
       // Para video: detener grabación al soltar
+      console.log('Deteniendo grabación de video...');
       stopRecording();
     }
   };
