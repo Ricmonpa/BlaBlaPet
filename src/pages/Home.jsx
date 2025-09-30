@@ -308,25 +308,9 @@ const Home = () => {
     console.log('Video seleccionado:', video);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Lógica para manejar la subida del video
-  };
 
   return (
     <div className="h-screen flex flex-col no-pull-refresh" style={{ backgroundColor: '#DC195C' }}>
-      {/* Formulario para capturar el nombre del perro - ÁREA DONDE SÍ FUNCIONA PULL-TO-REFRESH */}
-      <form onSubmit={handleSubmit} className="allow-pull-refresh">
-        <label htmlFor="dogName">Nombre del perro (opcional):</label>
-        <input
-          id="dogName"
-          type="text"
-          placeholder="Ejemplo: Rocky"
-          className="mb-2 px-2 py-1 border rounded"
-        />
-        {/* ...otros campos y botones... */}
-      </form>
-
       {/* Feed de la Comunidad */}
       <div className="flex-1 pb-16">
         <SharedFeed onVideoSelect={handleVideoSelect} />
