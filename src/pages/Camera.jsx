@@ -541,7 +541,7 @@ const Camera = () => {
   }
 
   return (
-    <div className="h-screen bg-black flex flex-col pb-16">
+    <div className="h-screen bg-black flex flex-col pb-16 no-pull-refresh">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12">
         <button 

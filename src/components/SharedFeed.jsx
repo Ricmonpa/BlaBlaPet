@@ -136,24 +136,38 @@ const SharedFeed = ({ onVideoSelect }) => {
 
   // Manejar eventos de touch para swipe
   const handleTouchStart = (e) => {
+    // Prevenir pull-to-refresh nativo del navegador
+    e.preventDefault();
     const touch = e.touches[0];
     setTouchStart(touch.clientY);
   };
 
+  const handleTouchMove = (e) => {
+    // Prevenir pull-to-refresh nativo del navegador
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const handleTouchEnd = (e) => {
+    // Prevenir pull-to-refresh nativo del navegador
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!touchStart) return;
     
     const touch = e.changedTouches[0];
     const touchEnd = touch.clientY;
     const diff = touchStart - touchEnd;
     
-    // Si el swipe es suficientemente largo
+    // Si el swipe es suficientemente largo y rápido
     if (Math.abs(diff) > 50) {
       if (diff > 0) {
         // Swipe hacia arriba (siguiente video)
+        console.log('📱 Swipe hacia arriba detectado');
         handleSwipe('up');
       } else {
         // Swipe hacia abajo (video anterior)
+        console.log('📱 Swipe hacia abajo detectado');
         handleSwipe('down');
       }
     }
@@ -375,7 +389,13 @@ const SharedFeed = ({ onVideoSelect }) => {
       {/* Feed Container - Sistema TikTok (Swipe Vertical) */}
       <div 
         className="flex-1 relative overflow-hidden"
+        style={{
+          touchAction: 'pan-y',
+          overscrollBehavior: 'none',
+          WebkitOverflowScrolling: 'touch'
+        }}
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onKeyDown={handleKeyDown}
         tabIndex={0}

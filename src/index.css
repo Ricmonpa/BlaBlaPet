@@ -18,6 +18,10 @@
     padding: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Prevenir pull-to-refresh nativo del navegador */
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 }
 
@@ -81,5 +85,12 @@
 
   .animate-pulse-slow {
     animation: pulse 2s infinite;
+  }
+
+  /* Prevenir pull-to-refresh en contenedores principales */
+  .no-pull-refresh {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 }

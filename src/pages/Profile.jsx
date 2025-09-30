@@ -138,7 +138,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black pb-16">
+    <div className="min-h-screen bg-black pb-16 no-pull-refresh">
       {/* Header del Perfil */}
       <div className="bg-gradient-to-b from-[#1ca9b1] to-[#0f8a91] pt-12 pb-6 px-4">
         <div className="flex items-center space-x-4">

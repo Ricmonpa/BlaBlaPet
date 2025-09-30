@@ -314,7 +314,7 @@ const Home = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col" style={{ backgroundColor: '#DC195C' }}>
+    <div className="h-screen flex flex-col no-pull-refresh" style={{ backgroundColor: '#DC195C' }}>
       {/* Formulario para capturar el nombre del perro (puedes dejarlo como campo opcional visual, pero no usarlo en la lógica) */}
       <form onSubmit={handleSubmit}>
         <label htmlFor="dogName">Nombre del perro (opcional):</label>
