@@ -138,7 +138,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black pb-16">
       {/* Header del Perfil */}
       <div className="bg-gradient-to-b from-[#1ca9b1] to-[#0f8a91] pt-12 pb-6 px-4">
         <div className="flex items-center space-x-4">
@@ -324,10 +324,8 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <div className="flex-shrink-0">
-        <BottomNavigation />
-      </div>
+      {/* Bottom Navigation - Fixed */}
+      <BottomNavigation />
     </div>
   );
 };

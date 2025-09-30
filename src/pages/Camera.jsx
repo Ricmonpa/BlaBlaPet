@@ -541,7 +541,7 @@ const Camera = () => {
   }
 
   return (
-    <div className="h-screen bg-black flex flex-col">
+    <div className="h-screen bg-black flex flex-col pb-16">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-12">
         <button 
@@ -690,10 +690,8 @@ const Camera = () => {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="flex-shrink-0">
-        <BottomNavigation />
-      </div>
+      {/* Bottom Navigation - Fixed */}
+      <BottomNavigation />
     </div>
   );
 };

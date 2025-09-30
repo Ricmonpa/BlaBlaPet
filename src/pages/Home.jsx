@@ -328,14 +328,12 @@ const Home = () => {
       </form>
 
       {/* Feed de la Comunidad */}
-      <div className="flex-1">
+      <div className="flex-1 pb-16">
         <SharedFeed onVideoSelect={handleVideoSelect} />
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="flex-shrink-0">
-        <BottomNavigation />
-      </div>
+      {/* Bottom Navigation - Fixed */}
+      <BottomNavigation />
     </div>
   );
 };

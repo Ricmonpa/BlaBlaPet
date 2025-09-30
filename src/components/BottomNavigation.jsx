@@ -63,7 +63,7 @@ const BottomNavigation = () => {
   };
 
   return (
-    <div className="w-full px-4 py-3 h-16" style={{ backgroundColor: '#DC195C' }}>
+    <div className="fixed bottom-0 left-0 right-0 w-full px-4 py-3 h-16 z-50" style={{ backgroundColor: '#DC195C' }}>
       <div className="flex items-center justify-around">
         {navItems.map((item) => (
           <button

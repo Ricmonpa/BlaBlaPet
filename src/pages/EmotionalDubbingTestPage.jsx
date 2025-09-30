@@ -28,11 +28,11 @@ const EmotionalDubbingTestPage = () => {
       </div>
 
       {/* Content */}
-      <div className="pb-20">
+      <div className="pb-16">
         <EmotionalDubbingTest />
       </div>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - Fixed */}
       <BottomNavigation />
     </div>
   );

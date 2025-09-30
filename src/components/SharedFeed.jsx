@@ -445,7 +445,7 @@ const SharedFeed = ({ onVideoSelect }) => {
 
       {/* Botón de cargar más */}
       {!loading && hasMore && (
-        <div className="flex-shrink-0 bg-black/80 text-center py-4">
+        <div className="flex-shrink-0 bg-black/80 text-center py-4 mb-16">
           <button
             onClick={loadMore}
             className="bg-[#1ca9b1] text-white px-6 py-2 rounded-lg hover:bg-[#0f8a91] transition-colors"
