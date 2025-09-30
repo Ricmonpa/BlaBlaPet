@@ -29,16 +29,11 @@ const Camera = () => {
     try {
       setIsLoadingCamera(true);
       
-      // Detener stream anterior si existe
-      setStream(prevStream => {
-        if (prevStream) {
-          prevStream.getTracks().forEach(track => track.stop());
-        }
-        return null;
-      });
+      // Detener todos los streams existentes primero
+      const tracks = videoRef.current?.srcObject?.getTracks() || [];
+      tracks.forEach(track => track.stop());
 
-      // Intentar primero con constraints específicos
-      let constraints = {
+      const constraints = {
         video: {
           width: 720,
           height: 1280,
@@ -48,54 +43,38 @@ const Camera = () => {
       };
 
       console.log(`Obteniendo stream para cámara: ${facingMode}`);
-      let newStream;
+      const newStream = await navigator.mediaDevices.getUserMedia(constraints);
       
-      try {
-        newStream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (specificError) {
-        console.warn(`Error con facingMode específico ${facingMode}:`, specificError);
-        
-        // Fallback: intentar sin especificar facingMode
-        constraints = {
-          video: {
-            width: 720,
-            height: 1280
-          },
-          audio: true
-        };
-        
-        console.log('Intentando sin facingMode específico...');
-        newStream = await navigator.mediaDevices.getUserMedia(constraints);
-      }
-      
-      setStream(newStream);
-      
-      // Asignar stream al video element
+      // Asignar stream al video element ANTES de actualizar el estado
       if (videoRef.current) {
         videoRef.current.srcObject = newStream;
         videoRef.current.play().catch(console.error);
       }
       
+      setStream(newStream);
       setIsLoadingCamera(false);
-      console.log(`Cámara ${facingMode} inicializada correctamente`);
+      
+      console.log(`✅ Cámara ${facingMode} inicializada correctamente`);
       return newStream;
     } catch (error) {
-      console.error('Error accediendo a la cámara:', error);
+      console.error(`❌ Error accediendo a la cámara ${facingMode}:`, error);
       setIsLoadingCamera(false);
       return null;
     }
-  }, []); // Sin dependencias para evitar loops
+  }, []);
 
   // Función para cambiar entre cámara frontal y trasera
-  const switchCamera = useCallback(async () => {
+  const switchCamera = useCallback(() => {
     console.log("Cambiando cámara...");
-    const currentMode = facingMode;
-    const newMode = currentMode === "user" ? "environment" : "user";
-    console.log(`Cambiando de ${currentMode} a ${newMode}`);
-    
-    setFacingMode(newMode);
-    await getCameraStream(newMode);
-  }, [facingMode]);
+    setFacingMode(prevMode => {
+      const newMode = prevMode === "user" ? "environment" : "user";
+      console.log(`Cambiando de ${prevMode} a ${newMode}`);
+      
+      // Cambiar cámara inmediatamente
+      getCameraStream(newMode);
+      return newMode;
+    });
+  }, []);
 
   // Inicializar cámara al montar el componente
   useEffect(() => {
@@ -519,6 +498,11 @@ const Camera = () => {
           className="w-full h-full object-cover"
         />
         
+        {/* Camera indicator */}
+        <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded text-xs">
+          {facingMode === "user" ? "📱 Frontal" : "📷 Trasera"}
+        </div>
+
         {/* Loading indicator */}
         {isLoadingCamera && (
           <div className="absolute inset-0 bg-black flex items-center justify-center">
