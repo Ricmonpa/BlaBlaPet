@@ -521,8 +521,8 @@ const Camera = () => {
           </div>
         )}
 
-        {/* Right side controls - Solo botón de voltear cámara */}
-        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+        {/* Right side controls - Botón de voltear cámara con texto */}
+        <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col items-center space-y-2">
           <button 
             onClick={switchCamera}
             className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
@@ -531,6 +531,7 @@ const Camera = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
             </svg>
           </button>
+          <span className="text-white text-xs font-medium">Girar</span>
         </div>
       </div>
 
