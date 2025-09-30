@@ -347,8 +347,10 @@ const SharedFeed = ({ onVideoSelect }) => {
 
   return (
     <div className="h-full flex flex-col bg-black">
-      {/* Header del Feed Compartido */}
-      <div className="flex-shrink-0 bg-[#1ca9b1] pt-12 pb-4 px-4 z-20">
+      {/* Header del Feed Compartido - ÁREA DONDE SÍ FUNCIONA PULL-TO-REFRESH */}
+      <div 
+        className="flex-shrink-0 bg-[#1ca9b1] pt-12 pb-4 px-4 z-20 allow-pull-refresh"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img 
@@ -386,7 +388,7 @@ const SharedFeed = ({ onVideoSelect }) => {
         </div>
       </div>
 
-      {/* Feed Container - Sistema TikTok (Swipe Vertical) */}
+      {/* Feed Container - Sistema TikTok (Swipe Vertical) - ÁREA DONDE NO FUNCIONA PULL-TO-REFRESH */}
       <div 
         className="flex-1 relative overflow-hidden"
         style={{

@@ -18,10 +18,8 @@
     padding: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Prevenir pull-to-refresh nativo del navegador */
-    overscroll-behavior: none;
+    /* Permitir pull-to-refresh por defecto, pero será controlado por clases específicas */
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
   }
 }
 
@@ -92,5 +90,11 @@
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+  }
+
+  /* Permitir pull-to-refresh solo en áreas específicas */
+  .allow-pull-refresh {
+    overscroll-behavior: auto;
+    touch-action: auto;
   }
 }

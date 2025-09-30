@@ -315,8 +315,8 @@ const Home = () => {
 
   return (
     <div className="h-screen flex flex-col no-pull-refresh" style={{ backgroundColor: '#DC195C' }}>
-      {/* Formulario para capturar el nombre del perro (puedes dejarlo como campo opcional visual, pero no usarlo en la lógica) */}
-      <form onSubmit={handleSubmit}>
+      {/* Formulario para capturar el nombre del perro - ÁREA DONDE SÍ FUNCIONA PULL-TO-REFRESH */}
+      <form onSubmit={handleSubmit} className="allow-pull-refresh">
         <label htmlFor="dogName">Nombre del perro (opcional):</label>
         <input
           id="dogName"
