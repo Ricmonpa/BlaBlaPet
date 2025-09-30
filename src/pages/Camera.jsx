@@ -128,11 +128,33 @@ const Camera = () => {
   const stopRecording = useCallback(() => {
     console.log('Deteniendo grabación...');
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      console.log('Grabación detenida');
+      try {
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+        console.log('Grabación detenida - MediaRecorder.stop() ejecutado');
+        
+        // Timeout de seguridad para procesar video si onstop no se ejecuta
+        setTimeout(() => {
+          if (recordedChunks.length > 0) {
+            console.log('Procesando video por timeout de seguridad...');
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            setCapturedMedia({ 
+              type: 'video', 
+              data: URL.createObjectURL(blob),
+              blob: blob
+            });
+            setShowPreview(true);
+          }
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error deteniendo grabación:', error);
+        setIsRecording(false);
+      }
+    } else {
+      console.log('No hay grabación activa para detener');
     }
-  }, [isRecording]);
+  }, [isRecording, recordedChunks]);
 
   // Configurar MediaRecorder cuando cambie el stream
   useEffect(() => {
@@ -154,15 +176,21 @@ const Camera = () => {
 
       mediaRecorderRef.current.onstop = () => {
         console.log('Grabación detenida, procesando video...');
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        console.log('Video creado:', blob.size, 'bytes');
+        console.log('Chunks disponibles:', recordedChunks.length);
         
-        setCapturedMedia({ 
-          type: 'video', 
-          data: URL.createObjectURL(blob),
-          blob: blob
-        });
-        setShowPreview(true);
+        if (recordedChunks.length > 0) {
+          const blob = new Blob(recordedChunks, { type: 'video/webm' });
+          console.log('Video creado:', blob.size, 'bytes');
+          
+          setCapturedMedia({ 
+            type: 'video', 
+            data: URL.createObjectURL(blob),
+            blob: blob
+          });
+          setShowPreview(true);
+        } else {
+          console.error('No hay chunks de video para procesar');
+        }
       };
     }
   }, [stream]);
