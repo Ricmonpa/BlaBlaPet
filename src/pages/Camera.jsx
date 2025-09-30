@@ -138,12 +138,17 @@ const Camera = () => {
           if (recordedChunks.length > 0) {
             console.log('Procesando video por timeout de seguridad...');
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const videoUrl = URL.createObjectURL(blob);
+            console.log('Video de seguridad creado:', blob.size, 'bytes');
+            console.log('URL de seguridad:', videoUrl);
+            
             setCapturedMedia({ 
               type: 'video', 
-              data: URL.createObjectURL(blob),
+              data: videoUrl,
               blob: blob
             });
             setShowPreview(true);
+            console.log('Vista previa activada por timeout');
           }
         }, 1000);
         
@@ -182,12 +187,16 @@ const Camera = () => {
           const blob = new Blob(recordedChunks, { type: 'video/webm' });
           console.log('Video creado:', blob.size, 'bytes');
           
+          const videoUrl = URL.createObjectURL(blob);
+          console.log('URL del video creada:', videoUrl);
+          
           setCapturedMedia({ 
             type: 'video', 
-            data: URL.createObjectURL(blob),
+            data: videoUrl,
             blob: blob
           });
           setShowPreview(true);
+          console.log('Vista previa activada');
         } else {
           console.error('No hay chunks de video para procesar');
         }
@@ -464,11 +473,23 @@ const Camera = () => {
               className="max-w-full max-h-full object-contain rounded-lg"
             />
           ) : (
-            <video 
-              src={capturedMedia.data} 
-              controls 
-              className="max-w-full max-h-full object-contain rounded-lg"
-            />
+            <div className="w-full h-full flex flex-col items-center justify-center">
+              <video 
+                src={capturedMedia.data} 
+                controls 
+                autoPlay
+                muted
+                className="max-w-full max-h-full object-contain rounded-lg"
+                onLoadStart={() => console.log('Video cargando...')}
+                onLoadedData={() => console.log('Video cargado correctamente')}
+                onError={(e) => console.error('Error cargando video:', e)}
+              />
+              <div className="mt-4 text-white text-sm">
+                <p>Tipo: {capturedMedia.type}</p>
+                <p>URL: {capturedMedia.data ? 'Válida' : 'Inválida'}</p>
+                <p>Blob: {capturedMedia.blob ? `${capturedMedia.blob.size} bytes` : 'No disponible'}</p>
+              </div>
+            </div>
           )}
           
           {/* Loading overlay */}
