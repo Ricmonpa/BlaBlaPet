@@ -11,7 +11,7 @@ const Camera = () => {
   
   const [capturing, setCapturing] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState([]);
-  const [captureMode, setCaptureMode] = useState('photo'); // 'photo', 'video'
+  const [captureMode, setCaptureMode] = useState('video'); // 'photo', 'video'
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [capturedMedia, setCapturedMedia] = useState(null);
