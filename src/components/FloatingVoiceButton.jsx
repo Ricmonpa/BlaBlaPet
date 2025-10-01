@@ -147,9 +147,7 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
       }`}
       style={{
         touchAction: 'manipulation',
-        WebkitTapHighlightColor: 'transparent',
-        border: '3px solid red', // DEBUG: Ver si está visible
-        backgroundColor: isVoiceEnabled ? 'rgba(0,255,0,0.3)' : 'rgba(255,0,0,0.3)' // DEBUG: Ver si está tapado
+        WebkitTapHighlightColor: 'transparent'
       }}
       title={isVoiceEnabled ? 'Desactivar voz de perro' : 'Activar voz de perro'}
       aria-label={isVoiceEnabled ? 'Desactivar voz de perro' : 'Activar voz de perro'}

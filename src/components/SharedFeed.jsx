@@ -151,12 +151,24 @@ const SharedFeed = ({ onVideoSelect }) => {
   }, []);
 
   const handleTouchMove = useCallback((e) => {
+    // Verificar si el touch es en el botón de voz
+    if (e.target.closest('.voice-button')) {
+      console.log('🎤 Touch move en botón de voz, no procesar swipe');
+      return; // No procesar como swipe
+    }
+    
     // Prevenir pull-to-refresh nativo del navegador
     e.preventDefault();
     e.stopPropagation();
   }, []);
 
   const handleTouchEnd = useCallback((e) => {
+    // Verificar si el touch es en el botón de voz
+    if (e.target.closest('.voice-button')) {
+      console.log('🎤 Touch end en botón de voz, no procesar swipe');
+      return; // No procesar como swipe
+    }
+    
     // Prevenir pull-to-refresh nativo del navegador
     e.preventDefault();
     e.stopPropagation();
