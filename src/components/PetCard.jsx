@@ -166,7 +166,7 @@ const PetCard = ({ post }) => {
             className="w-full h-full object-cover"
             autoPlay
             loop
-            muted
+            volume={0.65}
             playsInline
             onError={(e) => {
               console.error('❌ Error cargando video:', {
