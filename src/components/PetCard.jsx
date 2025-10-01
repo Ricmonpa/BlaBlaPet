@@ -11,6 +11,7 @@ const PetCard = ({ post }) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
 
   // Sincronizar videoRef con el estado del video
   useEffect(() => {
@@ -166,8 +167,16 @@ const PetCard = ({ post }) => {
             className="w-full h-full object-cover"
             autoPlay
             loop
-            volume={0.65}
+            volume={userInteracted ? 0.65 : 0}
             playsInline
+            onTouchStart={() => {
+              console.log('👆 Primera interacción detectada, activando audio original');
+              setUserInteracted(true);
+            }}
+            onMouseDown={() => {
+              console.log('🖱️ Primera interacción detectada (desktop), activando audio original');
+              setUserInteracted(true);
+            }}
             onError={(e) => {
               console.error('❌ Error cargando video:', {
                 videoSrc: e.target.src,
