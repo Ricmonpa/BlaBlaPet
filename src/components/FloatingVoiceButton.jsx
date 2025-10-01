@@ -13,8 +13,15 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
   useEffect(() => {
     const savedPreference = localStorage.getItem('dogVoiceEnabled');
     if (savedPreference !== null) {
-      setIsVoiceEnabled(JSON.parse(savedPreference));
-      dogVoiceService.setEnabled(JSON.parse(savedPreference));
+      const enabled = JSON.parse(savedPreference);
+      console.log('🎤 Cargando preferencia guardada:', enabled);
+      setIsVoiceEnabled(enabled);
+      dogVoiceService.setEnabled(enabled);
+    } else {
+      // Si no hay preferencia guardada, empezar desactivado
+      console.log('🎤 Sin preferencia guardada, empezando desactivado');
+      setIsVoiceEnabled(false);
+      dogVoiceService.setEnabled(false);
     }
   }, []);
 
@@ -90,13 +97,16 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
     
     const newEnabled = !isVoiceEnabled;
     console.log(`🎤 Toggle voz de perro: ${newEnabled ? 'ACTIVADO' : 'DESACTIVADO'}`);
+    console.log(`🎤 Estado actual: isVoiceEnabled=${isVoiceEnabled}, newEnabled=${newEnabled}`);
     setIsVoiceEnabled(newEnabled);
     
     if (!newEnabled) {
+      console.log('🎤 Desactivando voz de perro...');
       dogVoiceService.stop();
       setIsPlaying(false);
     } else {
       // Probar voz al activar
+      console.log('🎤 Activando voz de perro...');
       console.log('🎤 Probando voz de perro...');
       dogVoiceService.testVoice();
     }
@@ -108,7 +118,17 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
   };
 
   // Solo mostrar si hay subtítulos secuenciales
-  if (!subtitles || subtitles.length === 0) return null;
+  if (!subtitles || subtitles.length === 0) {
+    console.log('🎤 FloatingVoiceButton: No hay subtítulos, no mostrando botón');
+    return null;
+  }
+
+  console.log('🎤 FloatingVoiceButton renderizando:', {
+    isVoiceEnabled,
+    subtitlesCount: subtitles.length,
+    currentTime,
+    isVideoPlaying
+  });
 
   return (
     <button
