@@ -91,6 +91,8 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
   }, [isVideoPlaying]);
 
   const toggleVoice = (e) => {
+    console.log('🎤 CLIC DETECTADO en botón de voz!');
+    
     // Prevenir que el evento se propague al video o al contenedor
     e.stopPropagation();
     e.preventDefault();
