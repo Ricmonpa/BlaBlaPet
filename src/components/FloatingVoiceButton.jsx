@@ -92,6 +92,9 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
 
   const toggleVoice = (e) => {
     console.log('🎤 CLIC DETECTADO en botón de voz!');
+    console.log('🎤 Evento completo:', e);
+    console.log('🎤 Target:', e.target);
+    console.log('🎤 CurrentTarget:', e.currentTarget);
     
     // Prevenir que el evento se propague al video o al contenedor
     e.stopPropagation();
@@ -137,14 +140,16 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
       onClick={toggleVoice}
       onPointerDown={handlePointerDown}
       onTouchStart={(e) => e.stopPropagation()}
-      className={`voice-button absolute top-4 right-4 z-50 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${
+      className={`voice-button absolute top-4 right-4 z-[100] w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${
         isVoiceEnabled 
           ? 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-300' 
           : 'bg-gray-700 text-white hover:bg-gray-600 ring-2 ring-gray-500'
       }`}
       style={{
         touchAction: 'manipulation',
-        WebkitTapHighlightColor: 'transparent'
+        WebkitTapHighlightColor: 'transparent',
+        border: '3px solid red', // DEBUG: Ver si está visible
+        backgroundColor: isVoiceEnabled ? 'rgba(0,255,0,0.3)' : 'rgba(255,0,0,0.3)' // DEBUG: Ver si está tapado
       }}
       title={isVoiceEnabled ? 'Desactivar voz de perro' : 'Activar voz de perro'}
       aria-label={isVoiceEnabled ? 'Desactivar voz de perro' : 'Activar voz de perro'}
