@@ -140,7 +140,7 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
       onClick={toggleVoice}
       onPointerDown={handlePointerDown}
       onTouchStart={(e) => e.stopPropagation()}
-      className={`voice-button absolute top-4 right-4 z-[100] w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${
+      className={`voice-button absolute top-16 right-4 z-[100] w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${
         isVoiceEnabled 
           ? 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-300' 
           : 'bg-gray-700 text-white hover:bg-gray-600 ring-2 ring-gray-500'
