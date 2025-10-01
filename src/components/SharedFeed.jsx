@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import PetCard from './PetCard.jsx';
 import videoShareService from '../services/videoShareService.js';
 
@@ -14,7 +14,7 @@ const SharedFeed = ({ onVideoSelect }) => {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
-  const [touchStart, setTouchStart] = useState(null);
+  const touchStartRef = useRef(null); // Cambio a useRef para evitar re-renders
 
   // Cargar videos del feed público
   const loadVideos = async (pageNum = 1, refresh = false) => {
@@ -112,26 +112,8 @@ const SharedFeed = ({ onVideoSelect }) => {
     };
   }, []);
 
-  // Configurar eventos touch NO passive para permitir preventDefault
-  useEffect(() => {
-    const container = document.querySelector('.feed-container-touch');
-    if (!container) return;
-
-    const options = { passive: false };
-    
-    container.addEventListener('touchstart', handleTouchStart, options);
-    container.addEventListener('touchmove', handleTouchMove, options);
-    container.addEventListener('touchend', handleTouchEnd, options);
-
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [touchStart]);
-
   // Manejar swipe vertical tipo TikTok
-  const handleSwipe = (direction) => {
+  const handleSwipe = useCallback((direction) => {
     if (direction === 'up' && currentIndex < videos.length - 1) {
       // Siguiente video
       setCurrentIndex(currentIndex + 1);
@@ -142,40 +124,43 @@ const SharedFeed = ({ onVideoSelect }) => {
       // Cargar más videos cuando llegamos al final
       loadMore();
     }
-  };
+  }, [currentIndex, videos.length, hasMore]);
 
   // Manejar eventos de teclado para navegación
-  const handleKeyDown = (e) => {
+  const handleKeyDown = useCallback((e) => {
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
       handleSwipe(e.key === 'ArrowUp' ? 'up' : 'down');
     }
-  };
+  }, [handleSwipe]);
 
   // Manejar eventos de touch para swipe
-  const handleTouchStart = (e) => {
+  const handleTouchStart = useCallback((e) => {
     // Prevenir pull-to-refresh nativo del navegador
     e.preventDefault();
     const touch = e.touches[0];
-    setTouchStart(touch.clientY);
-  };
+    touchStartRef.current = touch.clientY;
+    console.log('👆 Touch start:', touch.clientY);
+  }, []);
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = useCallback((e) => {
     // Prevenir pull-to-refresh nativo del navegador
     e.preventDefault();
     e.stopPropagation();
-  };
+  }, []);
 
-  const handleTouchEnd = (e) => {
+  const handleTouchEnd = useCallback((e) => {
     // Prevenir pull-to-refresh nativo del navegador
     e.preventDefault();
     e.stopPropagation();
     
-    if (!touchStart) return;
+    if (!touchStartRef.current) return;
     
     const touch = e.changedTouches[0];
     const touchEnd = touch.clientY;
-    const diff = touchStart - touchEnd;
+    const diff = touchStartRef.current - touchEnd;
+    
+    console.log('👇 Touch end:', touchEnd, 'Diff:', diff);
     
     // Si el swipe es suficientemente largo y rápido
     if (Math.abs(diff) > 50) {
@@ -190,8 +175,31 @@ const SharedFeed = ({ onVideoSelect }) => {
       }
     }
     
-    setTouchStart(null);
-  };
+    touchStartRef.current = null;
+  }, [handleSwipe]);
+
+  // Configurar eventos touch NO passive para permitir preventDefault
+  useEffect(() => {
+    const container = document.querySelector('.feed-container-touch');
+    if (!container) {
+      console.warn('⚠️ Contenedor .feed-container-touch no encontrado');
+      return;
+    }
+
+    console.log('✅ Registrando event listeners touch (non-passive)');
+    const options = { passive: false };
+    
+    container.addEventListener('touchstart', handleTouchStart, options);
+    container.addEventListener('touchmove', handleTouchMove, options);
+    container.addEventListener('touchend', handleTouchEnd, options);
+
+    return () => {
+      console.log('🧹 Limpiando event listeners touch');
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []); // ✅ Sin dependencias - solo se ejecuta una vez al montar
 
   // Manejar selección de video
   const handleVideoSelect = (video) => {
