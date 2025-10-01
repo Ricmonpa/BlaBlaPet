@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import SequentialSubtitlesOverlay from './SequentialSubtitlesOverlay.jsx';
 import ShareModal from './ShareModal.jsx';
 import FloatingVoiceButton from './FloatingVoiceButton.jsx';
+import { useInteraction } from '../contexts/InteractionContext';
 
 const PetCard = ({ post }) => {
   const [isLiked, setIsLiked] = useState(false);
@@ -11,7 +12,7 @@ const PetCard = ({ post }) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
-  const [userInteracted, setUserInteracted] = useState(false);
+  const { hasInteracted, setHasInteracted } = useInteraction();
 
   // Sincronizar videoRef con el estado del video
   useEffect(() => {
@@ -167,15 +168,16 @@ const PetCard = ({ post }) => {
             className="w-full h-full object-cover"
             autoPlay
             loop
-            volume={userInteracted ? 0.65 : 0}
+            volume={0.65}
+            muted={!hasInteracted}
             playsInline
             onTouchStart={() => {
               console.log('👆 Primera interacción detectada, activando audio original');
-              setUserInteracted(true);
+              setHasInteracted(true);
             }}
             onMouseDown={() => {
               console.log('🖱️ Primera interacción detectada (desktop), activando audio original');
-              setUserInteracted(true);
+              setHasInteracted(true);
             }}
             onError={(e) => {
               console.error('❌ Error cargando video:', {
