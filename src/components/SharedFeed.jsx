@@ -137,6 +137,12 @@ const SharedFeed = ({ onVideoSelect }) => {
 
   // Manejar eventos de touch para swipe
   const handleTouchStart = useCallback((e) => {
+    // Verificar si el touch es en el botón de voz
+    if (e.target.closest('.voice-button')) {
+      console.log('🎤 Touch en botón de voz, no procesar swipe');
+      return; // No procesar como swipe
+    }
+    
     // Prevenir pull-to-refresh nativo del navegador
     e.preventDefault();
     const touch = e.touches[0];
