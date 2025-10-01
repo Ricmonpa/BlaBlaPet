@@ -15,6 +15,7 @@ const SharedFeed = ({ onVideoSelect }) => {
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const touchStartRef = useRef(null); // Cambio a useRef para evitar re-renders
+  const containerRef = useRef(null); // Ref para el contenedor del feed
 
   // Cargar videos del feed público
   const loadVideos = async (pageNum = 1, refresh = false) => {
@@ -180,13 +181,13 @@ const SharedFeed = ({ onVideoSelect }) => {
 
   // Configurar eventos touch NO passive para permitir preventDefault
   useEffect(() => {
-    const container = document.querySelector('.feed-container-touch');
+    const container = containerRef.current;
     if (!container) {
-      console.warn('⚠️ Contenedor .feed-container-touch no encontrado');
+      console.warn('⚠️ Contenedor del feed no está disponible aún');
       return;
     }
 
-    console.log('✅ Registrando event listeners touch (non-passive)');
+    console.log('✅ Registrando event listeners touch (non-passive) en:', container.className);
     const options = { passive: false };
     
     container.addEventListener('touchstart', handleTouchStart, options);
@@ -199,7 +200,7 @@ const SharedFeed = ({ onVideoSelect }) => {
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []); // ✅ Sin dependencias - solo se ejecuta una vez al montar
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd, videos.length]); // ✅ Se ejecuta cuando hay videos
 
   // Manejar selección de video
   const handleVideoSelect = (video) => {
@@ -416,6 +417,7 @@ const SharedFeed = ({ onVideoSelect }) => {
 
       {/* Feed Container - Sistema TikTok (Swipe Vertical) - ÁREA DONDE NO FUNCIONA PULL-TO-REFRESH */}
       <div 
+        ref={containerRef}
         className="flex-1 relative overflow-hidden feed-container-touch"
         style={{
           touchAction: 'pan-y',
