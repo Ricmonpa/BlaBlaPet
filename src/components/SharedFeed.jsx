@@ -143,6 +143,12 @@ const SharedFeed = ({ onVideoSelect }) => {
       return; // No procesar como swipe
     }
     
+    // Verificar si el touch es en un video
+    if (e.target.closest('video')) {
+      console.log('🎬 Touch en video, no procesar swipe - permitir interacción');
+      return; // No procesar como swipe, permitir interacción del video
+    }
+    
     // Prevenir pull-to-refresh nativo del navegador
     e.preventDefault();
     const touch = e.touches[0];
@@ -157,6 +163,12 @@ const SharedFeed = ({ onVideoSelect }) => {
       return; // No procesar como swipe
     }
     
+    // Verificar si el touch es en un video
+    if (e.target.closest('video')) {
+      console.log('🎬 Touch move en video, no procesar swipe - permitir interacción');
+      return; // No procesar como swipe, permitir interacción del video
+    }
+    
     // Prevenir pull-to-refresh nativo del navegador
     e.preventDefault();
     e.stopPropagation();
@@ -167,6 +179,12 @@ const SharedFeed = ({ onVideoSelect }) => {
     if (e.target.closest('.voice-button')) {
       console.log('🎤 Touch end en botón de voz, no procesar swipe');
       return; // No procesar como swipe
+    }
+    
+    // Verificar si el touch es en un video
+    if (e.target.closest('video')) {
+      console.log('🎬 Touch end en video, no procesar swipe - permitir interacción');
+      return; // No procesar como swipe, permitir interacción del video
     }
     
     // Prevenir pull-to-refresh nativo del navegador
