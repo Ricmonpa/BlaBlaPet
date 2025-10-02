@@ -15,7 +15,7 @@ const PetCard = ({ post }) => {
   const { hasInteracted, setHasInteracted } = useInteraction();
 
   // Debug: Log del estado de interacción
-  console.log('🎬 PetCard - hasInteracted:', hasInteracted, 'muted:', !hasInteracted);
+  console.log('🎬 PetCard - hasInteracted:', hasInteracted, 'video muted:', videoRef.current?.muted);
 
   // Sincronizar videoRef con el estado del video
   useEffect(() => {
@@ -171,24 +171,23 @@ const PetCard = ({ post }) => {
             className="w-full h-full object-cover"
             autoPlay
             loop
-            volume={0.65}
-            muted={!hasInteracted}
+            muted={true}
             playsInline
             onClick={() => {
-              console.log('🖱️ CLICK detectado, activando audio original');
-              setHasInteracted(true);
+              if (!hasInteracted) {
+                console.log('🖱️ CLICK detectado, activando audio original');
+                videoRef.current.muted = false;
+                videoRef.current.volume = 0.65;
+                setHasInteracted(true);
+              }
             }}
             onTouchStart={() => {
-              console.log('👆 TOUCH detectado, activando audio original');
-              setHasInteracted(true);
-            }}
-            onMouseDown={() => {
-              console.log('🖱️ MOUSE DOWN detectado, activando audio original');
-              setHasInteracted(true);
-            }}
-            onPlay={() => {
-              console.log('▶️ VIDEO PLAY detectado, activando audio original');
-              setHasInteracted(true);
+              if (!hasInteracted) {
+                console.log('👆 TOUCH detectado, activando audio original');
+                videoRef.current.muted = false;
+                videoRef.current.volume = 0.65;
+                setHasInteracted(true);
+              }
             }}
             onError={(e) => {
               console.error('❌ Error cargando video:', {
