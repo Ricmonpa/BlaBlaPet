@@ -149,6 +149,15 @@ const SharedFeed = ({ onVideoSelect }) => {
       return; // No procesar como swipe, permitir interacción del video
     }
     
+    // 🎯 NUEVA LÓGICA: Activar audio en cualquier touch
+    console.log('🎬 Touch detectado en contenedor, activando audio');
+    const video = e.target.closest('.feed-container-touch')?.querySelector('video');
+    if (video && video.muted) {
+      console.log('🎬 ACTIVANDO AUDIO desde contenedor');
+      video.muted = false;
+      video.volume = 0.65;
+    }
+    
     // Prevenir pull-to-refresh nativo del navegador
     e.preventDefault();
     const touch = e.touches[0];
