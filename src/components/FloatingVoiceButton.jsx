@@ -2,34 +2,46 @@ import React, { useState, useEffect } from 'react';
 import dogVoiceService from '../services/dogVoiceService';
 
 /**
- * Botón flotante simple para activar/desactivar voz de perro
+ * Botón flotante para activar/desactivar audio original + voz TTS
  * Solo se muestra en videos con subtítulos secuenciales
  */
-const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying = false }) => {
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying = false, videoRef }) => {
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Cargar preferencia guardada
   useEffect(() => {
-    const savedPreference = localStorage.getItem('dogVoiceEnabled');
+    const savedPreference = localStorage.getItem('audioEnabled');
     if (savedPreference !== null) {
       const enabled = JSON.parse(savedPreference);
       console.log('🎤 Cargando preferencia guardada:', enabled);
-      setIsVoiceEnabled(enabled);
+      setIsAudioEnabled(enabled);
       dogVoiceService.setEnabled(enabled);
     } else {
       // Si no hay preferencia guardada, empezar desactivado
       console.log('🎤 Sin preferencia guardada, empezando desactivado');
-      setIsVoiceEnabled(false);
+      setIsAudioEnabled(false);
       dogVoiceService.setEnabled(false);
     }
   }, []);
 
-  // Guardar preferencia
+  // Guardar preferencia y manejar audio
   useEffect(() => {
-    localStorage.setItem('dogVoiceEnabled', JSON.stringify(isVoiceEnabled));
-    dogVoiceService.setEnabled(isVoiceEnabled);
-  }, [isVoiceEnabled]);
+    localStorage.setItem('audioEnabled', JSON.stringify(isAudioEnabled));
+    dogVoiceService.setEnabled(isAudioEnabled);
+    
+    // Manejar audio original del video
+    if (videoRef?.current) {
+      if (isAudioEnabled) {
+        console.log('🎬 Activando audio original del video');
+        videoRef.current.muted = false;
+        videoRef.current.volume = 0.65;
+      } else {
+        console.log('🎬 Desactivando audio original del video');
+        videoRef.current.muted = true;
+      }
+    }
+  }, [isAudioEnabled, videoRef]);
 
   // Encontrar subtítulo activo
   const findActiveSubtitle = (time) => {
@@ -54,7 +66,7 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
 
   // Reproducir subtítulo emocional
   const speakSubtitle = (subtitle) => {
-    if (!subtitle?.traduccion_emocional || !isVoiceEnabled) return;
+    if (!subtitle?.traduccion_emocional || !isAudioEnabled) return;
     
     setIsPlaying(true);
     dogVoiceService.speak(subtitle.traduccion_emocional);
@@ -62,7 +74,7 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
 
   // Monitorear tiempo del video con debounce
   useEffect(() => {
-    if (!isVoiceEnabled || !isVideoPlaying) return;
+    if (!isAudioEnabled || !isVideoPlaying) return;
 
     // Debounce para evitar llamadas múltiples
     const timeoutId = setTimeout(() => {
@@ -73,7 +85,7 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
     }, 50); // 50ms de debounce (reducido)
 
     return () => clearTimeout(timeoutId);
-  }, [isVoiceEnabled, isVideoPlaying, currentTime, subtitles]);
+  }, [isAudioEnabled, isVideoPlaying, currentTime, subtitles]);
 
   // Limpiar al desmontar
   useEffect(() => {
@@ -90,8 +102,8 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
     }
   }, [isVideoPlaying]);
 
-  const toggleVoice = (e) => {
-    console.log('🎤 CLIC DETECTADO en botón de voz!');
+  const toggleAudio = (e) => {
+    console.log('🎤 CLIC DETECTADO en botón de audio!');
     console.log('🎤 Evento completo:', e);
     console.log('🎤 Target:', e.target);
     console.log('🎤 CurrentTarget:', e.currentTarget);
@@ -100,19 +112,18 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
     e.stopPropagation();
     e.preventDefault();
     
-    const newEnabled = !isVoiceEnabled;
-    console.log(`🎤 Toggle voz de perro: ${newEnabled ? 'ACTIVADO' : 'DESACTIVADO'}`);
-    console.log(`🎤 Estado actual: isVoiceEnabled=${isVoiceEnabled}, newEnabled=${newEnabled}`);
-    setIsVoiceEnabled(newEnabled);
+    const newEnabled = !isAudioEnabled;
+    console.log(`🎤 Toggle audio: ${newEnabled ? 'ACTIVADO' : 'DESACTIVADO'}`);
+    console.log(`🎤 Estado actual: isAudioEnabled=${isAudioEnabled}, newEnabled=${newEnabled}`);
+    setIsAudioEnabled(newEnabled);
     
     if (!newEnabled) {
-      console.log('🎤 Desactivando voz de perro...');
+      console.log('🎤 Desactivando audio original + voz TTS...');
       dogVoiceService.stop();
       setIsPlaying(false);
     } else {
+      console.log('🎤 Activando audio original + voz TTS...');
       // Probar voz al activar
-      console.log('🎤 Activando voz de perro...');
-      console.log('🎤 Probando voz de perro...');
       dogVoiceService.testVoice();
     }
   };
@@ -129,7 +140,7 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
   }
 
   console.log('🎤 FloatingVoiceButton renderizando:', {
-    isVoiceEnabled,
+    isAudioEnabled,
     subtitlesCount: subtitles.length,
     currentTime,
     isVideoPlaying
@@ -137,11 +148,11 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
 
   return (
     <button
-      onClick={toggleVoice}
+      onClick={toggleAudio}
       onPointerDown={handlePointerDown}
       onTouchStart={(e) => e.stopPropagation()}
       className={`voice-button absolute top-32 right-4 z-[100] w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${
-        isVoiceEnabled 
+        isAudioEnabled 
           ? 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-300' 
           : 'bg-gray-700 text-white hover:bg-gray-600 ring-2 ring-gray-500'
       }`}
@@ -149,11 +160,11 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
         touchAction: 'manipulation',
         WebkitTapHighlightColor: 'transparent'
       }}
-      title={isVoiceEnabled ? 'Desactivar voz de perro' : 'Activar voz de perro'}
-      aria-label={isVoiceEnabled ? 'Desactivar voz de perro' : 'Activar voz de perro'}
+      title={isAudioEnabled ? 'Desactivar audio' : 'Activar audio'}
+      aria-label={isAudioEnabled ? 'Desactivar audio' : 'Activar audio'}
     >
-      <span className="text-xl" role="img" aria-label={isVoiceEnabled ? 'Micrófono activo' : 'Sonido desactivado'}>
-        {isVoiceEnabled ? '🎤' : '🔇'}
+      <span className="text-xl" role="img" aria-label={isAudioEnabled ? 'Audio activo' : 'Audio desactivado'}>
+        {isAudioEnabled ? '🔊' : '🔇'}
       </span>
     </button>
   );

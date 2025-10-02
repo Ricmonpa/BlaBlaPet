@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { InteractionProvider } from './contexts/InteractionContext';
 import Home from './pages/Home';
 import Camera from './pages/Camera';
 import Profile from './pages/Profile';
@@ -10,20 +9,18 @@ import VideoPreview from './pages/VideoPreview';
 
 function App() {
   return (
-    <InteractionProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/camera" element={<Camera />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/gemini-test" element={<GeminiTestPage />} />
-            <Route path="/emotional-dubbing-test" element={<EmotionalDubbingTestPage />} />
-            <Route path="/video/:videoId" element={<VideoPreview />} />
-          </Routes>
-        </div>
-      </Router>
-    </InteractionProvider>
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/camera" element={<Camera />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/gemini-test" element={<GeminiTestPage />} />
+          <Route path="/emotional-dubbing-test" element={<EmotionalDubbingTestPage />} />
+          <Route path="/video/:videoId" element={<VideoPreview />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 

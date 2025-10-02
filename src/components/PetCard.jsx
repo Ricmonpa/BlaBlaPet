@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import SequentialSubtitlesOverlay from './SequentialSubtitlesOverlay.jsx';
 import ShareModal from './ShareModal.jsx';
 import FloatingVoiceButton from './FloatingVoiceButton.jsx';
-import { useInteraction } from '../contexts/InteractionContext';
 
 const PetCard = ({ post }) => {
   const [isLiked, setIsLiked] = useState(false);
@@ -12,41 +11,6 @@ const PetCard = ({ post }) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
-  const { hasInteracted, setHasInteracted } = useInteraction();
-
-  // Debug: Log del estado de interacción
-  console.log('🎬 PetCard - hasInteracted:', hasInteracted, 'video muted:', videoRef.current?.muted);
-
-  // Manejar interacción con el video
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) {
-      console.log('🎬 Video ref no disponible aún');
-      return;
-    }
-
-    console.log('🎬 Agregando event listeners al video:', video.src);
-
-    const handleInteraction = (e) => {
-      console.log('🎬 EVENTO DETECTADO en video:', e.type);
-      if (!hasInteracted) {
-        console.log('🎬 INTERACCIÓN detectada, activando audio original');
-        video.muted = false;
-        video.volume = 0.65;
-        setHasInteracted(true);
-      }
-    };
-
-    // Agregar listeners
-    video.addEventListener('click', handleInteraction);
-    video.addEventListener('touchstart', handleInteraction);
-
-    return () => {
-      console.log('🎬 Limpiando event listeners del video');
-      video.removeEventListener('click', handleInteraction);
-      video.removeEventListener('touchstart', handleInteraction);
-    };
-  }, [hasInteracted]);
 
   // Sincronizar videoRef con el estado del video
   useEffect(() => {
@@ -252,6 +216,7 @@ const PetCard = ({ post }) => {
             subtitles={post.subtitles}
             currentTime={currentTime}
             isVideoPlaying={isVideoPlaying}
+            videoRef={videoRef}
           />
         )}
       </div>
