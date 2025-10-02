@@ -20,9 +20,15 @@ const PetCard = ({ post }) => {
   // Manejar interacción con el video
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video) {
+      console.log('🎬 Video ref no disponible aún');
+      return;
+    }
 
-    const handleInteraction = () => {
+    console.log('🎬 Agregando event listeners al video:', video.src);
+
+    const handleInteraction = (e) => {
+      console.log('🎬 EVENTO DETECTADO en video:', e.type);
       if (!hasInteracted) {
         console.log('🎬 INTERACCIÓN detectada, activando audio original');
         video.muted = false;
@@ -36,6 +42,7 @@ const PetCard = ({ post }) => {
     video.addEventListener('touchstart', handleInteraction);
 
     return () => {
+      console.log('🎬 Limpiando event listeners del video');
       video.removeEventListener('click', handleInteraction);
       video.removeEventListener('touchstart', handleInteraction);
     };
