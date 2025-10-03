@@ -94,7 +94,7 @@ const PetCard = ({ post }) => {
         video.removeEventListener('error', handleError);
       };
     }
-  }, [post.mediaUrl, post.mediaType, post.metadata?.isLocal]);
+  }, [post.mediaUrl, post.mediaType, post.metadata?.isLocal, post.id]);
 
   // Event listeners para voz (solo para videos con subtítulos)
   useEffect(() => {
@@ -128,20 +128,22 @@ const PetCard = ({ post }) => {
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('ended', handleEnded);
     };
-  }, [post.mediaType, post.isSequentialSubtitles]);
+  }, [post.mediaType, post.isSequentialSubtitles, post.id]);
 
-  // Debug logging para subtítulos secuenciales
-  if (post.isSequentialSubtitles) {
-    console.log('🎬 PetCard recibió video con subtítulos secuenciales:', {
-      id: post.id,
-      petName: post.petName,
-      isSequentialSubtitles: post.isSequentialSubtitles,
-      subtitlesCount: post.subtitles?.length,
-      totalDuration: post.totalDuration,
-      mediaType: post.mediaType,
-      videoReady: videoReady
-    });
-  }
+  // Debug logging para subtítulos secuenciales (solo una vez)
+  useEffect(() => {
+    if (post.isSequentialSubtitles) {
+      console.log('🎬 PetCard recibió video con subtítulos secuenciales:', {
+        id: post.id,
+        petName: post.petName,
+        isSequentialSubtitles: post.isSequentialSubtitles,
+        subtitlesCount: post.subtitles?.length,
+        totalDuration: post.totalDuration,
+        mediaType: post.mediaType,
+        videoReady: videoReady
+      });
+    }
+  }, [post.id]); // Solo cuando cambie el ID del post
 
   const formatNumber = (num) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';

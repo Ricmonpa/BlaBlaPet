@@ -30,18 +30,25 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
     localStorage.setItem('audioEnabled', JSON.stringify(isAudioEnabled));
     dogVoiceService.setEnabled(isAudioEnabled);
     
-    // Manejar audio original del video
-    if (videoRef?.current) {
-      if (isAudioEnabled) {
-        console.log('🎬 Activando audio original del video');
-        videoRef.current.muted = false;
-        videoRef.current.volume = 0.65;
+    // Manejar audio original del video con retry
+    const handleAudioToggle = () => {
+      if (videoRef?.current) {
+        if (isAudioEnabled) {
+          console.log('🎬 Activando audio original del video');
+          videoRef.current.muted = false;
+          videoRef.current.volume = 0.65;
+        } else {
+          console.log('🎬 Desactivando audio original del video');
+          videoRef.current.muted = true;
+        }
       } else {
-        console.log('🎬 Desactivando audio original del video');
-        videoRef.current.muted = true;
+        // Si no hay videoRef, intentar de nuevo en 100ms
+        setTimeout(handleAudioToggle, 100);
       }
-    }
-  }, [isAudioEnabled, videoRef]);
+    };
+    
+    handleAudioToggle();
+  }, [isAudioEnabled, videoRef?.current]);
 
   // Encontrar subtítulo activo
   const findActiveSubtitle = (time) => {
@@ -139,12 +146,15 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
     return null;
   }
 
-  console.log('🎤 FloatingVoiceButton renderizando:', {
-    isAudioEnabled,
-    subtitlesCount: subtitles.length,
-    currentTime,
-    isVideoPlaying
-  });
+  // Debug logs (solo cuando cambien las props importantes)
+  useEffect(() => {
+    console.log('🎤 FloatingVoiceButton renderizando:', {
+      isAudioEnabled,
+      subtitlesCount: subtitles.length,
+      currentTime,
+      isVideoPlaying
+    });
+  }, [isAudioEnabled, subtitles.length, currentTime, isVideoPlaying]);
 
   return (
     <button

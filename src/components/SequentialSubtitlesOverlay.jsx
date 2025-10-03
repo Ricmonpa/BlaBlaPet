@@ -6,13 +6,15 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
   const [showTechnical, setShowTechnical] = useState(true);
   const [showEmotional, setShowEmotional] = useState(true);
 
-  // Debug logs
-  console.log('🎬 SequentialSubtitlesOverlay props:', {
-    subtitles: subtitles?.length,
-    videoRef: !!videoRef?.current,
-    totalDuration,
-    subtitlesData: subtitles?.slice(0, 2) // Mostrar primeros 2 subtítulos para debug
-  });
+  // Debug logs (solo una vez)
+  useEffect(() => {
+    console.log('🎬 SequentialSubtitlesOverlay props:', {
+      subtitles: subtitles?.length,
+      videoRef: !!videoRef?.current,
+      totalDuration,
+      subtitlesData: subtitles?.slice(0, 2) // Mostrar primeros 2 subtítulos para debug
+    });
+  }, [subtitles?.length, videoRef?.current, totalDuration]); // Solo cuando cambien las props
 
   // Parsear timestamp a segundos
   const parseTimestamp = (timestamp) => {
@@ -72,7 +74,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       
       setCurrentSubtitle(current || null);
     }
-  }, [currentTime, subtitles]);
+  }, [currentTime, subtitles, currentSubtitle?.id]);
 
   // Escuchar cambios de tiempo del video
   useEffect(() => {
@@ -118,7 +120,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
     };
-  }, [videoRef]);
+  }, [videoRef?.current]);
 
   // Mostrar el overlay solo si hay subtítulos disponibles Y hay video ref
   if (!subtitles || subtitles.length === 0 || !videoRef?.current) return null;
