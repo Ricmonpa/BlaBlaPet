@@ -24,7 +24,8 @@ class DirectBlobUploadService {
       // Upload directo a Cloudinary desde el frontend (bypass Vercel 4.5MB limit)
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'yo-pett-videos');
+      // No usar upload preset - usar autenticación directa
+      // formData.append('upload_preset', 'yo-pett-videos');
       formData.append('folder', 'yo-pett-videos');
       
       // Agregar autenticación para upload directo
