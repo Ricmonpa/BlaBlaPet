@@ -10,7 +10,16 @@ class VideoCompressor {
     
     // Configuraciones por modo optimizadas para funcionalidad
     this.modes = {
-      // Modo agresivo - para almacenamiento con audio preservado
+      // Modo ligero - para videos medianos (rápido)
+      light: {
+        targetBitrate: 800, // kbps más alto para calidad
+        audioBitrate: 96,   // kbps mejor audio
+        audioSampleRate: 44100, // 44.1kHz audio completo
+        audioChannels: 2,   // Estéreo
+        maxWidth: 640,
+        fps: 24
+      },
+      // Modo agresivo - para videos largos (5 min)
       aggressive: {
         targetBitrate: 600, // kbps para preservar gestos visuales
         audioBitrate: 64,   // kbps suficiente para análisis IA

@@ -504,9 +504,12 @@ const Camera = () => {
                   }
                 </p>
                 {capturedMedia.type === 'video' && (
-                  <p className="text-sm text-gray-300">
-                    Upload en background - análisis rápido
-                  </p>
+                  <div className="text-sm text-gray-300">
+                    <p>Upload en background - análisis rápido</p>
+                    <p className="text-xs mt-1">
+                      Videos largos (5 min) pueden tardar 2-3 minutos
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

@@ -108,34 +108,37 @@ class DirectBlobUploadService {
         type: videoFile.type
       });
 
-      // Verificar si necesita compresión
-      if (VideoCompressor.needsCompression(videoFile)) {
-        console.log('🗜️ Video muy grande, aplicando compresión agresiva...');
+      // ESTRATEGIA ESCALONADA para diferentes tamaños de video
+      const fileSizeMB = videoFile.size / (1024 * 1024);
+      
+      if (fileSizeMB <= 5) {
+        // Videos muy pequeños: sin compresión
+        console.log('✅ Video pequeño (≤5MB), sin compresión para velocidad');
+        processedFile = videoFile;
+      } else if (fileSizeMB <= 15) {
+        // Videos medianos: compresión ligera
+        console.log('🗜️ Video mediano (5-15MB), compresión ligera...');
+        try {
+          processedFile = await VideoCompressor.compressVideo(videoFile, {
+            mode: 'light' // Nuevo modo ligero
+          });
+          wasCompressed = true;
+        } catch (error) {
+          console.warn('⚠️ Error en compresión ligera, usando original');
+          processedFile = videoFile;
+        }
+      } else {
+        // Videos grandes (5 min): compresión agresiva
+        console.log('🗜️ Video grande (>15MB), compresión agresiva...');
+        console.log('⏰ Esto puede tardar 2-3 minutos para videos de 5 min...');
         
         try {
-          // Usar modo análisis si es para subtítulos, agresivo para almacenamiento
-          const compressionMode = metadata?.forAnalysis ? 'analysis' : 'aggressive';
-          
           processedFile = await VideoCompressor.compressVideo(videoFile, {
-            mode: compressionMode
+            mode: 'aggressive'
           });
-          
-        console.log(`🗜️ Compresión en modo ${compressionMode}:`, {
-          original: (videoFile.size / 1024 / 1024).toFixed(2) + ' MB',
-          compressed: (processedFile.size / 1024 / 1024).toFixed(2) + ' MB',
-          config: {
-            videoBitrate: '600kbps',
-            audioBitrate: '64kbps',
-            audioSampleRate: '22kHz',
-            maxSize: '5MB'
-          }
-        });
           wasCompressed = true;
-          
-          console.log('✅ Video comprimido exitosamente');
-        } catch (compressionError) {
-          console.warn('⚠️ Error en compresión, intentando upload original:', compressionError.message);
-          // Si falla la compresión, intentar con el original
+        } catch (error) {
+          console.warn('⚠️ Error en compresión agresiva, usando original');
           processedFile = videoFile;
         }
       }

@@ -170,7 +170,7 @@ const PetCard = ({ post }) => {
             autoPlay
             loop
             muted={!isAudioEnabled}
-            volume={isAudioEnabled ? 0.7 : 0}
+            volume={isAudioEnabled ? 0.65 : 0}
             playsInline
             onError={(e) => {
               console.error('❌ Error cargando video:', {

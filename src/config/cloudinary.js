@@ -48,8 +48,8 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
       resource_type: 'video',
       folder: 'yo-pett-videos',
       public_id: `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-      chunk_size: 6000000, // 6MB chunks para videos largos
-      timeout: 300000, // 5 minutos timeout
+      chunk_size: 2000000, // 2MB chunks para velocidad
+      timeout: 120000, // 2 minutos timeout
       use_filename: true,
       unique_filename: true,
       // 🏷️ WATERMARK AUTOMÁTICO - Logo de Yo Pett en todos los videos
@@ -64,30 +64,8 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
       //     crop: 'scale'                     // Escalar proporcionalmente
       //   }
       // ],
-      eager: [
-        { 
-          width: 320, 
-          height: 240, 
-          crop: 'scale',
-          overlay: 'yo-pett-logo',
-          gravity: 'south_east',
-          width: 60,
-          height: 60,
-          opacity: 30,
-          crop: 'scale'
-        }, // Thumbnail pequeño CON watermark
-        { 
-          width: 640, 
-          height: 480, 
-          crop: 'scale',
-          overlay: 'yo-pett-logo',
-          gravity: 'south_east',
-          width: 80,
-          height: 80,
-          opacity: 30,
-          crop: 'scale'
-        }  // Thumbnail mediano CON watermark
-      ],
+      // SKIP EAGER TRANSFORMATIONS para velocidad
+      // eager: [],
       eager_async: true,
       eager_transformation: [
         { 

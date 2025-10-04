@@ -17,7 +17,7 @@ class DogVoiceService {
     this.dogVoiceConfig = {
       rate: 1.4,    // 40% más rápido (energía de Dug)
       pitch: 1.6,   // 60% más agudo (entusiasmo de Dug)
-      volume: 0.8,  // 80% volumen (mezcla con audio original)
+      volume: 1.0,  // 100% volumen (como solicitaste)
       lang: 'es-ES' // Español
     };
     
