@@ -46,7 +46,7 @@ class DirectBlobUploadService {
       }
 
       // Upload directo a Cloudinary (SIN VERCEL)
-      const cloudName = process.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
       const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
 
       console.log('🚀 Upload directo a Cloudinary...');
