@@ -18,34 +18,50 @@ class DirectBlobUploadService {
    */
   async uploadToCloudinary(file, metadata = {}) {
     try {
-      console.log('📤 Subiendo archivo a Cloudinary...', file.name);
+      console.log('📤 Subiendo archivo DIRECTO a Cloudinary (bypass Vercel)...', file.name);
       console.log('📁 Archivo:', { name: file.name, size: file.size, type: file.type });
 
+      // Upload directo a Cloudinary desde el frontend (bypass Vercel 4.5MB limit)
       const formData = new FormData();
-      formData.append('video', file);
+      formData.append('file', file);
+      formData.append('upload_preset', 'yo-pett-videos');
+      formData.append('folder', 'yo-pett-videos');
       
-      // Agregar metadata como campos adicionales
-      if (metadata.petName) formData.append('petName', metadata.petName);
-      if (metadata.translation) formData.append('translation', metadata.translation);
-      if (metadata.emotionalDubbing) formData.append('emotionalDubbing', metadata.emotionalDubbing);
-      if (metadata.subtitles) formData.append('subtitles', JSON.stringify(metadata.subtitles));
-      if (metadata.totalDuration) formData.append('totalDuration', metadata.totalDuration);
-      if (metadata.isSequentialSubtitles) formData.append('isSequentialSubtitles', metadata.isSequentialSubtitles);
-      if (metadata.userId) formData.append('userId', metadata.userId);
-      if (metadata.isPublic !== undefined) formData.append('isPublic', metadata.isPublic);
+      // Agregar metadata como context
+      if (metadata.subtitles) {
+        formData.append('context', JSON.stringify({
+          subtitles: JSON.stringify(metadata.subtitles),
+          petName: metadata.petName || '',
+          translation: metadata.translation || '',
+          emotionalDubbing: metadata.emotionalDubbing || '',
+          totalDuration: metadata.totalDuration || 0,
+          isSequentialSubtitles: metadata.isSequentialSubtitles || false,
+          userId: metadata.userId || '',
+          isPublic: metadata.isPublic || false
+        }));
+      }
+      
+      if (metadata.tags) {
+        formData.append('tags', metadata.tags.join(','));
+      }
 
-      const response = await fetch(`${this.baseUrl}/api/upload-video-cloudinary`, {
+      // URL directa de Cloudinary (bypass Vercel)
+      const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
+
+      const response = await fetch(uploadUrl, {
         method: 'POST',
-        body: formData
+        body: formData,
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Error subiendo a Cloudinary: ${response.status} ${response.statusText} - ${errorText}`);
+        console.error('❌ Error response:', errorText);
+        throw new Error(`Cloudinary upload failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Archivo subido exitosamente a Cloudinary:', result);
+      console.log('✅ Upload directo a Cloudinary exitoso:', result);
       
       return result;
     } catch (error) {
@@ -108,25 +124,9 @@ class DirectBlobUploadService {
         type: videoFile.type
       });
 
-      // SKIP COMPRESSION COMPLETAMENTE para videos pequeños (optimización extrema)
-      const fileSizeMB = videoFile.size / (1024 * 1024);
-      
-      if (fileSizeMB <= 20) { // Aumentar límite a 20MB
-        console.log(`✅ Video pequeño (${fileSizeMB.toFixed(1)}MB), SIN COMPRESIÓN para velocidad máxima`);
-        processedFile = videoFile;
-      } else {
-        // Solo comprimir videos MUY grandes (>20MB)
-        console.log(`🗜️ Video grande (${fileSizeMB.toFixed(1)}MB), compresión necesaria...`);
-        try {
-          processedFile = await VideoCompressor.compressVideo(videoFile, {
-            mode: 'aggressive'
-          });
-          wasCompressed = true;
-        } catch (error) {
-          console.warn('⚠️ Error en compresión, usando original');
-          processedFile = videoFile;
-        }
-      }
+      // SIN COMPRESIÓN - SUBIR DIRECTO
+      console.log('✅ Subiendo video SIN COMPRESIÓN para velocidad máxima');
+      processedFile = videoFile;
 
       // Intentar subir el archivo (comprimido o original) a Cloudinary
       let uploadResult;

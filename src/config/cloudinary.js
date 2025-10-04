@@ -48,8 +48,8 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
       resource_type: 'video',
       folder: 'yo-pett-videos',
       public_id: `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-      chunk_size: 6000000, // 6MB chunks para videos largos
-      timeout: 120000, // 2 minutos timeout
+      chunk_size: 10000000, // 10MB chunks para velocidad máxima
+      timeout: 300000, // 5 minutos timeout
       use_filename: true,
       unique_filename: true,
       eager: [
