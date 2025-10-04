@@ -29,9 +29,14 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
     localStorage.setItem('audioEnabled', JSON.stringify(isAudioEnabled));
     dogVoiceService.setEnabled(isAudioEnabled);
     
-    // El audio del video se maneja desde PetCard con muted={!isAudioEnabled}
+    // Toggle único: Audio original + Voz de perro juntos
+    if (videoRef?.current) {
+      videoRef.current.muted = !isAudioEnabled;
+      videoRef.current.volume = isAudioEnabled ? 0.65 : 0;
+    }
+    
     console.log('🎬 Estado de audio actualizado:', isAudioEnabled ? 'ACTIVADO' : 'DESACTIVADO');
-  }, [isAudioEnabled]);
+  }, [isAudioEnabled, videoRef]);
 
   // Encontrar subtítulo activo
   const findActiveSubtitle = (time) => {

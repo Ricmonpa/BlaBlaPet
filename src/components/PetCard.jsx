@@ -9,7 +9,8 @@ const PetCard = ({ post, isVisible = true }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false); // TikTok style: muted por defecto
+  const [hasInteracted, setHasInteracted] = useState(false); // Primera interacción
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
@@ -183,10 +184,29 @@ const PetCard = ({ post, isVisible = true }) => {
               className="w-full h-full object-cover"
               autoPlay
               loop
-              muted={!isAudioEnabled}
-              volume={isAudioEnabled ? 0.65 : 0}
+              muted={true} // TikTok style: SIEMPRE muted para autoplay
               playsInline
-            onError={(e) => {
+              onTouchStart={() => {
+                // TikTok style: Primera interacción → unmute
+                if (!hasInteracted) {
+                  videoRef.current.muted = false;
+                  videoRef.current.volume = 0.65;
+                  setHasInteracted(true);
+                  setIsAudioEnabled(true);
+                }
+              }}
+              onTimeUpdate={() => {
+                if (videoRef.current) {
+                  setCurrentTime(videoRef.current.currentTime);
+                }
+              }}
+              onPlay={() => setIsVideoPlaying(true)}
+              onPause={() => setIsVideoPlaying(false)}
+              onLoadedData={() => {
+                console.log('🎬 Video cargado y listo:', post.mediaUrl);
+                setVideoReady(true);
+              }}
+              onError={(e) => {
               console.error('❌ Error cargando video:', {
                 videoSrc: e.target.src,
                 videoError: e.target.error,
