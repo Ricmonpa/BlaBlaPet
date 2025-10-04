@@ -43,7 +43,7 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
     const base64String = fileBuffer.toString('base64');
     console.log('✅ Base64 generado, longitud:', base64String.length);
     
-    // Configurar opciones de upload optimizadas para videos CON WATERMARK AUTOMÁTICO
+    // Configurar opciones de upload optimizadas para videos (SIN WATERMARK)
     const uploadOptions = {
       resource_type: 'video',
       folder: 'yo-pett-videos',
@@ -52,33 +52,6 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
       timeout: 120000, // 2 minutos timeout
       use_filename: true,
       unique_filename: true,
-      // 🏷️ WATERMARK AUTOMÁTICO - Logo de Yo Pett en todos los videos
-      // TEMPORALMENTE DESHABILITADO PARA DEBUGGING
-      // transformation: [
-      //   {
-      //     overlay: 'yo-pett-logo', // Logo ubicado en la raíz de Cloudinary
-      //     gravity: 'south_east',            // Posición: esquina inferior derecha
-      //     width: 120,                       // Tamaño del logo (ajustable)
-      //     height: 120,
-      //     opacity: 30,                      // Transparencia 30% (ajustable)
-      //     crop: 'scale'                     // Escalar proporcionalmente
-      //   }
-      // ],
-      // SKIP EAGER TRANSFORMATIONS para velocidad
-      // eager: [],
-      eager_async: true,
-      eager_transformation: [
-        { 
-          quality: 'auto', // Calidad automática
-          format: 'mp4',   // Forzar formato MP4
-          overlay: 'yo-pett-logo',
-          gravity: 'south_east',
-          width: 100,
-          height: 100,
-          opacity: 30,
-          crop: 'scale'
-        }
-      ],
       ...options
     };
     
@@ -103,7 +76,7 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
       height: uploadResult.height,
       duration: uploadResult.duration,
       bytes: uploadResult.bytes,
-      eager: uploadResult.eager // Thumbnails generados
+      // eager: uploadResult.eager // Thumbnails generados (deshabilitado)
     };
   } catch (error) {
     console.error('❌ Error detallado en upload a Cloudinary:', {
@@ -161,39 +134,4 @@ export const getCloudinaryThumbnailUrl = (publicId, width = 320, height = 240) =
   });
 };
 
-// 🏷️ Función para generar URL de video CON WATERMARK automático
-export const getCloudinaryVideoUrlWithWatermark = (publicId, transformations = {}) => {
-  const defaultWatermarkTransformations = {
-    overlay: 'yo-pett-logo',
-    gravity: 'south_east',
-    width: 120,
-    height: 120,
-    opacity: 30,
-    crop: 'scale'
-  };
-  
-  return cloudinary.url(publicId, {
-    resource_type: 'video',
-    transformation: [defaultWatermarkTransformations, transformations]
-  });
-};
-
-// 🏷️ Función para generar thumbnail CON WATERMARK
-export const getCloudinaryThumbnailUrlWithWatermark = (publicId, width = 320, height = 240) => {
-  const watermarkSize = Math.min(width * 0.2, 80); // 20% del ancho o máximo 80px
-  
-  return cloudinary.url(publicId, {
-    resource_type: 'video',
-    width,
-    height,
-    crop: 'scale',
-    format: 'jpg',
-    quality: 'auto',
-    overlay: 'yo-pett-logo',
-    gravity: 'south_east',
-    width: watermarkSize,
-    height: watermarkSize,
-    opacity: 30,
-    crop: 'scale'
-  });
-};
+// Funciones de watermark eliminadas para restaurar velocidad

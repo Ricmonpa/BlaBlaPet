@@ -6,15 +6,15 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
   const [showTechnical, setShowTechnical] = useState(true);
   const [showEmotional, setShowEmotional] = useState(true);
 
-  // Debug logs (solo una vez)
+  // Debug logs (solo una vez) - REDUCIDO
   useEffect(() => {
-    console.log('🎬 SequentialSubtitlesOverlay props:', {
+    // Solo loggear una vez al montar
+    console.log('🎬 SequentialSubtitlesOverlay montado:', {
       subtitles: subtitles?.length,
       videoRef: !!videoRef?.current,
-      totalDuration,
-      subtitlesData: subtitles?.slice(0, 2) // Mostrar primeros 2 subtítulos para debug
+      totalDuration
     });
-  }, [subtitles?.length, videoRef, totalDuration]); // Solo cuando cambien las props
+  }, []); // Solo una vez al montar
 
   // Parsear timestamp a segundos
   const parseTimestamp = (timestamp) => {

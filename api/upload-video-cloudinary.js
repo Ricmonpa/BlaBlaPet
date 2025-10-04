@@ -5,7 +5,7 @@ export const config = {
   api: {
     bodyParser: false, // Disable body parsing for multipart/form-data
   },
-  maxDuration: 300, // 5 minutos para videos largos
+  maxDuration: 120, // 2 minutos para videos
 };
 
 export default async function handler(req, res) {
@@ -171,7 +171,7 @@ export default async function handler(req, res) {
       ...metadata,
       mediaUrl: uploadResult.url,
       mediaType: 'video',
-      thumbnailUrl: uploadResult.eager?.[0]?.secure_url || uploadResult.url, // Usar thumbnail generado
+      thumbnailUrl: uploadResult.url, // Usar URL del video como thumbnail
       createdAt: now,
       updatedAt: now,
       shareCount: 0,
@@ -209,7 +209,7 @@ export default async function handler(req, res) {
         assetId: uploadResult.assetId,
         format: uploadResult.format,
         duration: uploadResult.duration,
-        thumbnails: uploadResult.eager,
+        // thumbnails: uploadResult.eager, // Deshabilitado para velocidad
         url: uploadResult.url,
         secure_url: uploadResult.secure_url
       },

@@ -108,37 +108,22 @@ class DirectBlobUploadService {
         type: videoFile.type
       });
 
-      // ESTRATEGIA ESCALONADA para diferentes tamaños de video
+      // SKIP COMPRESSION COMPLETAMENTE para videos pequeños (optimización extrema)
       const fileSizeMB = videoFile.size / (1024 * 1024);
       
-      if (fileSizeMB <= 5) {
-        // Videos muy pequeños: sin compresión
-        console.log('✅ Video pequeño (≤5MB), sin compresión para velocidad');
+      if (fileSizeMB <= 20) { // Aumentar límite a 20MB
+        console.log(`✅ Video pequeño (${fileSizeMB.toFixed(1)}MB), SIN COMPRESIÓN para velocidad máxima`);
         processedFile = videoFile;
-      } else if (fileSizeMB <= 15) {
-        // Videos medianos: compresión ligera
-        console.log('🗜️ Video mediano (5-15MB), compresión ligera...');
-        try {
-          processedFile = await VideoCompressor.compressVideo(videoFile, {
-            mode: 'light' // Nuevo modo ligero
-          });
-          wasCompressed = true;
-        } catch (error) {
-          console.warn('⚠️ Error en compresión ligera, usando original');
-          processedFile = videoFile;
-        }
       } else {
-        // Videos grandes (5 min): compresión agresiva
-        console.log('🗜️ Video grande (>15MB), compresión agresiva...');
-        console.log('⏰ Esto puede tardar 2-3 minutos para videos de 5 min...');
-        
+        // Solo comprimir videos MUY grandes (>20MB)
+        console.log(`🗜️ Video grande (${fileSizeMB.toFixed(1)}MB), compresión necesaria...`);
         try {
           processedFile = await VideoCompressor.compressVideo(videoFile, {
             mode: 'aggressive'
           });
           wasCompressed = true;
         } catch (error) {
-          console.warn('⚠️ Error en compresión agresiva, usando original');
+          console.warn('⚠️ Error en compresión, usando original');
           processedFile = videoFile;
         }
       }
