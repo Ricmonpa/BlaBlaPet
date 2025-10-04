@@ -43,15 +43,20 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
     const base64String = fileBuffer.toString('base64');
     console.log('✅ Base64 generado, longitud:', base64String.length);
     
-    // Configurar opciones de upload optimizadas para videos (SIN WATERMARK)
+    // Configurar opciones de upload básicas
     const uploadOptions = {
       resource_type: 'video',
       folder: 'yo-pett-videos',
       public_id: `video_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-      chunk_size: 2000000, // 2MB chunks para velocidad
+      chunk_size: 6000000, // 6MB chunks para videos largos
       timeout: 120000, // 2 minutos timeout
       use_filename: true,
       unique_filename: true,
+      eager: [
+        { width: 320, height: 240, crop: 'scale' }, // Thumbnail pequeño
+        { width: 640, height: 480, crop: 'scale' }  // Thumbnail mediano
+      ],
+      eager_async: true,
       ...options
     };
     
@@ -76,7 +81,7 @@ export const uploadVideoToCloudinary = async (fileBuffer, options = {}) => {
       height: uploadResult.height,
       duration: uploadResult.duration,
       bytes: uploadResult.bytes,
-      // eager: uploadResult.eager // Thumbnails generados (deshabilitado)
+      eager: uploadResult.eager // Thumbnails generados
     };
   } catch (error) {
     console.error('❌ Error detallado en upload a Cloudinary:', {
@@ -133,5 +138,3 @@ export const getCloudinaryThumbnailUrl = (publicId, width = 320, height = 240) =
     quality: 'auto'
   });
 };
-
-// Funciones de watermark eliminadas para restaurar velocidad
