@@ -133,12 +133,12 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
   useEffect(() => {
     // Solo loggear cambios significativos, no cada frame
     if (currentTime % 5 < 0.1) { // Solo cada 5 segundos
-      console.log('🎤 FloatingVoiceButton renderizando:', {
-        isAudioEnabled,
-        subtitlesCount: subtitles.length,
+    console.log('🎤 FloatingVoiceButton renderizando:', {
+      isAudioEnabled,
+      subtitlesCount: subtitles.length,
         currentTime: Math.floor(currentTime),
-        isVideoPlaying
-      });
+      isVideoPlaying
+    });
     }
   }, [isAudioEnabled, subtitles.length, Math.floor(currentTime), isVideoPlaying]);
 
