@@ -45,18 +45,25 @@ class DirectBlobUploadService {
         formData.append('tags', metadata.tags.join(','));
       }
 
-      // URL directa de Cloudinary (bypass Vercel)
+      // Upload directo a Cloudinary (SIN VERCEL)
       const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME;
       const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`;
 
+      console.log('🚀 Upload directo a Cloudinary...');
+      console.log('🔧 Cloud Name:', cloudName);
+      console.log('🔗 Upload URL:', uploadUrl);
+      
       const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
 
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response ok:', response.ok);
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Error response:', errorText);
+        console.error('❌ Cloudinary upload failed:', errorText);
         throw new Error(`Cloudinary upload failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
