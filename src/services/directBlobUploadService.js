@@ -27,6 +27,13 @@ class DirectBlobUploadService {
       formData.append('upload_preset', 'yo-pett-videos');
       formData.append('folder', 'yo-pett-videos');
       
+      // Agregar autenticación para upload directo
+      const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
+      const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
+      
+      if (apiKey) formData.append('api_key', apiKey);
+      if (apiSecret) formData.append('api_secret', apiSecret);
+      
       // Agregar metadata como context
       if (metadata.subtitles) {
         formData.append('context', JSON.stringify({
@@ -56,6 +63,8 @@ class DirectBlobUploadService {
       const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
+        // Agregar timeout para evitar colgadas
+        signal: AbortSignal.timeout(300000) // 5 minutos timeout
       });
 
       console.log('📊 Response status:', response.status);
