@@ -5,8 +5,7 @@ import dogVoiceService from '../services/dogVoiceService';
  * Botón flotante para activar/desactivar audio original + voz TTS
  * Solo se muestra en videos con subtítulos secuenciales
  */
-const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying = false, videoRef }) => {
-  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying = false, videoRef, isAudioEnabled, setIsAudioEnabled }) => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Cargar preferencia guardada
@@ -23,32 +22,16 @@ const FloatingVoiceButton = ({ subtitles = [], currentTime = 0, isVideoPlaying =
       setIsAudioEnabled(false);
       dogVoiceService.setEnabled(false);
     }
-  }, []);
+  }, [setIsAudioEnabled]);
 
   // Guardar preferencia y manejar audio
   useEffect(() => {
     localStorage.setItem('audioEnabled', JSON.stringify(isAudioEnabled));
     dogVoiceService.setEnabled(isAudioEnabled);
     
-    // Manejar audio original del video con retry
-    const handleAudioToggle = () => {
-      if (videoRef?.current) {
-        if (isAudioEnabled) {
-          console.log('🎬 Activando audio original del video');
-          videoRef.current.muted = false;
-          videoRef.current.volume = 0.65;
-        } else {
-          console.log('🎬 Desactivando audio original del video');
-          videoRef.current.muted = true;
-        }
-      } else {
-        // Si no hay videoRef, intentar de nuevo en 100ms
-        setTimeout(handleAudioToggle, 100);
-      }
-    };
-    
-    handleAudioToggle();
-  }, [isAudioEnabled, videoRef?.current]);
+    // El audio del video se maneja desde PetCard con muted={!isAudioEnabled}
+    console.log('🎬 Estado de audio actualizado:', isAudioEnabled ? 'ACTIVADO' : 'DESACTIVADO');
+  }, [isAudioEnabled]);
 
   // Encontrar subtítulo activo
   const findActiveSubtitle = (time) => {

@@ -9,6 +9,7 @@ const PetCard = ({ post }) => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
 
@@ -94,7 +95,7 @@ const PetCard = ({ post }) => {
         video.removeEventListener('error', handleError);
       };
     }
-  }, [post.mediaUrl, post.mediaType, post.metadata?.isLocal, post.id]);
+  }, [post.mediaUrl, post.mediaType, post.id]);
 
   // Event listeners para voz (solo para videos con subtítulos)
   useEffect(() => {
@@ -143,7 +144,7 @@ const PetCard = ({ post }) => {
         videoReady: videoReady
       });
     }
-  }, [post.id]); // Solo cuando cambie el ID del post
+  }, [post.id, post.isSequentialSubtitles]); // Solo cuando cambien estas props
 
   const formatNumber = (num) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -168,7 +169,8 @@ const PetCard = ({ post }) => {
             className="w-full h-full object-cover"
             autoPlay
             loop
-            muted={true}
+            muted={!isAudioEnabled}
+            volume={isAudioEnabled ? 0.7 : 0}
             playsInline
             onError={(e) => {
               console.error('❌ Error cargando video:', {
@@ -219,6 +221,8 @@ const PetCard = ({ post }) => {
             currentTime={currentTime}
             isVideoPlaying={isVideoPlaying}
             videoRef={videoRef}
+            isAudioEnabled={isAudioEnabled}
+            setIsAudioEnabled={setIsAudioEnabled}
           />
         )}
       </div>

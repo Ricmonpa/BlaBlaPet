@@ -14,7 +14,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       totalDuration,
       subtitlesData: subtitles?.slice(0, 2) // Mostrar primeros 2 subtítulos para debug
     });
-  }, [subtitles?.length, videoRef?.current, totalDuration]); // Solo cuando cambien las props
+  }, [subtitles?.length, videoRef, totalDuration]); // Solo cuando cambien las props
 
   // Parsear timestamp a segundos
   const parseTimestamp = (timestamp) => {
@@ -79,10 +79,8 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
   // Escuchar cambios de tiempo del video
   useEffect(() => {
     const video = videoRef?.current;
-    console.log('🎬 Video ref:', video);
     if (!video) {
-      console.log('❌ No hay video ref - componente deshabilitado');
-      return; // No simular, simplemente no funcionar
+      return;
     }
 
     const handleTimeUpdate = () => {
@@ -90,24 +88,12 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       setCurrentTime(time);
     };
 
-    // Asegurar que el video esté listo
     const handleLoadedData = () => {
-      console.log('🎬 Video loaded, duration:', video.duration);
       setCurrentTime(video.currentTime);
-    };
-
-    const handlePlay = () => {
-      console.log('🎬 Video started playing');
-    };
-
-    const handlePause = () => {
-      console.log('🎬 Video paused');
     };
 
     video.addEventListener('timeupdate', handleTimeUpdate);
     video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
     
     // Si el video ya está cargado, establecer el tiempo inicial
     if (video.readyState >= 2) {
@@ -117,10 +103,8 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     return () => {
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('loadeddata', handleLoadedData);
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
     };
-  }, [videoRef?.current]);
+  }, [videoRef]); // Solo videoRef, no videoRef?.current
 
   // Mostrar el overlay solo si hay subtítulos disponibles Y hay video ref
   if (!subtitles || subtitles.length === 0 || !videoRef?.current) return null;
