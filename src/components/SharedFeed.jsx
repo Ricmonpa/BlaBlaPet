@@ -14,8 +14,33 @@ const SharedFeed = ({ onVideoSelect }) => {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
+  const [visibleVideos, setVisibleVideos] = useState(new Set()); // Para lazy loading
   const touchStartRef = useRef(null); // Cambio a useRef para evitar re-renders
   const containerRef = useRef(null); // Ref para el contenedor del feed
+
+  // LAZY LOADING: Detectar videos visibles
+  useEffect(() => {
+    const handleIntersection = (entries) => {
+      entries.forEach((entry) => {
+        const videoId = entry.target.dataset.videoId;
+        if (entry.isIntersecting) {
+          setVisibleVideos(prev => new Set([...prev, videoId]));
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(handleIntersection, {
+      root: null,
+      rootMargin: '50px', // Cargar 50px antes de que sea visible
+      threshold: 0.1
+    });
+
+    // Observar todos los videos
+    const videoElements = document.querySelectorAll('[data-video-id]');
+    videoElements.forEach(el => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, [videos]);
 
   // Cargar videos del feed público
   const loadVideos = async (pageNum = 1, refresh = false) => {
@@ -481,6 +506,7 @@ const SharedFeed = ({ onVideoSelect }) => {
           return (
             <div
               key={video.id}
+              data-video-id={video.id}
               className={`absolute inset-0 transition-transform duration-300 ease-out ${
                 index === currentIndex ? 'translate-y-0' : 
                 index < currentIndex ? '-translate-y-full' : 'translate-y-full'
@@ -490,6 +516,7 @@ const SharedFeed = ({ onVideoSelect }) => {
                 post={post} 
                 onSelect={() => handleVideoSelect(video)}
                 isShared={true}
+                isVisible={index === currentIndex || visibleVideos.has(video.id)}
               />
             </div>
           );

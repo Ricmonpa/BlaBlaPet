@@ -3,7 +3,7 @@ import SequentialSubtitlesOverlay from './SequentialSubtitlesOverlay.jsx';
 import ShareModal from './ShareModal.jsx';
 import FloatingVoiceButton from './FloatingVoiceButton.jsx';
 
-const PetCard = ({ post }) => {
+const PetCard = ({ post, isVisible = true }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -12,11 +12,24 @@ const PetCard = ({ post }) => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const videoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+
+  // LAZY LOADING: Solo cargar video cuando sea visible
+  useEffect(() => {
+    if (isVisible && post.mediaType === 'video') {
+      // Delay pequeño para evitar cargar todos los videos simultáneamente
+      const timer = setTimeout(() => {
+        setShouldLoadVideo(true);
+      }, 100); // 100ms delay entre videos
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, post.mediaType]);
 
   // Sincronizar videoRef con el estado del video
   useEffect(() => {
     const video = videoRef.current;
-    if (video && post.mediaType === 'video') {
+    if (video && post.mediaType === 'video' && shouldLoadVideo) {
       const handleLoadedData = () => {
         console.log('🎬 Video cargado y listo:', video.src);
         setVideoReady(true);
@@ -163,15 +176,16 @@ const PetCard = ({ post }) => {
       {/* Media Background */}
       <div className="absolute inset-0">
         {post.mediaType === 'video' ? (
-          <video
-            ref={videoRef}
-            src={post.mediaUrl}
-            className="w-full h-full object-cover"
-            autoPlay
-            loop
-            muted={!isAudioEnabled}
-            volume={isAudioEnabled ? 0.65 : 0}
-            playsInline
+          shouldLoadVideo ? (
+            <video
+              ref={videoRef}
+              src={post.mediaUrl}
+              className="w-full h-full object-cover"
+              autoPlay
+              loop
+              muted={!isAudioEnabled}
+              volume={isAudioEnabled ? 0.65 : 0}
+              playsInline
             onError={(e) => {
               console.error('❌ Error cargando video:', {
                 videoSrc: e.target.src,
@@ -195,7 +209,16 @@ const PetCard = ({ post }) => {
               // Ocultar video si no se puede cargar
               e.target.style.display = 'none';
             }}
-          />
+            />
+          ) : (
+            // Placeholder mientras se carga el video
+            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+              <div className="text-white text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                <p className="text-sm">Cargando video...</p>
+              </div>
+            </div>
+          )
         ) : (
           <img
             src={post.mediaUrl}
