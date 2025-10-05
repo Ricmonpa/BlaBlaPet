@@ -108,7 +108,7 @@ class DirectBlobUploadService {
         pathname: result.publicId,
         size: file.size,
         type: file.type,
-        cloudinary: result.cloudinary
+        cloudinary: result // Pasar el resultado completo de Cloudinary
       };
 
     } catch (error) {
