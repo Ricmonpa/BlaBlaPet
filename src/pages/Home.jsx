@@ -218,11 +218,11 @@ const Home = () => {
           console.log('🔍 DEBUG - Condiciones para guardar video:');
           console.log('  - uploadResult:', uploadResult);
           console.log('  - uploadResult.cloudinary:', uploadResult.cloudinary);
-          console.log('  - hasCloudinaryData:', uploadResult.cloudinary && uploadResult.cloudinary.publicId);
+          console.log('  - hasCloudinaryData:', uploadResult.cloudinary && uploadResult.cloudinary.public_id);
           console.log('  - videoFile.isVideo:', videoFile.isVideo);
-          console.log('  - Condición completa:', uploadResult.cloudinary && uploadResult.cloudinary.publicId && videoFile.isVideo);
+          console.log('  - Condición completa:', uploadResult.cloudinary && uploadResult.cloudinary.public_id && videoFile.isVideo);
           
-          if (uploadResult.cloudinary && uploadResult.cloudinary.publicId && videoFile.isVideo) {
+          if (uploadResult.cloudinary && uploadResult.cloudinary.public_id && videoFile.isVideo) {
             // Crear objeto de video para la base de datos
             const newVideo = {
               petName: 'Tu Mascota',

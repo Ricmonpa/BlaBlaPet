@@ -90,7 +90,7 @@ Responde en formato JSON con la siguiente estructura:
       
       // Configurar timeout adaptativo para videos largos
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 180000); // 180 segundos para videos largos
+      const timeoutId = setTimeout(() => controller.abort(), 480000); // 480 segundos (8 minutos) para videos largos
 
       const result = await this.model.generateContent({
         contents: [{ role: "user", parts: content }],

@@ -126,7 +126,7 @@ Responde en formato JSON:
       
       // Configurar timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 70000); // 70 segundos
+      const timeoutId = setTimeout(() => controller.abort(), 480000); // 480 segundos (8 minutos) para videos largos
 
       const result = await this.model.generateContent({
         contents: [{ role: "user", parts: content }],
