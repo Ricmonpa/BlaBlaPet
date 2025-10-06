@@ -503,17 +503,28 @@ Responde SOLO en formato JSON:
       const response = await result.response;
       const text = response.text();
       
+      // 🔍 DEBUGGING: Capturar respuesta RAW de Gemini
+      console.log('🔍 RAW Gemini response:', text);
+      console.log('🔍 Response length:', text.length);
+      console.log('🔍 First 500 chars:', text.substring(0, 500));
+      console.log('🔍 Last 500 chars:', text.substring(Math.max(0, text.length - 500)));
+      
       // Parsear respuesta
     let videoAnalysis;
       try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-        videoAnalysis = JSON.parse(jsonMatch[0]);
+          console.log('🔍 JSON extraído:', jsonMatch[0]);
+          console.log('🔍 JSON length:', jsonMatch[0].length);
+          videoAnalysis = JSON.parse(jsonMatch[0]);
         } else {
+          console.error('❌ No se encontró JSON válido en la respuesta');
+          console.error('❌ Texto completo:', text);
           throw new Error('No JSON found');
         }
       } catch (parseError) {
       console.error(`❌ Error parseando análisis de video:`, parseError);
+      console.error(`❌ JSON problemático:`, jsonMatch ? jsonMatch[0] : 'No JSON found');
       return {
         subtitles: [],
         totalDuration: 0,
