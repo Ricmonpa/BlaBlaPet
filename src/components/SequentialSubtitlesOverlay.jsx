@@ -57,7 +57,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       }
       
       // Solo loggear cuando cambie el subtítulo
-      if (current && (!currentSubtitle || current.id !== currentSubtitle.id)) {
+      if (current && (!currentSubtitle || current.timestamp !== currentSubtitle.timestamp)) {
         console.log('🎬 Subtítulo actual:', {
           timestamp: current.timestamp,
           tecnica: current.traduccion_tecnica,
@@ -74,7 +74,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       
       setCurrentSubtitle(current || null);
     }
-  }, [currentTime, subtitles, currentSubtitle?.id]);
+  }, [currentTime, subtitles, currentSubtitle?.timestamp]);
 
   // Escuchar cambios de tiempo del video
   useEffect(() => {
