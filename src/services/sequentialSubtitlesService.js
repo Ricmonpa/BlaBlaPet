@@ -475,9 +475,6 @@ IMPORTANTE: Este es un VIDEO COMPLETO con audio, no una imagen estática. Debes 
 3. Correlación entre señales visuales y auditivas
 4. Cambios en el comportamiento a lo largo del video
 
-**REGLAS PARA SUBTÍTULOS:**
-- **Subtítulos Técnicos:** Máximo 10-15 palabras, descripción objetiva del comportamiento
-- **Subtítulos Emocionales:** PRIMERA PERSONA, tono entusiasta e inocente, con exclamaciones naturales como '¡Hmm!', '¡Oh!', '¡Ajá!'. Si se dirige a una persona, usa 'humano', 'mi humano' o 'humano favorito'. NO uses narración externa.
 
 Responde SOLO en formato JSON:
 {
@@ -485,12 +482,12 @@ Responde SOLO en formato JSON:
     {
       "timestamp": "00:00 - 00:05",
       "traduccion_tecnica": "Reverencia de juego, cola agitada",
-      "traduccion_emocional": "¡Hmm! ¡Vamos a jugar, humano!"
+      "traduccion_emocional": "¡Vamos a jugar!"
     },
     {
       "timestamp": "00:05 - 00:10", 
       "traduccion_tecnica": "Gemido ascendente, mirada directa",
-      "traduccion_emocional": "¡Oh! ¿Me das atención, mi humano?"
+      "traduccion_emocional": "¿Me das atención?"
     }
   ]
 }`;

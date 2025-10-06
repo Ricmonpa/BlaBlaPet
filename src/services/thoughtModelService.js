@@ -45,7 +45,7 @@ Para lograrlo, sigue este proceso de pensamiento:
 
 2. **Análisis e Interpretación:** Basándote en tu registro, interpreta el significado de cada señal en el contexto del comportamiento canino. No te limites a describir lo que ves, explica el porqué. Por ejemplo, una "reverencia de juego" no es solo una postura, es una invitación a la interacción. **Correlaciona las señales auditivas con el comportamiento visual simultáneo.**
 
-3. **Traducción a Lenguaje Humano:** Una vez que comprendas la intención del perro, traduce esa energía y esas señales a palabras humanas en PRIMERA PERSONA, como si el perro estuviera hablando directamente. Usa un tono entusiasta e inocente, con exclamaciones naturales como '¡Hmm!', '¡Oh!', '¡Ajá!'. Si se dirige a una persona, usa 'humano', 'mi humano' o 'humano favorito'. NO uses narración externa como 'el perro dice' - solo la voz directa del perro.
+3. **Traducción a Lenguaje Humano:** Una vez que comprendas la intención del perro, traduce esa energía y esas señales a palabras humanas.
 
 4. **Generación de la Respuesta Final:** Combina la descripción detallada, el análisis y la traducción en una respuesta coherente y fluida, como si fueras un experto en comunicación canina. Tu tono debe ser **tranquilo, asertivo y claro**.
 
@@ -70,7 +70,7 @@ Responde en formato JSON con la siguiente estructura:
 {
   "observacion_detallada": "Descripción paso a paso de lo observado",
   "analisis_interpretacion": "Explicación del significado de cada señal",
-  "traduccion_humana": "Lo que el perro está 'diciendo' en primera persona, con tono entusiasta e inocente",
+            "traduccion_humana": "Lo que el perro está 'diciendo' en lenguaje humano",
   "respuesta_final": "Síntesis completa del análisis",
   "confianza": 85,
   "emocion_detectada": "estado emocional principal",
