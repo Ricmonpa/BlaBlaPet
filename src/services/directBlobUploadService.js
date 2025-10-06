@@ -65,7 +65,7 @@ class DirectBlobUploadService {
         method: 'POST',
         body: formData,
         // Agregar timeout para evitar colgadas
-        signal: AbortSignal.timeout(600000) // 10 minutos timeout para videos largos
+        signal: AbortSignal.timeout(900000) // 15 minutos timeout para videos largos
       });
 
       console.log('📊 Response status:', response.status);
