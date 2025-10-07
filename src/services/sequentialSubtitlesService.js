@@ -56,9 +56,9 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
 **IMPORTANTE - RESTRICCIÓN CRÍTICA:**
 - NO leas, traduzcas, o interpretes NINGÚN texto nativo del video original (subtítulos originales, títulos, marcas de agua, etc.)
 - IGNORA completamente cualquier texto que sea parte del video original
+- SÍ puedes leer y usar subtítulos emocionales que hayas generado previamente
 - Tu análisis debe basarse ÚNICAMENTE en el comportamiento visual y auditivo del perro
-- NO uses información de texto nativo para generar tus traducciones
-- SÍ puedes leer y mejorar subtítulos emocionales que hayas generado previamente (si los hay)
+- NO uses información de texto nativo del video para generar tus traducciones
 
 **REQUERIMIENTOS DE ANÁLISIS:**
 1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas: (**ladridos, aullidos, gruñidos, lloriqueos, quejidos, jadeos, suspiros, vociferaciones**) con el comportamiento visual.
@@ -508,9 +508,9 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
 **IMPORTANTE - RESTRICCIÓN CRÍTICA:**
 - NO leas, traduzcas, o interpretes NINGÚN texto nativo del video original (subtítulos originales, títulos, marcas de agua, etc.)
 - IGNORA completamente cualquier texto que sea parte del video original
+- SÍ puedes leer y usar subtítulos emocionales que hayas generado previamente
 - Tu análisis debe basarse ÚNICAMENTE en el comportamiento visual y auditivo del perro
-- NO uses información de texto nativo para generar tus traducciones
-- SÍ puedes leer y mejorar subtítulos emocionales que hayas generado previamente (si los hay)
+- NO uses información de texto nativo del video para generar tus traducciones
 
 **REQUERIMIENTOS DE ANÁLISIS:**
 1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas: (**ladridos, aullidos, gruñidos, lloriqueos, quejidos, jadeos, suspiros, vociferaciones**) con el comportamiento visual.
