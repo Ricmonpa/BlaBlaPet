@@ -557,6 +557,13 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
           console.log('🔍 JSON extraído:', jsonMatch[0]);
           console.log('🔍 JSON length:', jsonMatch[0].length);
           videoAnalysis = JSON.parse(jsonMatch[0]);
+          
+          // 🔍 DEBUGGING PROFUNDO: Ver estructura completa del JSON parseado
+          console.log('🔍 DEBUGGING - videoAnalysis completo:', videoAnalysis);
+          console.log('🔍 DEBUGGING - videoAnalysis.subtitles:', videoAnalysis.subtitles);
+          console.log('🔍 DEBUGGING - Primer subtítulo completo:', videoAnalysis.subtitles?.[0]);
+          console.log('🔍 DEBUGGING - Segundo subtítulo completo:', videoAnalysis.subtitles?.[1]);
+          console.log('🔍 DEBUGGING - Último subtítulo completo:', videoAnalysis.subtitles?.[videoAnalysis.subtitles?.length - 1]);
         } else {
           console.error('❌ No se encontró JSON válido en la respuesta');
           console.error('❌ Texto completo:', text);
@@ -576,6 +583,20 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
 
     // Procesar subtítulos
     if (videoAnalysis && videoAnalysis.subtitles && Array.isArray(videoAnalysis.subtitles)) {
+      // 🔍 DEBUGGING PROFUNDO: Ver cada subtítulo ANTES de mapear
+      console.log('🔍 DEBUGGING PROFUNDO - Total subtítulos recibidos:', videoAnalysis.subtitles.length);
+      videoAnalysis.subtitles.forEach((subtitle, index) => {
+        console.log(`🔍 Subtítulo ${index + 1}:`, {
+          timestamp: subtitle.timestamp,
+          hasTimestamp: subtitle.timestamp !== undefined,
+          timestampType: typeof subtitle.timestamp,
+          traduccion_tecnica: subtitle.traduccion_tecnica?.substring(0, 50) + '...',
+          traduccion_emocional: subtitle.traduccion_emocional?.substring(0, 50) + '...',
+          allKeys: Object.keys(subtitle),
+          fullSubtitle: subtitle
+        });
+      });
+      
       const subtitles = videoAnalysis.subtitles.map((subtitle, index) => ({
         id: `subtitle_${index + 1}`,
         timestamp: subtitle.timestamp,
@@ -585,6 +606,17 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
         source: 'gemini_video_analysis',
         frameIndex: index
       }));
+      
+      // 🔍 DEBUGGING PROFUNDO: Ver cada subtítulo DESPUÉS de mapear
+      console.log('🔍 DEBUGGING PROFUNDO - Subtítulos mapeados:');
+      subtitles.forEach((subtitle, index) => {
+        console.log(`🔍 Subtítulo mapeado ${index + 1}:`, {
+          id: subtitle.id,
+          timestamp: subtitle.timestamp,
+          hasTimestamp: subtitle.timestamp !== undefined,
+          timestampType: typeof subtitle.timestamp
+        });
+      });
       
       console.log(`✅ Video completo procesado: ${subtitles.length} subtítulos generados`);
       
