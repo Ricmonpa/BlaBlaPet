@@ -16,21 +16,18 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     });
   }, []); // Solo una vez al montar
 
-  // Parsear timestamp a segundos
-  const parseTimestamp = (timestamp) => {
-    const match = timestamp.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-    if (match) {
-      const startMinutes = parseInt(match[1]);
-      const startSeconds = parseInt(match[2]);
-      const endMinutes = parseInt(match[3]);
-      const endSeconds = parseInt(match[4]);
-      
+  // Parsear timestamp a segundos (solo nuevo formato)
+  const parseTimestamp = (subtitle) => {
+    // NUEVO FORMATO: timestamp_start y timestamp_end en segundos
+    if (subtitle && subtitle.timestamp_start !== undefined && subtitle.timestamp_end !== undefined) {
       return {
-        start: startMinutes * 60 + startSeconds,
-        end: endMinutes * 60 + endSeconds
+        start: subtitle.timestamp_start,
+        end: subtitle.timestamp_end
       };
     }
     
+    // Si no es el formato esperado, devolver fallback
+    console.warn('⚠️ Formato de timestamp no soportado en overlay:', subtitle);
     return { start: 0, end: 5 };
   };
 
@@ -39,14 +36,14 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     if (subtitles && subtitles.length > 0) {
       // Buscar subtítulo exacto primero
       let current = subtitles.find(subtitle => {
-        const timeRange = parseTimestamp(subtitle.timestamp);
+        const timeRange = parseTimestamp(subtitle);
         return currentTime >= timeRange.start && currentTime <= timeRange.end;
       });
       
       // Si no hay coincidencia exacta, buscar el más cercano
       if (!current) {
         current = subtitles.find(subtitle => {
-          const timeRange = parseTimestamp(subtitle.timestamp);
+          const timeRange = parseTimestamp(subtitle);
           return currentTime >= timeRange.start;
         });
       }
@@ -57,9 +54,10 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       }
       
       // Solo loggear cuando cambie el subtítulo
-      if (current && (!currentSubtitle || current.timestamp !== currentSubtitle.timestamp)) {
+      if (current && (!currentSubtitle || current.timestamp_start !== currentSubtitle.timestamp_start)) {
         console.log('🎬 Subtítulo actual:', {
-          timestamp: current.timestamp,
+          timestamp_start: current.timestamp_start,
+          timestamp_end: current.timestamp_end,
           tecnica: current.traduccion_tecnica,
           emocional: current.traduccion_emocional,
           confidence: current.confidence,
@@ -67,14 +65,15 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
           fullStructure: current,
           hasTraduccionEmocional: !!current.traduccion_emocional,
           hasTraduccionTecnica: !!current.traduccion_tecnica,
-          hasTimestamp: !!current.timestamp,
+          hasTimestampStart: !!current.timestamp_start,
+          hasTimestampEnd: !!current.timestamp_end,
           hasConfidence: !!current.confidence
         });
       }
       
       setCurrentSubtitle(current || null);
     }
-  }, [currentTime, subtitles, currentSubtitle?.timestamp]);
+  }, [currentTime, subtitles, currentSubtitle?.timestamp_start]);
 
   // Escuchar cambios de tiempo del video
   useEffect(() => {
@@ -137,7 +136,9 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
         {/* Información del subtítulo - Ultra compacta */}
         {currentSubtitle && (
           <div className="mt-1 text-xs text-gray-400 bg-black bg-opacity-40 px-2 py-0.5 rounded text-center">
-            {currentSubtitle.timestamp || 'Sin timestamp'}
+            {currentSubtitle.timestamp_start !== undefined && currentSubtitle.timestamp_end !== undefined 
+              ? `${currentSubtitle.timestamp_start}s - ${currentSubtitle.timestamp_end}s`
+              : 'Sin timestamp'}
           </div>
         )}
       </div>

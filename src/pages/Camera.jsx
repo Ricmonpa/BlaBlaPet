@@ -276,9 +276,9 @@ const Camera = () => {
       // Mostrar indicador de carga
       setCapturing(true);
       
-      // Timeout para evitar que se congele (aumentado a 900 segundos para videos largos)
+      // Timeout para evitar que se congele (aumentado a 20 minutos para análisis completo con audio)
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: La traducción tardó demasiado')), 900000)
+        setTimeout(() => reject(new Error('Timeout: La traducción tardó demasiado')), 1200000)
       );
       
       let result;
