@@ -53,6 +53,13 @@ class SequentialSubtitlesService {
 
 El video puede tener una duración inexacta, posiblemente superior a 5 minutos. Debes cubrir el 100% de la duración.
 
+**IMPORTANTE - RESTRICCIÓN CRÍTICA:**
+- NO leas, traduzcas, o interpretes NINGÚN texto nativo del video original (subtítulos originales, títulos, marcas de agua, etc.)
+- IGNORA completamente cualquier texto que sea parte del video original
+- Tu análisis debe basarse ÚNICAMENTE en el comportamiento visual y auditivo del perro
+- NO uses información de texto nativo para generar tus traducciones
+- SÍ puedes leer y mejorar subtítulos emocionales que hayas generado previamente (si los hay)
+
 **REQUERIMIENTOS DE ANÁLISIS:**
 1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas: (**ladridos, aullidos, gruñidos, lloriqueos, quejidos, jadeos, suspiros, vociferaciones**) con el comportamiento visual.
 2. **Transiciones:** Los bloques de subtítulos deben reflejar cambios CLAVE en el estado emocional o la actividad del perro.
@@ -497,6 +504,13 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
     const videoPrompt = `Eres un analista de comportamiento canino experto. Tu tarea es analizar este video COMPLETO del perro (que incluye audio) y generar una transcripción emocional secuencial para nuestro servicio de Texto a Voz (TTS).
 
 El video puede tener una duración inexacta, posiblemente superior a 5 minutos. Debes cubrir el 100% de la duración.
+
+**IMPORTANTE - RESTRICCIÓN CRÍTICA:**
+- NO leas, traduzcas, o interpretes NINGÚN texto nativo del video original (subtítulos originales, títulos, marcas de agua, etc.)
+- IGNORA completamente cualquier texto que sea parte del video original
+- Tu análisis debe basarse ÚNICAMENTE en el comportamiento visual y auditivo del perro
+- NO uses información de texto nativo para generar tus traducciones
+- SÍ puedes leer y mejorar subtítulos emocionales que hayas generado previamente (si los hay)
 
 **REQUERIMIENTOS DE ANÁLISIS:**
 1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas: (**ladridos, aullidos, gruñidos, lloriqueos, quejidos, jadeos, suspiros, vociferaciones**) con el comportamiento visual.
