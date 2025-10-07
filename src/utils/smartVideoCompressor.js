@@ -161,10 +161,11 @@ class SmartVideoCompressor {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // Configurar video
+      // Configurar video - NO MUTED para capturar audio
       video.src = URL.createObjectURL(videoFile);
-      video.muted = true;
+      video.muted = false; // ✅ NO silenciar para poder capturar audio
       video.playsInline = true;
+      video.volume = 1.0; // ✅ Volumen completo
 
       await new Promise((resolve, reject) => {
         video.onloadedmetadata = resolve;
@@ -184,9 +185,38 @@ class SmartVideoCompressor {
 
       console.log(`📐 Dimensiones: ${video.videoWidth}x${video.videoHeight} → ${width}x${height}`);
 
-      // Configurar MediaRecorder
-      const stream = canvas.captureStream(Math.min(profile.fps, 30));
+      // CAPTURAR AUDIO DEL VIDEO ORIGINAL
+      let audioTrack = null;
+      try {
+        // Intentar capturar stream del video con audio
+        const videoStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+        const audioTracks = videoStream.getAudioTracks();
+        
+        if (audioTracks && audioTracks.length > 0) {
+          audioTrack = audioTracks[0];
+          console.log(`✅ Audio capturado del video original: ${audioTrack.label}`);
+        } else {
+          console.warn('⚠️ Video sin pista de audio');
+        }
+      } catch (audioError) {
+        console.warn('⚠️ No se pudo capturar audio del video:', audioError.message);
+      }
+
+      // Configurar stream de video comprimido desde canvas
+      const canvasStream = canvas.captureStream(Math.min(profile.fps, 30));
+      const videoTrack = canvasStream.getVideoTracks()[0];
       
+      // COMBINAR video comprimido + audio original
+      let stream;
+      if (audioTrack) {
+        stream = new MediaStream([videoTrack, audioTrack]);
+        console.log('✅ Stream combinado: video comprimido + audio original');
+      } else {
+        stream = canvasStream;
+        console.log('⚠️ Stream sin audio (video original no tenía audio)');
+      }
+      
+      // Configurar MediaRecorder con el stream combinado
       let mimeType = 'video/webm';
       let recorderOptions = {};
       
@@ -199,20 +229,28 @@ class SmartVideoCompressor {
       
       // Configurar bitrate seguro
       const safeBitrate = Math.max(profile.targetBitrate * 1000, 200000); // Mínimo 200kbps
-      const audioBitrate = profile.audioBitrate * 1000;
+      const audioBitrate = audioTrack ? profile.audioBitrate * 1000 : 0; // Solo si hay audio
       
       try {
         recorderOptions = {
           mimeType: mimeType,
-          videoBitsPerSecond: safeBitrate,
-          audioBitsPerSecond: audioBitrate
+          videoBitsPerSecond: safeBitrate
         };
+        
+        // Solo agregar audioBitsPerSecond si hay audio
+        if (audioTrack) {
+          recorderOptions.audioBitsPerSecond = audioBitrate;
+        }
         
         // Probar configuración
         const testRecorder = new MediaRecorder(stream, recorderOptions);
         testRecorder.stop();
         
-        console.log(`🎵 Audio: ${profile.audioBitrate}kbps, ${profile.audioSampleRate || 22050}Hz, ${profile.audioChannels || 1} canal(es)`);
+        if (audioTrack) {
+          console.log(`🎵 Audio: ${profile.audioBitrate}kbps, ${profile.audioSampleRate || 44100}Hz, ${profile.audioChannels || 2} canal(es) - PRESERVADO`);
+        } else {
+          console.log('🎵 Audio: No disponible en video original');
+        }
         
       } catch (error) {
         console.warn('⚠️ Configuración avanzada no soportada, usando básica');
@@ -221,7 +259,11 @@ class SmartVideoCompressor {
       
       const mediaRecorder = new MediaRecorder(stream, recorderOptions);
       
-      console.log(`🎬 MediaRecorder: ${recorderOptions.mimeType}, ${safeBitrate}bps video, ${audioBitrate}bps audio`);
+      if (audioTrack) {
+        console.log(`🎬 MediaRecorder configurado: ${recorderOptions.mimeType}, ${safeBitrate}bps video, ${audioBitrate}bps audio - CON AUDIO ORIGINAL`);
+      } else {
+        console.log(`🎬 MediaRecorder configurado: ${recorderOptions.mimeType}, ${safeBitrate}bps video - SIN AUDIO`);
+      }
 
       const chunks = [];
       mediaRecorder.ondataavailable = (event) => {
