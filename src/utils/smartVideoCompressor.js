@@ -14,9 +14,9 @@ class SmartVideoCompressor {
         maxWidth: 720,
         maxHeight: 1280,
         targetBitrate: 800, // kbps
-        audioBitrate: 96,   // kbps
+        audioBitrate: 128,  // kbps - AUDIO DE CALIDAD
         audioSampleRate: 44100,
-        audioChannels: 2,
+        audioChannels: 2,   // ESTÉREO - Preserva audio original
         fps: 24,
         maxSizeMB: 10,
         description: 'Videos cortos - calidad alta'
@@ -27,9 +27,9 @@ class SmartVideoCompressor {
         maxWidth: 720,
         maxHeight: 1280,
         targetBitrate: 600, // kbps
-        audioBitrate: 64,   // kbps
-        audioSampleRate: 22050,
-        audioChannels: 1,
+        audioBitrate: 128,  // kbps - AUDIO DE CALIDAD
+        audioSampleRate: 44100, // 44.1kHz - Calidad completa
+        audioChannels: 2,   // ESTÉREO - Preserva audio original
         fps: 24,
         maxSizeMB: 15,
         description: 'Videos medianos - balance calidad/tamaño'
@@ -40,9 +40,9 @@ class SmartVideoCompressor {
         maxWidth: 720,
         maxHeight: 1280,
         targetBitrate: 600, // kbps - tu configuración específica
-        audioBitrate: 64,   // kbps
-        audioSampleRate: 22050,
-        audioChannels: 1,
+        audioBitrate: 128,  // kbps - AUDIO DE CALIDAD
+        audioSampleRate: 44100, // 44.1kHz - Calidad completa
+        audioChannels: 2,   // ESTÉREO - Preserva audio original
         fps: 24,
         maxSizeMB: 25, // Target: 15-25MB para 5 min
         description: 'Videos largos - compresión obligatoria para 5 min'
@@ -56,7 +56,9 @@ class SmartVideoCompressor {
         maxWidth: 720,
         maxHeight: 1280,
         targetBitrate: 600,
-        audioBitrate: 64,
+        audioBitrate: 128,  // AUDIO DE CALIDAD
+        audioSampleRate: 44100,
+        audioChannels: 2,   // ESTÉREO
         fps: 24,
         description: 'Primer intento - 720p balanceado'
       },
@@ -65,7 +67,9 @@ class SmartVideoCompressor {
         maxWidth: 480,
         maxHeight: 854,
         targetBitrate: 400,
-        audioBitrate: 48,
+        audioBitrate: 128,  // AUDIO DE CALIDAD
+        audioSampleRate: 44100,
+        audioChannels: 2,   // ESTÉREO
         fps: 20,
         description: 'Segundo intento - 480p agresivo'
       },
@@ -74,7 +78,9 @@ class SmartVideoCompressor {
         maxWidth: 360,
         maxHeight: 640,
         targetBitrate: 200,
-        audioBitrate: 32,
+        audioBitrate: 96,   // AUDIO DE CALIDAD (mínimo aceptable)
+        audioSampleRate: 44100,
+        audioChannels: 2,   // ESTÉREO
         fps: 15,
         description: 'Último intento - 360p extremo'
       }
