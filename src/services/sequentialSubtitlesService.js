@@ -51,33 +51,30 @@ class SequentialSubtitlesService {
     // Definir el prompt específico para subtítulos secuenciales con TTS
     const prompt = `Eres un analista de comportamiento canino experto. Tu tarea es analizar este video COMPLETO del perro (que incluye audio) y generar una transcripción emocional secuencial para nuestro servicio de Texto a Voz (TTS).
 
-El video puede durar hasta 5 minutos. Debes cubrir el 100% de la duración.
+El video puede tener una duración inexacta, posiblemente superior a 5 minutos. Debes cubrir el 100% de la duración.
 
 **REQUERIMIENTOS DE ANÁLISIS:**
-1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas (ladridos, gemidos, jadeos) con el comportamiento visual.
+1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas: (**ladridos, aullidos, gruñidos, lloriqueos, quejidos, jadeos, suspiros, vociferaciones**) con el comportamiento visual.
 2. **Transiciones:** Los bloques de subtítulos deben reflejar cambios CLAVE en el estado emocional o la actividad del perro.
-3. **Duración:** Genera bloques de subtítulos con una duración mínima de 3 segundos y una duración máxima de 15 segundos. La cantidad total de bloques debe cubrir la duración total del video.
+3. **Duración:** Genera bloques de subtítulos con una duración **mínima de 3 segundos** y **máxima de 15 segundos**. La cantidad total de bloques debe cubrir la duración total del video.
 
 **FORMATO DE SALIDA (SOLO JSON):**
 
-- **ATENCIÓN:** El valor de 'traduccion_emocional' será enviado directamente a un servicio de voz, debe ser una frase natural, con la puntuación y exclamaciones necesarias para transmitir la emoción.
-- Los 'timestamp_start' y 'timestamp_end' deben estar en **segundos (número entero)** para garantizar la automatización.
+- **ATENCIÓN:** El valor de 'traduccion_emocional' será enviado directamente a un servicio de voz. Debe ser una frase natural, con la puntuación y exclamaciones necesarias para transmitir la emoción.
+- Los 'timestamp' deben usar el formato de texto legible **MM:SS - MM:SS** (Minutos:Segundos).
 
 {
   "subtitles": [
     {
-      "timestamp_start": 0,
-      "timestamp_end": 7,
-      "traduccion_tecnica": "Perro jadeando y moviendo la cola lentamente, mirando la puerta, postura de baja expectativa.",
-      "traduccion_emocional": "¡Oh, vaya! ¿Ya volviste? Estaba aquí, esperándote. ¿Tienes premios?"
+      "timestamp": "00:00 - 00:07",
+      "traduccion_tecnica": "Descripción técnica del comportamiento observado",
+      "traduccion_emocional": "Traducción emocional del estado del perro"
     },
     {
-      "timestamp_start": 8,
-      "timestamp_end": 15,
-      "traduccion_tecnica": "Ladrido agudo único, cambio de peso al tren delantero, orejas en posición de juego, salto.",
-      "traduccion_emocional": "¡¡Vamos a jugar!! ¡Esa es mi parte favorita del día!"
+      "timestamp": "00:07 - 00:15",
+      "traduccion_tecnica": "Descripción técnica del comportamiento observado", 
+      "traduccion_emocional": "Traducción emocional del estado del perro"
     }
-    // Continuar bloques hasta cubrir el 100% del video...
   ]
 }`;
 
@@ -199,10 +196,10 @@ El video puede durar hasta 5 minutos. Debes cubrir el 100% de la duración.
     if (!subtitles || subtitles.length === 0) return 0;
     
     const lastSubtitle = subtitles[subtitles.length - 1];
+    const timeRange = this.parseTimestamp(lastSubtitle);
     
-    // NUEVO FORMATO: timestamp_end en segundos
-    if (lastSubtitle.timestamp_end !== undefined) {
-      return lastSubtitle.timestamp_end;
+    if (timeRange) {
+      return timeRange.end;
     }
     
     // Si no es el formato esperado, devolver 0
@@ -215,30 +212,35 @@ El video puede durar hasta 5 minutos. Debes cubrir el 100% de la duración.
     if (!subtitles || subtitles.length === 0) return null;
     
     for (const subtitle of subtitles) {
-      // NUEVO FORMATO: timestamp_start y timestamp_end en segundos
-      if (subtitle.timestamp_start !== undefined && subtitle.timestamp_end !== undefined) {
-        if (currentTime >= subtitle.timestamp_start && currentTime <= subtitle.timestamp_end) {
-          return subtitle;
-        }
+      const timeRange = this.parseTimestamp(subtitle);
+      if (timeRange && currentTime >= timeRange.start && currentTime <= timeRange.end) {
+        return subtitle;
       }
     }
     
     return null;
   }
 
-  // Parsear timestamp a segundos (solo nuevo formato)
-  parseTimestamp(timestamp) {
-    // NUEVO FORMATO: timestamp_start y timestamp_end en segundos
-    if (timestamp && typeof timestamp === 'object' && 
-        'timestamp_start' in timestamp && 'timestamp_end' in timestamp) {
-      return {
-        start: timestamp.timestamp_start,
-        end: timestamp.timestamp_end
-      };
+  // Parsear timestamp a segundos (formato MM:SS - MM:SS)
+  parseTimestamp(subtitle) {
+    // FORMATO: timestamp como string "MM:SS - MM:SS"
+    if (subtitle && subtitle.timestamp && typeof subtitle.timestamp === 'string') {
+      const match = subtitle.timestamp.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+      if (match) {
+        const startMinutes = parseInt(match[1]);
+        const startSeconds = parseInt(match[2]);
+        const endMinutes = parseInt(match[3]);
+        const endSeconds = parseInt(match[4]);
+        
+        return {
+          start: startMinutes * 60 + startSeconds,
+          end: endMinutes * 60 + endSeconds
+        };
+      }
     }
     
     // Si no es el formato esperado, devolver null
-    console.warn('⚠️ Formato de timestamp no soportado:', timestamp);
+    console.warn('⚠️ Formato de timestamp no soportado:', subtitle);
     return null;
   }
 
@@ -494,33 +496,30 @@ El video puede durar hasta 5 minutos. Debes cubrir el 100% de la duración.
     // Prompt optimizado para análisis de video completo con audio y TTS
     const videoPrompt = `Eres un analista de comportamiento canino experto. Tu tarea es analizar este video COMPLETO del perro (que incluye audio) y generar una transcripción emocional secuencial para nuestro servicio de Texto a Voz (TTS).
 
-El video puede durar hasta 5 minutos. Debes cubrir el 100% de la duración.
+El video puede tener una duración inexacta, posiblemente superior a 5 minutos. Debes cubrir el 100% de la duración.
 
 **REQUERIMIENTOS DE ANÁLISIS:**
-1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas (ladridos, gemidos, jadeos) con el comportamiento visual.
+1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas: (**ladridos, aullidos, gruñidos, lloriqueos, quejidos, jadeos, suspiros, vociferaciones**) con el comportamiento visual.
 2. **Transiciones:** Los bloques de subtítulos deben reflejar cambios CLAVE en el estado emocional o la actividad del perro.
-3. **Duración:** Genera bloques de subtítulos con una duración mínima de 3 segundos y una duración máxima de 15 segundos. La cantidad total de bloques debe cubrir la duración total del video.
+3. **Duración:** Genera bloques de subtítulos con una duración **mínima de 3 segundos** y **máxima de 15 segundos**. La cantidad total de bloques debe cubrir la duración total del video.
 
 **FORMATO DE SALIDA (SOLO JSON):**
 
-- **ATENCIÓN:** El valor de 'traduccion_emocional' será enviado directamente a un servicio de voz, debe ser una frase natural, con la puntuación y exclamaciones necesarias para transmitir la emoción.
-- Los 'timestamp_start' y 'timestamp_end' deben estar en **segundos (número entero)** para garantizar la automatización.
+- **ATENCIÓN:** El valor de 'traduccion_emocional' será enviado directamente a un servicio de voz. Debe ser una frase natural, con la puntuación y exclamaciones necesarias para transmitir la emoción.
+- Los 'timestamp' deben usar el formato de texto legible **MM:SS - MM:SS** (Minutos:Segundos).
 
 {
   "subtitles": [
     {
-      "timestamp_start": 0,
-      "timestamp_end": 7,
-      "traduccion_tecnica": "Perro jadeando y moviendo la cola lentamente, mirando la puerta, postura de baja expectativa.",
-      "traduccion_emocional": "¡Oh, vaya! ¿Ya volviste? Estaba aquí, esperándote. ¿Tienes premios?"
+      "timestamp": "00:00 - 00:07",
+      "traduccion_tecnica": "Descripción técnica del comportamiento observado",
+      "traduccion_emocional": "Traducción emocional del estado del perro"
     },
     {
-      "timestamp_start": 8,
-      "timestamp_end": 15,
-      "traduccion_tecnica": "Ladrido agudo único, cambio de peso al tren delantero, orejas en posición de juego, salto.",
-      "traduccion_emocional": "¡¡Vamos a jugar!! ¡Esa es mi parte favorita del día!"
+      "timestamp": "00:07 - 00:15",
+      "traduccion_tecnica": "Descripción técnica del comportamiento observado", 
+      "traduccion_emocional": "Traducción emocional del estado del perro"
     }
-    // Continuar bloques hasta cubrir el 100% del video...
   ]
 }`;
 

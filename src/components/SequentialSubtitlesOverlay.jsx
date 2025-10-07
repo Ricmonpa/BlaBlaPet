@@ -16,14 +16,22 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     });
   }, []); // Solo una vez al montar
 
-  // Parsear timestamp a segundos (solo nuevo formato)
+  // Parsear timestamp a segundos (formato MM:SS - MM:SS)
   const parseTimestamp = (subtitle) => {
-    // NUEVO FORMATO: timestamp_start y timestamp_end en segundos
-    if (subtitle && subtitle.timestamp_start !== undefined && subtitle.timestamp_end !== undefined) {
-      return {
-        start: subtitle.timestamp_start,
-        end: subtitle.timestamp_end
-      };
+    // FORMATO: timestamp como string "MM:SS - MM:SS"
+    if (subtitle && subtitle.timestamp && typeof subtitle.timestamp === 'string') {
+      const match = subtitle.timestamp.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+      if (match) {
+        const startMinutes = parseInt(match[1]);
+        const startSeconds = parseInt(match[2]);
+        const endMinutes = parseInt(match[3]);
+        const endSeconds = parseInt(match[4]);
+        
+        return {
+          start: startMinutes * 60 + startSeconds,
+          end: endMinutes * 60 + endSeconds
+        };
+      }
     }
     
     // Si no es el formato esperado, devolver fallback
@@ -54,10 +62,9 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       }
       
       // Solo loggear cuando cambie el subtítulo
-      if (current && (!currentSubtitle || current.timestamp_start !== currentSubtitle.timestamp_start)) {
+      if (current && (!currentSubtitle || current.timestamp !== currentSubtitle.timestamp)) {
         console.log('🎬 Subtítulo actual:', {
-          timestamp_start: current.timestamp_start,
-          timestamp_end: current.timestamp_end,
+          timestamp: current.timestamp,
           tecnica: current.traduccion_tecnica,
           emocional: current.traduccion_emocional,
           confidence: current.confidence,
@@ -65,15 +72,14 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
           fullStructure: current,
           hasTraduccionEmocional: !!current.traduccion_emocional,
           hasTraduccionTecnica: !!current.traduccion_tecnica,
-          hasTimestampStart: !!current.timestamp_start,
-          hasTimestampEnd: !!current.timestamp_end,
+          hasTimestamp: !!current.timestamp,
           hasConfidence: !!current.confidence
         });
       }
       
       setCurrentSubtitle(current || null);
     }
-  }, [currentTime, subtitles, currentSubtitle?.timestamp_start]);
+  }, [currentTime, subtitles, currentSubtitle?.timestamp]);
 
   // Escuchar cambios de tiempo del video
   useEffect(() => {
@@ -136,9 +142,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
         {/* Información del subtítulo - Ultra compacta */}
         {currentSubtitle && (
           <div className="mt-1 text-xs text-gray-400 bg-black bg-opacity-40 px-2 py-0.5 rounded text-center">
-            {currentSubtitle.timestamp_start !== undefined && currentSubtitle.timestamp_end !== undefined 
-              ? `${currentSubtitle.timestamp_start}s - ${currentSubtitle.timestamp_end}s`
-              : 'Sin timestamp'}
+            {currentSubtitle.timestamp || 'Sin timestamp'}
           </div>
         )}
       </div>
