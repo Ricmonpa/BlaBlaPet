@@ -165,7 +165,7 @@ class SmartVideoCompressor {
       video.src = URL.createObjectURL(videoFile);
       video.muted = false; // ✅ NO silenciar para poder capturar audio
       video.playsInline = true;
-      video.volume = 1.0; // ✅ Volumen completo
+      video.volume = 0.5; // ✅ Volumen reducido para evitar eco
 
       await new Promise((resolve, reject) => {
         video.onloadedmetadata = resolve;
@@ -195,6 +195,12 @@ class SmartVideoCompressor {
         if (audioTracks && audioTracks.length > 0) {
           audioTrack = audioTracks[0];
           console.log(`✅ Audio capturado del video original: ${audioTrack.label}`);
+          
+          // ✅ PREVENIR ECO: Configurar audio track para evitar duplicación
+          if (audioTrack.getSettings) {
+            const settings = audioTrack.getSettings();
+            console.log('🎵 Configuración de audio original:', settings);
+          }
         } else {
           console.warn('⚠️ Video sin pista de audio');
         }

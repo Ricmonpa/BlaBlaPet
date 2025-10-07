@@ -34,6 +34,16 @@ const PetCard = ({ post, isVisible = true }) => {
       const handleLoadedData = () => {
         console.log('🎬 Video cargado y listo:', video.src);
         setVideoReady(true);
+        
+        // ✅ RESTAURAR AUDIO AL RECARGAR: Verificar preferencia guardada
+        const savedAudioPreference = localStorage.getItem('audioEnabled');
+        if (savedAudioPreference !== null) {
+          const audioEnabled = JSON.parse(savedAudioPreference);
+          console.log('🎵 Restaurando preferencia de audio:', audioEnabled);
+          video.muted = !audioEnabled;
+          video.volume = audioEnabled ? 0.65 : 0;
+          setIsAudioEnabled(audioEnabled);
+        }
       };
 
       const handleError = (e) => {
