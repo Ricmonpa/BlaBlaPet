@@ -1,4 +1,4 @@
-import VideoCompressor from '../utils/videoCompressor.js';
+import SmartVideoCompressor from '../utils/smartVideoCompressor.js';
 
 /**
  * Servicio para upload directo a Cloudinary
@@ -141,29 +141,39 @@ class DirectBlobUploadService {
         type: videoFile.type
       });
 
-      // SIN COMPRESIÓN - SUBIR DIRECTO
-      console.log('✅ Subiendo video SIN COMPRESIÓN para velocidad máxima');
-      processedFile = videoFile;
+      // COMPRESIÓN INTELIGENTE AUTOMÁTICA
+      console.log('🎯 Aplicando compresión inteligente automática...');
+      const compressionResult = await SmartVideoCompressor.compressWithFallback(videoFile);
+      processedFile = compressionResult.file;
+      
+      console.log('📊 Resultado de compresión:', {
+        perfilFinal: compressionResult.finalProfile,
+        intentos: compressionResult.attempts.length,
+        tamañoFinal: (processedFile.size / 1024 / 1024).toFixed(2) + ' MB'
+      });
 
       // Intentar subir el archivo (comprimido o original) a Cloudinary
       let uploadResult;
       try {
         uploadResult = await this.uploadFile(processedFile, metadata);
       } catch (uploadError) {
-        // Si falla el upload y no se había comprimido, intentar compresión
-        if (!wasCompressed && (uploadError.message.includes('413') || uploadError.message.includes('too large'))) {
-          console.log('🗜️ Upload falló por tamaño, forzando compresión...');
+        // Si falla el upload, el compresor inteligente ya aplicó fallback progresivo
+        // Solo intentar una compresión más agresiva si es absolutamente necesario
+        if (uploadError.message.includes('413') || uploadError.message.includes('too large')) {
+          console.log('🗜️ Upload falló incluso con compresión inteligente, intentando compresión extrema...');
           
           try {
-            processedFile = await VideoCompressor.compressVideo(videoFile, {
-              mode: 'aggressive' // Siempre agresivo en fallback
-            });
+            // Usar el perfil más agresivo disponible
+            const extremeProfile = SmartVideoCompressor.fallbackProfiles[2]; // 360p_extreme
+            processedFile = await SmartVideoCompressor.compressWithProfile(videoFile, extremeProfile);
             
             uploadResult = await this.uploadFile(processedFile, metadata);
             wasCompressed = true;
+            
+            console.log('✅ Éxito con compresión extrema:', (processedFile.size / 1024 / 1024).toFixed(2) + ' MB');
           } catch (fallbackError) {
-            console.error('❌ Falló incluso con compresión máxima:', fallbackError);
-            throw new Error('Video demasiado grande incluso después de compresión agresiva');
+            console.error('❌ Falló incluso con compresión extrema:', fallbackError);
+            throw new Error('Video demasiado grande incluso después de compresión extrema (360p, 200kbps)');
           }
         } else {
           throw uploadError;

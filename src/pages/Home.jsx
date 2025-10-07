@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import BottomNavigation from '../components/BottomNavigation';
 import SharedFeed from '../components/SharedFeed';
 import videoShareService from '../services/videoShareService.js';
-import { compressVideo, needsCompression } from '../utils/videoCompression.js';
+import SmartVideoCompressor from '../utils/smartVideoCompressor.js';
 import directBlobUploadService from '../services/directBlobUploadService.js';
 
 const convertBlobToFile = async (blobData, mediaType, originalBlob = null) => {
@@ -71,22 +71,19 @@ const convertBlobToFile = async (blobData, mediaType, originalBlob = null) => {
       throw new Error('Archivo vacío después de procesamiento');
     }
 
-    // Si el archivo es muy grande, usar compresión real
-    if (mediaType === 'video' && file.size > 50 * 1024 * 1024) { // 50MB
-      console.log('⚠️ Archivo muy grande para Cloudinary, aplicando compresión...');
+    // Aplicar compresión inteligente automática para videos
+    if (mediaType === 'video') {
+      console.log('🎯 Aplicando compresión inteligente automática...');
       
-      // Usar el servicio de compresión real
       try {
-        const { compressVideo } = await import('../utils/videoCompression.js');
-        const compressedFile = await compressVideo(file, {
-          quality: 0.6, // Calidad media
-          maxWidth: 1280,
-          maxHeight: 720
-        });
+        const compressionResult = await SmartVideoCompressor.compressWithFallback(file);
+        const compressedFile = compressionResult.file;
         
-        console.log('✅ Video comprimido:', {
+        console.log('✅ Compresión inteligente completada:', {
+          perfilFinal: compressionResult.finalProfile,
           original: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-          compressed: (compressedFile.size / 1024 / 1024).toFixed(2) + ' MB'
+          compressed: (compressedFile.size / 1024 / 1024).toFixed(2) + ' MB',
+          intentos: compressionResult.attempts.length
         });
         
         return {
@@ -94,10 +91,11 @@ const convertBlobToFile = async (blobData, mediaType, originalBlob = null) => {
           url: URL.createObjectURL(compressedFile),
           fileName: compressedFile.name,
           size: compressedFile.size,
-          isVideo: true
+          isVideo: true,
+          compressionInfo: compressionResult
         };
       } catch (compressionError) {
-        console.warn('⚠️ Error en compresión, usando archivo original:', compressionError.message);
+        console.warn('⚠️ Error en compresión inteligente, usando archivo original:', compressionError.message);
       }
     }
 
