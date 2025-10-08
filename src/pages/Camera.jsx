@@ -33,14 +33,21 @@ const Camera = () => {
       const tracks = videoRef.current?.srcObject?.getTracks() || [];
       tracks.forEach(track => track.stop());
 
+      // DETECTAR MOBILE para ajustar resolución
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      
       const constraints = {
         video: {
-          width: 720,
-          height: 1280,
+          // Mobile: 480p para reducir tamaño y memoria
+          // Desktop: 720p para mejor calidad
+          width: isMobile ? 480 : 720,
+          height: isMobile ? 854 : 1280,
           facingMode: facingMode
         },
         audio: true
       };
+
+      console.log(`📱 Obteniendo stream para ${isMobile ? 'MOBILE' : 'DESKTOP'}: ${constraints.video.width}x${constraints.video.height}`);
 
       console.log(`Obteniendo stream para cámara: ${facingMode}`);
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -276,9 +283,14 @@ const Camera = () => {
       // Mostrar indicador de carga
       setCapturing(true);
       
-      // Timeout para evitar que se congele (aumentado a 20 minutos para análisis completo con audio)
+      // Timeout diferenciado: Mobile 5 min, Desktop 20 min
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const timeoutDuration = isMobile ? 300000 : 1200000; // 5 min vs 20 min
+
+      console.log(`⏱️ Timeout configurado: ${timeoutDuration/60000} minutos (${isMobile ? 'Mobile' : 'Desktop'})`);
+
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: La traducción tardó demasiado')), 1200000)
+        setTimeout(() => reject(new Error('Timeout: La traducción tardó demasiado')), timeoutDuration)
       );
       
       let result;
