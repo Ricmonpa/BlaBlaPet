@@ -161,15 +161,49 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
           audioIncluded: 'SÍ - Video completo con audio'
         });
         
-        // Convertir video completo a base64 para enviar a Gemini
-        const videoBase64 = await this.blobToBase64(videoBlob);
+        // DETECTAR MOBILE y comprimir para Gemini si es necesario
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        let finalVideoBlob = videoBlob;
+        
+        if (isMobile && videoBlob.size > 3 * 1024 * 1024) { // Si es > 3MB en mobile
+          console.log('📱 MOBILE: Video muy grande para Gemini, comprimiendo para análisis...');
+          console.log('📱 Tamaño original:', (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB');
+          
+          try {
+            // Importar SmartVideoCompressor dinámicamente
+            const { default: SmartVideoCompressor } = await import('../utils/smartVideoCompressor.js');
+            
+            // Crear File temporal para compresión
+            const tempFile = new File([videoBlob], 'temp_video.webm', { type: videoBlob.type });
+            
+            // Comprimir SOLO para Gemini (perfil agresivo)
+            const compressionResult = await SmartVideoCompressor.compressWithFallback(tempFile);
+            finalVideoBlob = compressionResult.file;
+            
+            console.log('✅ Video comprimido para Gemini:', {
+              original: (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+              compressed: (finalVideoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+              reduction: ((1 - finalVideoBlob.size / videoBlob.size) * 100).toFixed(1) + '%'
+            });
+          } catch (compressionError) {
+            console.warn('⚠️ Error comprimiendo para Gemini, usando original:', compressionError.message);
+            finalVideoBlob = videoBlob;
+          }
+        } else if (!isMobile) {
+          console.log('💻 DESKTOP: Usando video original para Gemini');
+        } else {
+          console.log('📱 MOBILE: Video pequeño, usando original para Gemini');
+        }
+        
+        // Convertir video (comprimido o original) a base64 para enviar a Gemini
+        const videoBase64 = await this.blobToBase64(finalVideoBlob);
         
         return {
           isMultiFrame: false, // Cambiado a false para indicar que enviamos video completo
           multiFrameData: null, // No usamos frames
           inlineData: {
             data: videoBase64,
-            mimeType: videoBlob.type // Mantener el tipo original del video
+            mimeType: finalVideoBlob.type // Usar tipo del video final (comprimido o original)
           }
         };
       }
