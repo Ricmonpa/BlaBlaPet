@@ -76,9 +76,21 @@ const convertBlobToFile = async (blobData, mediaType, originalBlob = null) => {
       // DETECTAR MOBILE
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       
+      console.log('🔍 DEBUG - convertBlobToFile video processing:', {
+        isMobile,
+        userAgent: navigator.userAgent,
+        fileSize: file.size,
+        fileName: file.name
+      });
+      
       if (isMobile) {
         console.log('📱 MOBILE DETECTADO - SKIP compresión (prevenir crash)');
         console.log('📱 Video será procesado directamente sin comprimir en cliente');
+        console.log('🔍 DEBUG - Mobile file details:', {
+          size: file.size,
+          type: file.type,
+          name: file.name
+        });
         
         // Mobile: retornar sin comprimir - Cloudinary se encargará
         return {
@@ -201,12 +213,20 @@ const Home = () => {
       const handleVideoSave = async () => {
         try {
           console.log('🚀 DEBUG - Iniciando handleVideoSave');
-          console.log('🔍 DEBUG - location.state.media:', location.state.media);
+          console.log('🔍 DEBUG - location.state completo:', JSON.stringify(location.state, null, 2));
           console.log('🔍 DEBUG - skipUpload flag:', location.state.skipUpload);
+          console.log('🔍 DEBUG - uploadedUrl:', location.state.uploadedUrl);
+          console.log('🔍 DEBUG - isSequentialSubtitles:', location.state.isSequentialSubtitles);
+          console.log('🔍 DEBUG - media type:', location.state.media?.type);
+          console.log('🔍 DEBUG - media data type:', typeof location.state.media?.data);
+          console.log('🔍 DEBUG - userAgent:', navigator.userAgent);
+          console.log('🔍 DEBUG - isMobile detectado:', /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
           
           // RESPETAR skipUpload flag para evitar doble upload
           if (location.state.skipUpload) {
             console.log('⏭️ SKIP UPLOAD: Video ya fue subido en background, usando URL existente');
+            console.log('🔍 DEBUG - uploadedUrl disponible:', !!location.state.uploadedUrl);
+            console.log('🔍 DEBUG - uploadedUrl valor:', location.state.uploadedUrl);
             
             // Usar el video que ya fue subido en Camera.jsx
             if (location.state.uploadedUrl) {
@@ -259,6 +279,7 @@ const Home = () => {
           
           // Solo hacer upload si skipUpload=false o no hay uploadedUrl
           console.log('📤 Subiendo video a Cloudinary (upload normal)...');
+          console.log('🔍 DEBUG - Iniciando convertBlobToFile...');
           
           // Convertir blob URL a archivo real para upload a Cloudinary
           console.log('🎬 Convirtiendo blob a archivo para upload directo...');
@@ -267,7 +288,12 @@ const Home = () => {
             location.state.media?.type || 'video',
             location.state.media?.blob  // Pasar el blob original si está disponible
           );
-          console.log('✅ DEBUG - convertBlobToFile completado:', videoFile);
+          console.log('✅ DEBUG - convertBlobToFile completado:', {
+            fileName: videoFile.fileName,
+            size: videoFile.size,
+            isVideo: videoFile.isVideo,
+            mobileUpload: videoFile.mobileUpload
+          });
           
           // Validar que el archivo sea válido antes de subir
           if (!videoFile.file) {

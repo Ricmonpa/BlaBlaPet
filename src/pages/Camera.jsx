@@ -299,17 +299,37 @@ const Camera = () => {
       // Si es un video, usar ANÁLISIS RÁPIDO + upload en background
       if (capturedMedia.type === 'video') {
         console.log('🎬 Procesando video con análisis rápido...');
+        console.log('🔍 DEBUG - capturedMedia:', {
+          type: capturedMedia.type,
+          dataType: typeof capturedMedia.data,
+          hasBlob: !!capturedMedia.blob,
+          blobSize: capturedMedia.blob?.size
+        });
         
         // Convertir blob URL a File para upload posterior
         const fileName = `video_${Date.now()}.webm`;
+        console.log('🔍 DEBUG - Iniciando convertBlobToFile en Camera...');
         videoFile = await convertBlobToFile(capturedMedia.data, fileName);
+        console.log('✅ DEBUG - convertBlobToFile en Camera completado:', {
+          fileName: videoFile.name,
+          size: videoFile.size
+        });
         
         // PASO 1: ANALIZAR VIDEO ORIGINAL (máxima calidad para Gemini)
         console.log('🎬 Analizando video ORIGINAL para máxima calidad...');
+        console.log('🔍 DEBUG - Iniciando análisis con Gemini...');
+        console.log('🔍 DEBUG - Video size para análisis:', capturedMedia.blob?.size || 'unknown');
+        
         result = await translatorService.generateSequentialSubtitles(
           capturedMedia.data, // Video ORIGINAL sin comprimir
           capturedMedia.type
         );
+        
+        console.log('✅ DEBUG - Análisis con Gemini completado:', {
+          success: result?.success,
+          subtitlesCount: result?.subtitles?.length,
+          totalDuration: result?.totalDuration
+        });
         
         // PASO 2: UPLOAD EN BACKGROUND (comprimido para almacenamiento)
         if (videoFile) {
