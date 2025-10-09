@@ -176,16 +176,33 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
           console.log('📱 MOBILE: Video muy grande para Gemini, comprimiendo para análisis...');
           console.log('📱 Tamaño original:', (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB');
           
-          try {
-            // Importar SmartVideoCompressor dinámicamente
-            const { default: SmartVideoCompressor } = await import('../utils/smartVideoCompressor.js');
-            
-            // Crear File temporal para compresión
-            const tempFile = new File([videoBlob], 'temp_video.webm', { type: videoBlob.type });
-            
-            // Comprimir SOLO para Gemini (perfil agresivo)
-            const compressionResult = await SmartVideoCompressor.compressWithFallback(tempFile);
-            finalVideoBlob = compressionResult.file;
+          // Si el video es MUY grande (>50MB), skip compresión para evitar crash
+          if (videoBlob.size > 50 * 1024 * 1024) {
+            console.log('⚠️ MOBILE: Video MUY GRANDE (>50MB), SKIP compresión para evitar crash');
+            console.log('⚠️ Usando video original (puede ser lento pero no crashea)');
+            finalVideoBlob = videoBlob;
+          } else {
+            try {
+              // Importar SmartVideoCompressor dinámicamente
+              const { default: SmartVideoCompressor } = await import('../utils/smartVideoCompressor.js');
+              
+              // Crear File temporal para compresión
+              const tempFile = new File([videoBlob], 'temp_video.webm', { type: videoBlob.type });
+              
+              console.log('📱 MOBILE: Usando compresión LIGERA para evitar crash...');
+              
+              // COMPRESIÓN LIGERA para mobile - evitar crash por compresión agresiva
+              const compressionResult = await SmartVideoCompressor.compressWithProfile(tempFile, {
+                maxWidth: 480,  // Reducido de 720
+                maxHeight: 854, // Reducido de 1280
+                targetBitrate: 400, // Reducido de 800
+                audioBitrate: 96,   // Reducido de 128
+                audioSampleRate: 44100,
+                audioChannels: 2,
+                fps: 20,        // Reducido de 24
+                maxSizeMB: 15   // Más permisivo
+              });
+              finalVideoBlob = compressionResult;
             
             console.log('✅ Video comprimido para Gemini:', {
               original: (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
@@ -193,9 +210,10 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
               reduction: ((1 - finalVideoBlob.size / videoBlob.size) * 100).toFixed(1) + '%'
             });
             console.log('🔍 DEBUG - sequentialSubtitlesService: Compresión exitosa');
-          } catch (compressionError) {
-            console.warn('⚠️ Error comprimiendo para Gemini, usando original:', compressionError.message);
-            finalVideoBlob = videoBlob;
+            } catch (compressionError) {
+              console.warn('⚠️ Error comprimiendo para Gemini, usando original:', compressionError.message);
+              finalVideoBlob = videoBlob;
+            }
           }
         } else if (!isMobile) {
           console.log('💻 DESKTOP: Usando video original para Gemini');
