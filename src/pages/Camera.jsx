@@ -392,14 +392,11 @@ const Camera = () => {
           totalDuration: result?.totalDuration
         });
         
-        // LIMPIEZA DE MEMORIA: Liberar recursos antes de navegar
+        // LIMPIEZA DE MEMORIA: Liberar recursos ANTES de navegar (excepto blob URL)
         console.log('🧹 LIMPIEZA: Liberando recursos de memoria...');
         
-        // Limpiar blob URLs temporales
-        if (capturedMedia.data && capturedMedia.data.startsWith('blob:')) {
-          URL.revokeObjectURL(capturedMedia.data);
-          console.log('🧹 Blob URL liberada');
-        }
+        // NO liberar blob URL aquí - Home.jsx la necesita para upload
+        console.log('🧹 Blob URL preservada para Home.jsx');
         
         // Limpiar chunks de grabación
         setRecordedChunks([]);
@@ -456,11 +453,11 @@ const Camera = () => {
               translation: result.subtitles[0]?.traduccion_tecnica || 'Análisis de video',
               output_tecnico: result.subtitles[0]?.traduccion_tecnica,
               output_emocional: result.subtitles[0]?.traduccion_emocional,
-            // Media con URL limpia (sin blob URLs)
+            // Media con blob comprimido para Home.jsx
             media: {
               type: capturedMedia.type,
-              data: capturedMedia.uploadedUrl || capturedMedia.data, // Usar URL remota si está disponible
-              blob: null // Limpiar blob reference
+              data: capturedMedia.data, // Blob URL del video comprimido
+              blob: capturedMedia.blob  // Blob comprimido para upload
             },
               confidence: result.subtitles[0]?.confidence || 85,
               emotion: 'secuencial',

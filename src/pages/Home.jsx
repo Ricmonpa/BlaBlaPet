@@ -223,14 +223,13 @@ const Home = () => {
           console.log('🔍 DEBUG - isMobile detectado:', /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
           
           // RESPETAR skipUpload flag para evitar doble upload
-          if (location.state.skipUpload) {
+          if (location.state.skipUpload && location.state.uploadedUrl) {
             console.log('⏭️ SKIP UPLOAD: Video ya fue subido en background, usando URL existente');
             console.log('🔍 DEBUG - uploadedUrl disponible:', !!location.state.uploadedUrl);
             console.log('🔍 DEBUG - uploadedUrl valor:', location.state.uploadedUrl);
             
             // Usar el video que ya fue subido en Camera.jsx
-            if (location.state.uploadedUrl) {
-              console.log('✅ Usando URL del upload en background:', location.state.uploadedUrl);
+            console.log('✅ Usando URL del upload en background:', location.state.uploadedUrl);
               
               // Crear objeto de video usando la URL ya subida
               const newVideo = {
@@ -277,7 +276,13 @@ const Home = () => {
             }
           }
           
-          // Solo hacer upload si skipUpload=false o no hay uploadedUrl
+          // Si skipUpload=true pero no hay uploadedUrl, es un error de estado
+          if (location.state.skipUpload && !location.state.uploadedUrl) {
+            console.log('⚠️ skipUpload=true pero uploadedUrl=undefined - esto es un error de estado');
+            console.log('🔄 Intentando upload normal como fallback...');
+          }
+          
+          // Upload normal (cuando skipUpload=false o cuando uploadedUrl no está disponible)
           console.log('📤 Subiendo video a Cloudinary (upload normal)...');
           console.log('🔍 DEBUG - Iniciando convertBlobToFile...');
           
