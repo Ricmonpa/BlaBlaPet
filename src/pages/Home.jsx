@@ -281,6 +281,11 @@ const Home = () => {
           console.log('📤 Subiendo video a Cloudinary (upload normal)...');
           console.log('🔍 DEBUG - Iniciando convertBlobToFile...');
           
+          // LIMPIEZA PREVIA: Verificar si hay recursos que limpiar
+          if (location.state.media?.data && location.state.media.data.startsWith('blob:')) {
+            console.log('🧹 Home.jsx: Detectada blob URL, limpiando antes de procesar...');
+          }
+          
           // Convertir blob URL a archivo real para upload a Cloudinary
           console.log('🎬 Convirtiendo blob a archivo para upload directo...');
           const videoFile = await convertBlobToFile(
@@ -367,6 +372,27 @@ const Home = () => {
             });
             window.dispatchEvent(feedUpdateEvent);
             console.log('✅ Evento de actualización del feed disparado');
+            
+            // LIMPIEZA POST-UPLOAD: Liberar recursos de memoria
+            console.log('🧹 Home.jsx: Limpiando recursos post-upload...');
+            
+            // Limpiar blob URLs si existen
+            if (location.state.media?.data && location.state.media.data.startsWith('blob:')) {
+              URL.revokeObjectURL(location.state.media.data);
+              console.log('🧹 Blob URL liberada en Home.jsx');
+            }
+            
+            // Limpiar videoFile URL si existe
+            if (videoFile.url && videoFile.url.startsWith('blob:')) {
+              URL.revokeObjectURL(videoFile.url);
+              console.log('🧹 Video file URL liberada');
+            }
+            
+            // Forzar garbage collection si está disponible
+            if (window.gc) {
+              window.gc();
+              console.log('🧹 Garbage collection forzado en Home.jsx');
+            }
             
             return true; // Indicar éxito
           } else {

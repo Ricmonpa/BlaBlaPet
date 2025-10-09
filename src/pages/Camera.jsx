@@ -333,6 +333,25 @@ const Camera = () => {
           totalDuration: result?.totalDuration
         });
         
+        // LIMPIEZA DE MEMORIA: Liberar recursos antes de navegar
+        console.log('🧹 LIMPIEZA: Liberando recursos de memoria...');
+        
+        // Limpiar blob URLs temporales
+        if (capturedMedia.data && capturedMedia.data.startsWith('blob:')) {
+          URL.revokeObjectURL(capturedMedia.data);
+          console.log('🧹 Blob URL liberada');
+        }
+        
+        // Limpiar chunks de grabación
+        setRecordedChunks([]);
+        console.log('🧹 Recorded chunks liberados');
+        
+        // Forzar garbage collection si está disponible
+        if (window.gc) {
+          window.gc();
+          console.log('🧹 Garbage collection forzado');
+        }
+        
         // PASO 2: UPLOAD EN BACKGROUND (comprimido para almacenamiento)
         if (videoFile) {
           console.log('📤 Iniciando upload comprimido en background...');
@@ -366,31 +385,41 @@ const Camera = () => {
             data: capturedMedia.uploadedUrl || capturedMedia.data
           };
 
-          navigate('/', { 
-            state: { 
-              // Campos para subtítulos secuenciales
-              subtitles: result.subtitles,
-              totalDuration: result.totalDuration,
-              isSequentialSubtitles: true,
-              // Campos existentes para compatibilidad
-              translation: result.subtitles[0]?.traduccion_tecnica || 'Análisis de video',
-              output_tecnico: result.subtitles[0]?.traduccion_tecnica,
-              output_emocional: result.subtitles[0]?.traduccion_emocional,
-              media: preservedMedia,
-              confidence: result.subtitles[0]?.confidence || 85,
-              emotion: 'secuencial',
-              behavior: 'análisis por momentos',
-              context: 'video con subtítulos secuenciales',
-              source: result.source,
-              analysisType: 'sequential',
-              // Información del video subido
-              videoFile: videoFile,
-              uploadedUrl: capturedMedia.uploadedUrl,
-              videoId: capturedMedia.videoId,
-              // Flag para indicar que no necesita upload adicional
-              skipUpload: true
-            }
-          });
+          console.log('🧹 LIMPIEZA FINAL: Preparando navegación con datos mínimos...');
+          
+          // Crear objeto de navegación con datos mínimos para reducir memoria
+          const navigationState = {
+            // Campos para subtítulos secuenciales
+            subtitles: result.subtitles,
+            totalDuration: result.totalDuration,
+            isSequentialSubtitles: true,
+            // Campos existentes para compatibilidad
+            translation: result.subtitles[0]?.traduccion_tecnica || 'Análisis de video',
+            output_tecnico: result.subtitles[0]?.traduccion_tecnica,
+            output_emocional: result.subtitles[0]?.traduccion_emocional,
+            // Media con URL limpia (sin blob URLs)
+            media: {
+              type: capturedMedia.type,
+              data: capturedMedia.uploadedUrl || capturedMedia.data, // Usar URL remota si está disponible
+              blob: null // Limpiar blob reference
+            },
+            confidence: result.subtitles[0]?.confidence || 85,
+            emotion: 'secuencial',
+            behavior: 'análisis por momentos',
+            context: 'video con subtítulos secuenciales',
+            source: result.source,
+            analysisType: 'sequential',
+            // Información del video subido
+            videoFile: videoFile,
+            uploadedUrl: capturedMedia.uploadedUrl,
+            videoId: capturedMedia.videoId,
+            // Flag para indicar que no necesita upload adicional
+            skipUpload: true
+          };
+          
+          console.log('🧹 Navegando con estado limpio...');
+          
+          navigate('/', { state: navigationState });
           return;
         }
       } else {
