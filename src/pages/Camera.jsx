@@ -174,9 +174,15 @@ const Camera = () => {
       // Limpiar chunks anteriores
       setRecordedChunks([]);
       
-      // Crear MediaRecorder con el stream actual
+      // Crear MediaRecorder con bitrate limitado para evitar archivos enormes
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const targetBitrate = isMobile ? 1000000 : 2000000; // 1Mbps mobile, 2Mbps desktop
+      
+      console.log(`🎬 MediaRecorder configurado: ${isMobile ? 'MOBILE' : 'DESKTOP'}, bitrate: ${targetBitrate/1000}kbps`);
+      
       mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp8'
+        mimeType: 'video/webm;codecs=vp8',
+        videoBitsPerSecond: targetBitrate  // ✅ LIMITAR bitrate
       });
       
       mediaRecorderRef.current.ondataavailable = (event) => {
