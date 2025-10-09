@@ -273,13 +273,9 @@ const Home = () => {
               return true; // Indicar éxito
             } else {
               console.warn('⚠️ skipUpload=true pero no hay uploadedUrl, procediendo con upload normal');
+              console.log('⚠️ skipUpload=true pero uploadedUrl=undefined - esto es un error de estado');
+              console.log('🔄 Intentando upload normal como fallback...');
             }
-          }
-          
-          // Si skipUpload=true pero no hay uploadedUrl, es un error de estado
-          if (location.state.skipUpload && !location.state.uploadedUrl) {
-            console.log('⚠️ skipUpload=true pero uploadedUrl=undefined - esto es un error de estado');
-            console.log('🔄 Intentando upload normal como fallback...');
           }
           
           // Upload normal (cuando skipUpload=false o cuando uploadedUrl no está disponible)
