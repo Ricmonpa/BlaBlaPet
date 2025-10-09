@@ -239,7 +239,7 @@ const Camera = () => {
   };
 
   // Manejar selección de archivo desde galería
-  const handleFileSelect = (event) => {
+  const handleFileSelect = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -254,10 +254,63 @@ const Camera = () => {
       };
       reader.readAsDataURL(file);
     } else {
-      // Para videos, crear URL de objeto
-      const videoUrl = URL.createObjectURL(file);
-      setCapturedMedia({ type: 'video', data: videoUrl });
-      setShowPreview(true);
+      // Para videos, verificar tamaño y comprimir si es necesario
+      const videoSizeMB = (file.size / 1024 / 1024).toFixed(2);
+      console.log(`🎬 Video de galería seleccionado: ${videoSizeMB} MB`);
+      
+      if (file.size > 15 * 1024 * 1024) { // > 15MB
+        console.log('📦 Video muy grande, comprimiendo automáticamente...');
+        console.log('📦 Tamaño original:', videoSizeMB + ' MB');
+        
+        try {
+          // Mostrar mensaje de compresión
+          setCapturing(true);
+          console.log('📦 Comprimiendo video para análisis más rápido...');
+          
+          // Importar SmartVideoCompressor dinámicamente
+          const { default: SmartVideoCompressor } = await import('../utils/smartVideoCompressor.js');
+          
+          // Comprimir video de galería
+          const compressionResult = await SmartVideoCompressor.compressWithFallback(file);
+          const compressedFile = compressionResult.file;
+          
+          const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
+          console.log('✅ Video comprimido:', {
+            original: videoSizeMB + ' MB',
+            compressed: compressedSizeMB + ' MB',
+            reduction: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '%'
+          });
+          
+          // Crear URL del video comprimido
+          const videoUrl = URL.createObjectURL(compressedFile);
+          setCapturedMedia({ 
+            type: 'video', 
+            data: videoUrl,
+            blob: compressedFile, // Guardar blob comprimido
+            originalFile: file    // Guardar archivo original para referencia
+          });
+          
+          setCapturing(false);
+          setShowPreview(true);
+          console.log('✅ Video comprimido listo para análisis');
+          
+        } catch (compressionError) {
+          console.error('❌ Error comprimiendo video:', compressionError);
+          setCapturing(false);
+          
+          // Fallback: usar video original si falla la compresión
+          console.log('⚠️ Usando video original como fallback');
+          const videoUrl = URL.createObjectURL(file);
+          setCapturedMedia({ type: 'video', data: videoUrl, blob: file });
+          setShowPreview(true);
+        }
+      } else {
+        // Video pequeño, usar directamente
+        console.log('✅ Video pequeño, usando directamente');
+        const videoUrl = URL.createObjectURL(file);
+        setCapturedMedia({ type: 'video', data: videoUrl, blob: file });
+        setShowPreview(true);
+      }
     }
   };
 
@@ -395,32 +448,32 @@ const Camera = () => {
           
           // Crear objeto de navegación con datos mínimos para reducir memoria
           const navigationState = {
-            // Campos para subtítulos secuenciales
-            subtitles: result.subtitles,
-            totalDuration: result.totalDuration,
-            isSequentialSubtitles: true,
-            // Campos existentes para compatibilidad
-            translation: result.subtitles[0]?.traduccion_tecnica || 'Análisis de video',
-            output_tecnico: result.subtitles[0]?.traduccion_tecnica,
-            output_emocional: result.subtitles[0]?.traduccion_emocional,
+              // Campos para subtítulos secuenciales
+              subtitles: result.subtitles,
+              totalDuration: result.totalDuration,
+              isSequentialSubtitles: true,
+              // Campos existentes para compatibilidad
+              translation: result.subtitles[0]?.traduccion_tecnica || 'Análisis de video',
+              output_tecnico: result.subtitles[0]?.traduccion_tecnica,
+              output_emocional: result.subtitles[0]?.traduccion_emocional,
             // Media con URL limpia (sin blob URLs)
             media: {
               type: capturedMedia.type,
               data: capturedMedia.uploadedUrl || capturedMedia.data, // Usar URL remota si está disponible
               blob: null // Limpiar blob reference
             },
-            confidence: result.subtitles[0]?.confidence || 85,
-            emotion: 'secuencial',
-            behavior: 'análisis por momentos',
-            context: 'video con subtítulos secuenciales',
-            source: result.source,
-            analysisType: 'sequential',
-            // Información del video subido
-            videoFile: videoFile,
-            uploadedUrl: capturedMedia.uploadedUrl,
-            videoId: capturedMedia.videoId,
-            // Flag para indicar que no necesita upload adicional
-            skipUpload: true
+              confidence: result.subtitles[0]?.confidence || 85,
+              emotion: 'secuencial',
+              behavior: 'análisis por momentos',
+              context: 'video con subtítulos secuenciales',
+              source: result.source,
+              analysisType: 'sequential',
+              // Información del video subido
+              videoFile: videoFile,
+              uploadedUrl: capturedMedia.uploadedUrl,
+              videoId: capturedMedia.videoId,
+              // Flag para indicar que no necesita upload adicional
+              skipUpload: true
           };
           
           console.log('🧹 Navegando con estado limpio...');
@@ -567,9 +620,11 @@ const Camera = () => {
               <div className="text-white text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
                 <p className="mb-2">
-                  {capturedMedia.type === 'video' 
-                    ? 'Analizando video...' 
-                    : 'Analizando con el traductor perro-humano...'
+                  {capturedMedia?.originalFile 
+                    ? 'Comprimiendo video para análisis más rápido...'
+                    : capturedMedia.type === 'video' 
+                      ? 'Analizando video...' 
+                      : 'Analizando con el traductor perro-humano...'
                   }
                 </p>
                 {capturedMedia.type === 'video' && (
