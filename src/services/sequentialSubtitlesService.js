@@ -165,6 +165,13 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
         const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
         let finalVideoBlob = videoBlob;
         
+        console.log('🔍 DEBUG - sequentialSubtitlesService: Detección mobile:', {
+          isMobile,
+          userAgent: navigator.userAgent,
+          videoSize: (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+          needsCompression: isMobile && videoBlob.size > 3 * 1024 * 1024
+        });
+        
         if (isMobile && videoBlob.size > 3 * 1024 * 1024) { // Si es > 3MB en mobile
           console.log('📱 MOBILE: Video muy grande para Gemini, comprimiendo para análisis...');
           console.log('📱 Tamaño original:', (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB');
@@ -185,18 +192,28 @@ El video puede tener una duración inexacta, posiblemente superior a 5 minutos. 
               compressed: (finalVideoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
               reduction: ((1 - finalVideoBlob.size / videoBlob.size) * 100).toFixed(1) + '%'
             });
+            console.log('🔍 DEBUG - sequentialSubtitlesService: Compresión exitosa');
           } catch (compressionError) {
             console.warn('⚠️ Error comprimiendo para Gemini, usando original:', compressionError.message);
             finalVideoBlob = videoBlob;
           }
         } else if (!isMobile) {
           console.log('💻 DESKTOP: Usando video original para Gemini');
+          console.log('🔍 DEBUG - sequentialSubtitlesService: Desktop - sin compresión');
         } else {
           console.log('📱 MOBILE: Video pequeño, usando original para Gemini');
+          console.log('🔍 DEBUG - sequentialSubtitlesService: Mobile - video pequeño, sin compresión');
         }
         
+        console.log('🔍 DEBUG - sequentialSubtitlesService: Preparando video final para Gemini:', {
+          finalSize: (finalVideoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+          type: finalVideoBlob.type
+        });
+        
         // Convertir video (comprimido o original) a base64 para enviar a Gemini
+        console.log('🔍 DEBUG - sequentialSubtitlesService: Convirtiendo a base64...');
         const videoBase64 = await this.blobToBase64(finalVideoBlob);
+        console.log('🔍 DEBUG - sequentialSubtitlesService: Base64 convertido, enviando a Gemini...');
         
         return {
           isMultiFrame: false, // Cambiado a false para indicar que enviamos video completo

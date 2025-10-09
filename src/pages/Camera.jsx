@@ -2,7 +2,6 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import translatorService from '../services/translatorService';
 import directBlobUploadService from '../services/directBlobUploadService';
-import SmartVideoCompressor from '../utils/smartVideoCompressor';
 import BottomNavigation from '../components/BottomNavigation';
 
 const Camera = () => {
@@ -316,31 +315,17 @@ const Camera = () => {
           size: videoFile.size
         });
         
-        // PASO 1: ANALIZAR VIDEO (optimizado para mobile)
+        // PASO 1: ANALIZAR VIDEO ORIGINAL (compresión se maneja en sequentialSubtitlesService)
         console.log('🎬 Analizando video para Gemini...');
         console.log('🔍 DEBUG - Iniciando análisis con Gemini...');
         console.log('🔍 DEBUG - Video size para análisis:', capturedMedia.blob?.size || 'unknown');
+        console.log('🔍 DEBUG - Enviando video original a sequentialSubtitlesService (compresión ahí)');
         
-        // DETECTAR MOBILE y usar video comprimido para Gemini si es necesario
-        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        
-        if (isMobile && capturedMedia.blob?.size > 5 * 1024 * 1024) { // Si es > 5MB
-          console.log('📱 MOBILE: Video muy grande para Gemini, comprimiendo temporalmente...');
-          // Comprimir SOLO para Gemini (no para storage)
-          const compressedForGemini = await SmartVideoCompressor.compressWithFallback(videoFile);
-          console.log('✅ Video comprimido para Gemini:', compressedForGemini.file.size, 'bytes');
-          
-          result = await translatorService.generateSequentialSubtitles(
-            URL.createObjectURL(compressedForGemini.file),
-            capturedMedia.type
-          );
-        } else {
-          console.log('🎬 Usando video original para análisis...');
-          result = await translatorService.generateSequentialSubtitles(
-            capturedMedia.data, // Video original
-            capturedMedia.type
-          );
-        }
+        // Usar video original - la compresión se maneja en sequentialSubtitlesService.js
+        result = await translatorService.generateSequentialSubtitles(
+          capturedMedia.data, // Video original
+          capturedMedia.type
+        );
         
         console.log('✅ DEBUG - Análisis con Gemini completado:', {
           success: result?.success,
