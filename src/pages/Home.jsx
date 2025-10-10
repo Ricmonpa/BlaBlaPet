@@ -288,12 +288,13 @@ const Home = () => {
             
             return true; // Indicar éxito
           } else if (location.state.skipUpload && !location.state.uploadedUrl) {
-            console.warn('⚠️ skipUpload=true pero no hay uploadedUrl, procediendo con upload normal');
-            console.log('⚠️ skipUpload=true pero uploadedUrl=undefined - esto es un error de estado');
-            console.log('🔄 Intentando upload normal como fallback...');
+            console.error('❌ ERROR CRÍTICO: skipUpload=true pero uploadedUrl=undefined');
+            console.error('❌ Esto indica un error en el flujo de Camera.jsx - el video debería haber sido subido en background');
+            console.error('❌ NO procediendo con upload normal para evitar doble compresión');
+            throw new Error('Video no fue subido correctamente en background. Reintenta la grabación.');
           }
           
-          // Upload normal (cuando skipUpload=false o cuando uploadedUrl no está disponible)
+          // Upload normal (SOLO cuando skipUpload=false)
           console.log('📤 Subiendo video a Cloudinary (upload normal)...');
           console.log('🔍 DEBUG - Iniciando convertBlobToFile...');
           

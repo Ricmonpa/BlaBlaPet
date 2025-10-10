@@ -102,30 +102,56 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       return;
     }
 
-    console.log('✅ Video ref disponible, configurando event listeners');
+    // Esperar a que el video esté listo antes de configurar listeners
+    const setupVideoListeners = () => {
+      console.log('✅ Video ref disponible, configurando event listeners');
 
-    const handleTimeUpdate = () => {
-      const time = video.currentTime;
-      setCurrentTime(time);
+      const handleTimeUpdate = () => {
+        const time = video.currentTime;
+        setCurrentTime(time);
+      };
+
+      const handleLoadedData = () => {
+        console.log('✅ Video cargado en overlay, tiempo inicial:', video.currentTime);
+        setCurrentTime(video.currentTime);
+      };
+
+      const handleCanPlay = () => {
+        console.log('✅ Video puede reproducirse, estableciendo tiempo inicial:', video.currentTime);
+        setCurrentTime(video.currentTime);
+      };
+
+      video.addEventListener('timeupdate', handleTimeUpdate);
+      video.addEventListener('loadeddata', handleLoadedData);
+      video.addEventListener('canplay', handleCanPlay);
+      
+      // Si el video ya está cargado, establecer el tiempo inicial
+      if (video.readyState >= 2) {
+        console.log('✅ Video ya listo, estableciendo tiempo inicial:', video.currentTime);
+        setCurrentTime(video.currentTime);
+      }
+
+      return () => {
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+        video.removeEventListener('loadeddata', handleLoadedData);
+        video.removeEventListener('canplay', handleCanPlay);
+      };
     };
 
-    const handleLoadedData = () => {
-      console.log('✅ Video cargado en overlay, tiempo inicial:', video.currentTime);
-      setCurrentTime(video.currentTime);
-    };
-
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('loadeddata', handleLoadedData);
-    
-    // Si el video ya está cargado, establecer el tiempo inicial
+    // Si el video ya está listo, configurar inmediatamente
     if (video.readyState >= 2) {
-      console.log('✅ Video ya listo, estableciendo tiempo inicial:', video.currentTime);
-      setCurrentTime(video.currentTime);
+      return setupVideoListeners();
     }
 
+    // Si no está listo, esperar al evento loadeddata
+    const handleInitialLoad = () => {
+      setupVideoListeners();
+    };
+
+    video.addEventListener('loadeddata', handleInitialLoad, { once: true });
+
     return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('loadeddata', handleInitialLoad);
     };
   }, [videoRef?.current]); // ✅ CAMBIO CRÍTICO: Detectar cuando .current cambia
 

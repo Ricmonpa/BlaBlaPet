@@ -124,9 +124,15 @@ Responde en formato JSON:
 
       console.log('📤 Enviando solicitud a Gemini para análisis dual...');
       
-    // Configurar timeout
+    // Configurar timeout adaptativo para videos largos - Mobile vs Desktop
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const timeoutMs = isMobile ? 300000 : 1200000; // 5 min mobile, 20 min desktop
+    const timeoutMinutes = Math.round(timeoutMs / 60000);
+    
+    console.log(`⏱️ Timeout configurado: ${timeoutMinutes} minutos (${isMobile ? 'Mobile' : 'Desktop'})`);
+    
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 900000); // 900 segundos (15 minutos) para videos largos
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const result = await this.model.generateContent({
         contents: [{ role: "user", parts: content }],
