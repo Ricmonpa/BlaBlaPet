@@ -290,8 +290,16 @@ const Home = () => {
           } else if (location.state.skipUpload && !location.state.uploadedUrl) {
             console.error('❌ ERROR CRÍTICO: skipUpload=true pero uploadedUrl=undefined');
             console.error('❌ Esto indica un error en el flujo de Camera.jsx - el video debería haber sido subido en background');
-            console.error('❌ NO procediendo con upload normal para evitar doble compresión');
-            throw new Error('Video no fue subido correctamente en background. Reintenta la grabación.');
+            console.error('❌ FALLBACK: Procediendo con upload normal para salvar los subtítulos');
+            
+            // FALLBACK: Si tenemos subtítulos pero falló el upload, intentar upload normal
+            if (location.state.subtitles && location.state.subtitles.length > 0) {
+              console.log('🔄 FALLBACK: Tenemos subtítulos válidos, intentando upload normal...');
+              // Cambiar skipUpload a false para permitir upload normal
+              location.state.skipUpload = false;
+            } else {
+              throw new Error('Video no fue subido correctamente en background. Reintenta la grabación.');
+            }
           }
           
           // Upload normal (SOLO cuando skipUpload=false)

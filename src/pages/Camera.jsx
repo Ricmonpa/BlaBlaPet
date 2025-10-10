@@ -10,6 +10,7 @@ const Camera = () => {
   const mediaRecorderRef = useRef(null);
   
   const [capturing, setCapturing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState([]);
   const [captureMode, setCaptureMode] = useState('video'); // 'photo', 'video'
   const [isRecording, setIsRecording] = useState(false);
@@ -35,7 +36,7 @@ const Camera = () => {
 
       // DETECTAR MOBILE para ajustar resolución
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      
+
       const constraints = {
         video: {
           // Mobile: 480p para reducir tamaño y memoria
@@ -307,9 +308,9 @@ const Camera = () => {
       } else {
         // Video pequeño, usar directamente
         console.log('✅ Video pequeño, usando directamente');
-        const videoUrl = URL.createObjectURL(file);
+      const videoUrl = URL.createObjectURL(file);
         setCapturedMedia({ type: 'video', data: videoUrl, blob: file });
-        setShowPreview(true);
+      setShowPreview(true);
       }
     }
   };
@@ -408,23 +409,67 @@ const Camera = () => {
           console.log('🧹 Garbage collection forzado');
         }
         
-        // PASO 2: UPLOAD EN BACKGROUND (comprimido para almacenamiento)
+        // PASO 2: UPLOAD SÍNCRONO CON PROGRESO VISUAL (comprimido para almacenamiento)
         if (videoFile) {
-          console.log('📤 Iniciando upload comprimido en background...');
+          console.log('📤 Iniciando upload síncrono con progreso...');
+          console.log('🔍 DEBUG - Video file details:', {
+            name: videoFile.name,
+            size: `${(videoFile.size / 1024 / 1024).toFixed(2)} MB`,
+            type: videoFile.type,
+            lastModified: new Date(videoFile.lastModified).toISOString()
+          });
           
-          // Upload asíncrono - el usuario no espera esto
-          directBlobUploadService.uploadVideo(videoFile, {
+          // Mostrar progreso de upload al usuario
+          setCapturing(false); // Terminar análisis
+          setUploading(true);  // Iniciar upload
+          
+          try {
+            console.log('🔍 DEBUG - Llamando a directBlobUploadService.uploadVideo...');
+            
+            // Upload síncrono - el usuario ve el progreso
+            const uploadResult = await directBlobUploadService.uploadVideo(videoFile, {
             petName: 'Mascota',
             userId: 'current_user', // Usar ID consistente para el perfil
             tags: ['video', 'analisis'],
             forAnalysis: false // Usar compresión agresiva para almacenamiento
-          }).then(uploadResult => {
-            console.log('✅ Video comprimido subido en background:', uploadResult.mediaUrl);
+            });
+            
+            console.log('✅ Video comprimido subido exitosamente:', uploadResult.mediaUrl);
+            console.log('🔍 DEBUG - Upload result completo:', {
+              mediaUrl: uploadResult.mediaUrl,
+              id: uploadResult.id,
+              success: uploadResult.success,
+              cloudinary: uploadResult.cloudinary
+            });
+            
             capturedMedia.uploadedUrl = uploadResult.mediaUrl;
             capturedMedia.videoId = uploadResult.id;
-          }).catch(uploadError => {
-            console.warn('⚠️ Upload en background falló:', uploadError.message);
-          });
+            
+            console.log('🔍 DEBUG - capturedMedia actualizado:', {
+              uploadedUrl: capturedMedia.uploadedUrl,
+              videoId: capturedMedia.videoId
+            });
+            
+            setUploading(false);
+            console.log('✅ Upload completado, procediendo con navegación...');
+            
+          } catch (uploadError) {
+            console.error('❌ Error en upload síncrono:', uploadError.message);
+            console.error('❌ Error stack:', uploadError.stack);
+            console.error('❌ Error details:', {
+              name: uploadError.name,
+              message: uploadError.message,
+              cause: uploadError.cause
+            });
+            
+            setUploading(false);
+            
+            // Mostrar error al usuario
+            setError(`Error subiendo video: ${uploadError.message}. Inténtalo de nuevo.`);
+            return; // No navegar si falla el upload
+          }
+        } else {
+          console.warn('⚠️ No hay videoFile para subir - esto no debería pasar');
         }
         
         // Navegar directamente al home con los subtítulos secuenciales
@@ -474,6 +519,14 @@ const Camera = () => {
           };
           
           console.log('🧹 Navegando con estado limpio...');
+          console.log('🔍 DEBUG - navigationState final:', {
+            skipUpload: navigationState.skipUpload,
+            uploadedUrl: navigationState.uploadedUrl,
+            videoId: navigationState.videoId,
+            subtitlesCount: navigationState.subtitles?.length,
+            hasMedia: !!navigationState.media,
+            mediaType: navigationState.media?.type
+          });
           
           navigate('/', { state: navigationState });
           return;
@@ -611,22 +664,22 @@ const Camera = () => {
             </div>
           )}
           
-          {/* Loading overlay */}
+          {/* Loading overlay - Análisis */}
           {capturing && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
               <div className="text-white text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-                <p className="mb-2">
+                <p className="mb-2 text-lg font-semibold">
                   {capturedMedia?.originalFile 
                     ? 'Comprimiendo video para análisis más rápido...'
                     : capturedMedia.type === 'video' 
-                      ? 'Analizando video...' 
-                      : 'Analizando con el traductor perro-humano...'
+                      ? 'Analizando video con IA...' 
+                    : 'Analizando con el traductor perro-humano...'
                   }
                 </p>
                 {capturedMedia.type === 'video' && (
                   <div className="text-sm text-gray-300">
-                    <p>Upload en background - análisis rápido</p>
+                    <p>🧠 Generando subtítulos secuenciales...</p>
                     <p className="text-xs mt-1">
                       Videos largos (5 min) pueden tardar 2-3 minutos
                     </p>
@@ -635,9 +688,32 @@ const Camera = () => {
               </div>
             </div>
           )}
+
+          {/* Loading overlay - Upload */}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+              <div className="text-white text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                <p className="mb-2 text-lg font-semibold text-green-400">
+                  📤 Subiendo video a la nube...
+                </p>
+                <div className="text-sm text-gray-300">
+                  <p>☁️ Guardando video en Cloudinary</p>
+                  <p className="text-xs mt-1">
+                    Esto asegura que aparezca en el feed compartido
+                  </p>
+                  <div className="mt-3 flex justify-center space-x-1">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Error overlay */}
-          {error && !capturing && (
+          {error && !capturing && !uploading && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
               <div className="text-white text-center p-6">
                 <div className="text-red-500 text-4xl mb-4">⚠️</div>
