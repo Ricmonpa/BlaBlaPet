@@ -244,6 +244,12 @@ const Camera = () => {
     const file = event.target.files[0];
     if (!file) return;
 
+    // 🔑 CLAVE: Detener cámara INMEDIATAMENTE para evitar confusión visual
+    // Esto previene que el usuario vea la vista "Grabar" mientras se procesa el archivo
+    const tracks = videoRef.current?.srcObject?.getTracks() || [];
+    tracks.forEach(track => track.stop());
+    console.log('📷 Cámara detenida - archivo seleccionado de galería');
+
     const mediaType = file.type.startsWith('image/') ? 'photo' : 'video';
     
     if (mediaType === 'photo') {
