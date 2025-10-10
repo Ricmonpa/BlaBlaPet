@@ -265,12 +265,23 @@ const Camera = () => {
       const videoSizeMB = (file.size / 1024 / 1024).toFixed(2);
       console.log(`🎬 Video de galería seleccionado: ${videoSizeMB} MB`);
       
+      // 🔑 CLAVE: Crear y mostrar preview INMEDIATAMENTE con video original
+      const tempVideoUrl = URL.createObjectURL(file);
+      setCapturedMedia({ 
+        type: 'video', 
+        data: tempVideoUrl,
+        blob: file,
+        originalFile: file
+      });
+      setShowPreview(true);  // ← MOSTRAR PREVIEW AL INSTANTE
+      console.log('📹 Preview mostrado inmediatamente con video original');
+      
       if (file.size > 15 * 1024 * 1024) { // > 15MB
         console.log('📦 Video muy grande, comprimiendo automáticamente...');
         console.log('📦 Tamaño original:', videoSizeMB + ' MB');
         
         try {
-          // Mostrar mensaje de compresión
+          // Mostrar overlay de compresión SOBRE el preview
           setCapturing(true);
           console.log('📦 Comprimiendo video para análisis más rápido...');
           
@@ -288,35 +299,29 @@ const Camera = () => {
             reduction: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '%'
           });
           
-          // Crear URL del video comprimido
-          const videoUrl = URL.createObjectURL(compressedFile);
+          // Actualizar preview con video comprimido
+          const compressedVideoUrl = URL.createObjectURL(compressedFile);
+          URL.revokeObjectURL(tempVideoUrl); // Liberar URL temporal
+          
           setCapturedMedia({ 
             type: 'video', 
-            data: videoUrl,
+            data: compressedVideoUrl,
             blob: compressedFile, // Guardar blob comprimido
             originalFile: file    // Guardar archivo original para referencia
           });
           
           setCapturing(false);
-          setShowPreview(true);
           console.log('✅ Video comprimido listo para análisis');
           
         } catch (compressionError) {
           console.error('❌ Error comprimiendo video:', compressionError);
           setCapturing(false);
-          
-          // Fallback: usar video original si falla la compresión
-          console.log('⚠️ Usando video original como fallback');
-          const videoUrl = URL.createObjectURL(file);
-          setCapturedMedia({ type: 'video', data: videoUrl, blob: file });
-          setShowPreview(true);
+          // Preview ya tiene video original, no hacer nada más
+          console.log('⚠️ Manteniendo video original en preview');
         }
       } else {
-        // Video pequeño, usar directamente
-        console.log('✅ Video pequeño, usando directamente');
-      const videoUrl = URL.createObjectURL(file);
-        setCapturedMedia({ type: 'video', data: videoUrl, blob: file });
-      setShowPreview(true);
+        // Video pequeño, ya está en preview
+        console.log('✅ Video pequeño, listo en preview');
       }
     }
   };
