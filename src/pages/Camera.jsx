@@ -283,7 +283,7 @@ const Camera = () => {
         try {
           // Mostrar overlay de compresión SOBRE el preview
           setCapturing(true);
-          console.log('📦 Comprimiendo video para análisis más rápido...');
+          console.log('🐶 Alistando video para traducción perruna...');
           
           // Importar SmartVideoCompressor dinámicamente
           const { default: SmartVideoCompressor } = await import('../utils/smartVideoCompressor.js');
@@ -678,22 +678,29 @@ const Camera = () => {
           {/* Loading overlay - Análisis */}
           {capturing && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
-              <div className="text-white text-center">
+              <div className="text-white text-center px-6">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
                 <p className="mb-2 text-lg font-semibold">
                   {capturedMedia?.originalFile 
-                    ? 'Comprimiendo video para análisis más rápido...'
+                    ? 'Alistando tu video para la traducción perruna...'
                     : capturedMedia.type === 'video' 
-                      ? 'Analizando video con IA...' 
-                    : 'Analizando con el traductor perro-humano...'
+                      ? 'Decodificando el mensaje de tu mejor amigo...' 
+                      : 'Decodificando el mensaje de tu mejor amigo...'
                   }
                 </p>
                 {capturedMedia.type === 'video' && (
                   <div className="text-sm text-gray-300">
-                    <p>🧠 Generando subtítulos secuenciales...</p>
-                    <p className="text-xs mt-1">
-                      Videos largos (5 min) pueden tardar 2-3 minutos
-                    </p>
+                    {capturedMedia?.originalFile ? (
+                      <p className="text-xs">Optimizando el formato para el motor de traducción.</p>
+                    ) : (
+                      <>
+                        <p>🧠 Mapeando tonos y vocalizaciones caninas.</p>
+                        <p className="mt-1">🎙️ ¡Preparando el doblaje a voz humana!</p>
+                        <p className="text-xs mt-2 text-gray-400">
+                          Videos largos (&gt;1 min) toman 2-3 minutos. ¡Vale la pena la espera!
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -703,15 +710,15 @@ const Camera = () => {
           {/* Loading overlay - Upload */}
           {uploading && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
-              <div className="text-white text-center">
+              <div className="text-white text-center px-6">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
                 <p className="mb-2 text-lg font-semibold text-green-400">
-                  📤 Subiendo video a la nube...
+                  ¡Publicación casi lista! 🚀
                 </p>
                 <div className="text-sm text-gray-300">
-                  <p>☁️ Guardando video en Cloudinary</p>
+                  <p>☁️ Asegurando tu video en la Nube BlaBlaPet.</p>
                   <p className="text-xs mt-1">
-                    Esto asegura que aparezca en el feed compartido
+                    Tu video está listo para el feed mundial de mascotas.
                   </p>
                   <div className="mt-3 flex justify-center space-x-1">
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
