@@ -265,13 +265,10 @@ const Home = () => {
               totalDuration: newVideo.totalDuration
             });
             
-            // Guardar en localStorage
-            videoShareService.saveVideo(newVideo);
-            console.log('✅ Video guardado en localStorage con subtítulos secuenciales');
-            
-            // Crear URL para compartir
-            const videoUrl = `${window.location.origin}/video/${newVideo.id}`;
-            console.log('🔗 URL del video creada:', videoUrl);
+            // Guardar video y generar URL única
+            const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
+            console.log('✅ Video guardado en base de datos con subtítulos secuenciales');
+            console.log('🔗 URL del video generada:', `${window.location.origin}${videoUrl}`);
             
             // Disparar evento personalizado para actualizar el feed
             console.log('🔄 Disparando evento de actualización del feed...');
@@ -372,13 +369,10 @@ const Home = () => {
               totalDuration: newVideo.totalDuration
             });
             
-            // Guardar en localStorage
-            videoShareService.saveVideo(newVideo);
-            console.log('✅ Video guardado en localStorage con subtítulos secuenciales');
-            
-            // Crear URL para compartir
-            const videoUrl = `${window.location.origin}/video/${newVideo.id}`;
-            console.log('🔗 URL del video creada:', videoUrl);
+            // Guardar video y generar URL única
+            const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
+            console.log('✅ Video guardado en base de datos con subtítulos secuenciales');
+            console.log('🔗 URL del video generada:', `${window.location.origin}${videoUrl}`);
             
             // Disparar evento personalizado para actualizar el feed
             console.log('🔄 Disparando evento de actualización del feed...');
