@@ -196,13 +196,20 @@ class DirectBlobUploadService {
         }
       };
 
-      console.log('✅ Video subido a Cloudinary exitosamente:', uploadResult.publicId);
+      console.log('✅ Video subido a Cloudinary exitosamente:', uploadResult.cloudinary?.public_id);
       
       if (wasCompressed) {
         console.log('🗜️ Video fue comprimido para cumplir límites de tamaño');
       }
       
-      return videoData;
+      // Retornar estructura correcta para Camera.jsx
+      return {
+        success: true,
+        mediaUrl: uploadResult.url || uploadResult.cloudinary?.secure_url,
+        id: uploadResult.cloudinary?.public_id,
+        cloudinary: uploadResult.cloudinary,
+        metadata: videoData
+      };
 
     } catch (error) {
       console.error('❌ Error subiendo video:', error);
