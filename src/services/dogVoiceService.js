@@ -134,7 +134,18 @@ class DogVoiceService {
 
       utterance.onerror = (event) => {
         this.isPlaying = false;
-        console.error('❌ Error en voz de perro:', event.error);
+        
+        // En mobile, 'not-allowed' es esperado cuando no hay interacción del usuario
+        if (event.error === 'not-allowed') {
+          console.log('ℹ️ TTS bloqueado por el navegador (requiere interacción del usuario en mobile)');
+          // Silenciar error - es comportamiento esperado en mobile
+          return;
+        }
+        
+        // Solo mostrar otros errores
+        if (event.error !== 'canceled') {
+          console.error('❌ Error en voz de perro:', event.error);
+        }
       };
 
       // Reproducir

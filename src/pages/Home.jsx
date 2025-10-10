@@ -283,6 +283,11 @@ const Home = () => {
             window.dispatchEvent(feedUpdateEvent);
             console.log('✅ Evento de actualización del feed disparado');
             
+            // Limpiar estado INMEDIATAMENTE para evitar reutilización
+            console.log('🧹 Limpiando location.state inmediatamente...');
+            window.history.replaceState({}, document.title);
+            console.log('✅ Estado limpiado - video guardado correctamente');
+            
             return true; // Indicar éxito
           } else if (location.state.skipUpload && !location.state.uploadedUrl) {
             console.error('❌ ERROR CRÍTICO: skipUpload=true pero uploadedUrl=undefined');
@@ -386,6 +391,11 @@ const Home = () => {
             });
             window.dispatchEvent(feedUpdateEvent);
             console.log('✅ Evento de actualización del feed disparado');
+            
+            // Limpiar estado INMEDIATAMENTE para evitar reutilización
+            console.log('🧹 Limpiando location.state inmediatamente...');
+            window.history.replaceState({}, document.title);
+            console.log('✅ Estado limpiado - video guardado correctamente');
             
             // LIMPIEZA POST-UPLOAD: Liberar recursos de memoria
             console.log('🧹 Home.jsx: Limpiando recursos post-upload...');
