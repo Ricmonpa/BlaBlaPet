@@ -233,12 +233,12 @@ const Home = () => {
               
             // Crear objeto de video usando la URL ya subida
             const newVideo = {
-              petName: 'Tu Mascota',
+              petName: localStorage.getItem('userName') || 'Anónimo',
               translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
               emotionalDubbing: location.state.output_emocional || location.state.translation,
               mediaUrl: location.state.uploadedUrl, // URL del upload en background
               mediaType: location.state.media?.type || 'video',
-              userId: 'current_user',
+              userId: localStorage.getItem('userName') || 'current_user',
               tags: ['nuevo', 'análisis'],
               duration: location.state.totalDuration || 30,
               resolution: '400x600',
@@ -330,8 +330,8 @@ const Home = () => {
           // Upload directo a Cloudinary
           console.log('☁️ Iniciando upload directo a Cloudinary...');
           const uploadResult = await directBlobUploadService.uploadVideo(videoFile.file, {
-            petName: 'Tu Mascota',
-            userId: 'current_user',
+            petName: localStorage.getItem('userName') || 'Anónimo',
+            userId: localStorage.getItem('userName') || 'current_user',
             tags: ['video', 'análisis'],
             forAnalysis: false // Usar compresión agresiva para almacenamiento
           });
@@ -342,12 +342,12 @@ const Home = () => {
           if (uploadResult && uploadResult.url) {
             // Crear objeto de video para guardar
             const newVideo = {
-              petName: 'Tu Mascota',
+              petName: localStorage.getItem('userName') || 'Anónimo',
               translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
               emotionalDubbing: location.state.output_emocional || location.state.translation,
               mediaUrl: uploadResult.url,
               mediaType: location.state.media?.type || 'video',
-              userId: 'current_user',
+              userId: localStorage.getItem('userName') || 'current_user',
               tags: ['nuevo', 'análisis'],
               duration: location.state.totalDuration || 30,
               resolution: '400x600',

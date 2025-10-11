@@ -439,11 +439,11 @@ const Camera = () => {
             
             // Upload síncrono - el usuario ve el progreso
             const uploadResult = await directBlobUploadService.uploadVideo(videoFile, {
-            petName: 'Mascota',
-            userId: 'current_user', // Usar ID consistente para el perfil
+            petName: localStorage.getItem('userName') || 'Anónimo',
+            userId: localStorage.getItem('userName') || 'current_user',
             tags: ['video', 'analisis'],
             forAnalysis: false // Usar compresión agresiva para almacenamiento
-            });
+          });
             
             console.log('✅ Video comprimido subido exitosamente:', uploadResult.mediaUrl);
             console.log('🔍 DEBUG - Upload result completo:', {

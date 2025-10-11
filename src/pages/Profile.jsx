@@ -13,6 +13,8 @@ const Profile = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [editingVideo, setEditingVideo] = useState(null);
+  const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
+  const [isEditingName, setIsEditingName] = useState(false);
 
   // Cargar videos del usuario
   useEffect(() => {
@@ -35,13 +37,30 @@ const Profile = () => {
     try {
       setLoading(true);
       // Obtener videos del usuario desde la base de datos
-      const videos = await videoShareService.getUserVideos('current_user');
+      const userId = localStorage.getItem('userName') || 'current_user';
+      const videos = await videoShareService.getUserVideos(userId);
       console.log('📱 Videos cargados en perfil:', videos.length);
       setUserVideos(videos);
     } catch (error) {
       console.error('Error cargando videos del usuario:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Manejar cambio de nombre
+  const handleNameChange = (e) => {
+    const newName = e.target.value;
+    setUserName(newName);
+    localStorage.setItem('userName', newName);
+    console.log('✅ Nombre de usuario actualizado:', newName);
+  };
+
+  // Manejar blur del input (guardar y salir de edición)
+  const handleNameBlur = () => {
+    setIsEditingName(false);
+    if (userName.trim()) {
+      console.log('💾 Nombre guardado:', userName);
     }
   };
 
@@ -151,8 +170,26 @@ const Profile = () => {
           
           {/* Información del usuario */}
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-white">@usuario_yo_pett</h1>
-            <p className="text-white/80 text-sm">Traductor de mascotas</p>
+            {isEditingName ? (
+              <input
+                type="text"
+                value={userName}
+                onChange={handleNameChange}
+                onBlur={handleNameBlur}
+                placeholder="(escriba su nombre)"
+                autoFocus
+                maxLength={20}
+                className="text-2xl font-bold text-white bg-white/10 border-b-2 border-white/50 focus:border-white outline-none px-2 py-1 rounded w-full"
+              />
+            ) : (
+              <h1 
+                className="text-2xl font-bold text-white cursor-pointer hover:bg-white/10 px-2 py-1 rounded transition-colors"
+                onClick={() => setIsEditingName(true)}
+              >
+                {userName || '(escriba su nombre)'}
+              </h1>
+            )}
+            <p className="text-white/80 text-sm mt-1">Traductor de mascotas</p>
             
             {/* Stats */}
             <div className="flex space-x-6 mt-2">
