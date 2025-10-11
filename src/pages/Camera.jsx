@@ -10,6 +10,7 @@ const Camera = () => {
   const mediaRecorderRef = useRef(null);
   
   const [capturing, setCapturing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState([]);
   const [captureMode, setCaptureMode] = useState('video'); // 'photo', 'video'
   const [isRecording, setIsRecording] = useState(false);
@@ -33,14 +34,21 @@ const Camera = () => {
       const tracks = videoRef.current?.srcObject?.getTracks() || [];
       tracks.forEach(track => track.stop());
 
+      // DETECTAR MOBILE para ajustar resolución
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
       const constraints = {
         video: {
-          width: 720,
-          height: 1280,
+          // Mobile: 480p para reducir tamaño y memoria
+          // Desktop: 720p para mejor calidad
+          width: isMobile ? 480 : 720,
+          height: isMobile ? 854 : 1280,
           facingMode: facingMode
         },
         audio: true
       };
+
+      console.log(`📱 Obteniendo stream para ${isMobile ? 'MOBILE' : 'DESKTOP'}: ${constraints.video.width}x${constraints.video.height}`);
 
       console.log(`Obteniendo stream para cámara: ${facingMode}`);
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -167,9 +175,15 @@ const Camera = () => {
       // Limpiar chunks anteriores
       setRecordedChunks([]);
       
-      // Crear MediaRecorder con el stream actual
+      // Crear MediaRecorder con bitrate limitado para evitar archivos enormes
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const targetBitrate = isMobile ? 1000000 : 2000000; // 1Mbps mobile, 2Mbps desktop
+      
+      console.log(`🎬 MediaRecorder configurado: ${isMobile ? 'MOBILE' : 'DESKTOP'}, bitrate: ${targetBitrate/1000}kbps`);
+      
       mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp8'
+        mimeType: 'video/webm;codecs=vp8',
+        videoBitsPerSecond: targetBitrate  // ✅ LIMITAR bitrate
       });
       
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -226,9 +240,15 @@ const Camera = () => {
   };
 
   // Manejar selección de archivo desde galería
-  const handleFileSelect = (event) => {
+  const handleFileSelect = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
+
+    // 🔑 CLAVE: Detener cámara INMEDIATAMENTE para evitar confusión visual
+    // Esto previene que el usuario vea la vista "Grabar" mientras se procesa el archivo
+    const tracks = videoRef.current?.srcObject?.getTracks() || [];
+    tracks.forEach(track => track.stop());
+    console.log('📷 Cámara detenida - archivo seleccionado de galería');
 
     const mediaType = file.type.startsWith('image/') ? 'photo' : 'video';
     
@@ -241,10 +261,68 @@ const Camera = () => {
       };
       reader.readAsDataURL(file);
     } else {
-      // Para videos, crear URL de objeto
-      const videoUrl = URL.createObjectURL(file);
-      setCapturedMedia({ type: 'video', data: videoUrl });
-      setShowPreview(true);
+      // Para videos, verificar tamaño y comprimir si es necesario
+      const videoSizeMB = (file.size / 1024 / 1024).toFixed(2);
+      console.log(`🎬 Video de galería seleccionado: ${videoSizeMB} MB`);
+      
+      // 🔑 CLAVE: Crear y mostrar preview INMEDIATAMENTE con video original
+      const tempVideoUrl = URL.createObjectURL(file);
+      setCapturedMedia({ 
+        type: 'video', 
+        data: tempVideoUrl,
+        blob: file,
+        originalFile: file
+      });
+      setShowPreview(true);  // ← MOSTRAR PREVIEW AL INSTANTE
+      console.log('📹 Preview mostrado inmediatamente con video original');
+      
+      if (file.size > 15 * 1024 * 1024) { // > 15MB
+        console.log('📦 Video muy grande, comprimiendo automáticamente...');
+        console.log('📦 Tamaño original:', videoSizeMB + ' MB');
+        
+        try {
+          // Mostrar overlay de compresión SOBRE el preview
+          setCapturing(true);
+          console.log('🐶 Alistando video para traducción perruna...');
+          
+          // Importar SmartVideoCompressor dinámicamente
+          const { default: SmartVideoCompressor } = await import('../utils/smartVideoCompressor.js');
+          
+          // Comprimir video de galería
+          const compressionResult = await SmartVideoCompressor.compressWithFallback(file);
+          const compressedFile = compressionResult.file;
+          
+          const compressedSizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
+          console.log('✅ Video comprimido:', {
+            original: videoSizeMB + ' MB',
+            compressed: compressedSizeMB + ' MB',
+            reduction: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '%'
+          });
+          
+          // Actualizar preview con video comprimido
+          const compressedVideoUrl = URL.createObjectURL(compressedFile);
+          URL.revokeObjectURL(tempVideoUrl); // Liberar URL temporal
+          
+          setCapturedMedia({ 
+            type: 'video', 
+            data: compressedVideoUrl,
+            blob: compressedFile, // Guardar blob comprimido
+            originalFile: file    // Guardar archivo original para referencia
+          });
+          
+          setCapturing(false);
+          console.log('✅ Video comprimido listo para análisis');
+          
+        } catch (compressionError) {
+          console.error('❌ Error comprimiendo video:', compressionError);
+          setCapturing(false);
+          // Preview ya tiene video original, no hacer nada más
+          console.log('⚠️ Manteniendo video original en preview');
+        }
+      } else {
+        // Video pequeño, ya está en preview
+        console.log('✅ Video pequeño, listo en preview');
+      }
     }
   };
 
@@ -276,9 +354,14 @@ const Camera = () => {
       // Mostrar indicador de carga
       setCapturing(true);
       
-      // Timeout para evitar que se congele (aumentado a 480 segundos para videos largos)
+      // Timeout diferenciado: Mobile 5 min, Desktop 20 min
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const timeoutDuration = isMobile ? 300000 : 1200000; // 5 min vs 20 min
+
+      console.log(`⏱️ Timeout configurado: ${timeoutDuration/60000} minutos (${isMobile ? 'Mobile' : 'Desktop'})`);
+
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout: La traducción tardó demasiado')), 480000)
+        setTimeout(() => reject(new Error('Timeout: La traducción tardó demasiado')), timeoutDuration)
       );
       
       let result;
@@ -287,35 +370,117 @@ const Camera = () => {
       // Si es un video, usar ANÁLISIS RÁPIDO + upload en background
       if (capturedMedia.type === 'video') {
         console.log('🎬 Procesando video con análisis rápido...');
+        console.log('🔍 DEBUG - capturedMedia:', {
+          type: capturedMedia.type,
+          dataType: typeof capturedMedia.data,
+          hasBlob: !!capturedMedia.blob,
+          blobSize: capturedMedia.blob?.size
+        });
         
         // Convertir blob URL a File para upload posterior
         const fileName = `video_${Date.now()}.webm`;
+        console.log('🔍 DEBUG - Iniciando convertBlobToFile en Camera...');
         videoFile = await convertBlobToFile(capturedMedia.data, fileName);
+        console.log('✅ DEBUG - convertBlobToFile en Camera completado:', {
+          fileName: videoFile.name,
+          size: videoFile.size
+        });
         
-        // PASO 1: ANALIZAR VIDEO ORIGINAL (máxima calidad para Gemini)
-        console.log('🎬 Analizando video ORIGINAL para máxima calidad...');
+        // PASO 1: ANALIZAR VIDEO ORIGINAL (compresión se maneja en sequentialSubtitlesService)
+        console.log('🎬 Analizando video para Gemini...');
+        console.log('🔍 DEBUG - Iniciando análisis con Gemini...');
+        console.log('🔍 DEBUG - Video size para análisis:', capturedMedia.blob?.size || 'unknown');
+        console.log('🔍 DEBUG - Enviando video original a sequentialSubtitlesService (compresión ahí)');
+        
+        // Usar video original - la compresión se maneja en sequentialSubtitlesService.js
         result = await translatorService.generateSequentialSubtitles(
-          capturedMedia.data, // Video ORIGINAL sin comprimir
+          capturedMedia.data, // Video original
           capturedMedia.type
         );
         
-        // PASO 2: UPLOAD EN BACKGROUND (comprimido para almacenamiento)
+        console.log('✅ DEBUG - Análisis con Gemini completado:', {
+          success: result?.success,
+          subtitlesCount: result?.subtitles?.length,
+          totalDuration: result?.totalDuration
+        });
+        
+        // LIMPIEZA DE MEMORIA: Liberar recursos ANTES de navegar (excepto blob URL)
+        console.log('🧹 LIMPIEZA: Liberando recursos de memoria...');
+        
+        // NO liberar blob URL aquí - Home.jsx la necesita para upload
+        console.log('🧹 Blob URL preservada para Home.jsx');
+        
+        // Limpiar chunks de grabación
+        setRecordedChunks([]);
+        console.log('🧹 Recorded chunks liberados');
+        
+        // Forzar garbage collection si está disponible
+        if (window.gc) {
+          window.gc();
+          console.log('🧹 Garbage collection forzado');
+        }
+        
+        // PASO 2: UPLOAD SÍNCRONO CON PROGRESO VISUAL (comprimido para almacenamiento)
         if (videoFile) {
-          console.log('📤 Iniciando upload comprimido en background...');
+          console.log('📤 Iniciando upload síncrono con progreso...');
+          console.log('🔍 DEBUG - Video file details:', {
+            name: videoFile.name,
+            size: `${(videoFile.size / 1024 / 1024).toFixed(2)} MB`,
+            type: videoFile.type,
+            lastModified: new Date(videoFile.lastModified).toISOString()
+          });
           
-          // Upload asíncrono - el usuario no espera esto
-          directBlobUploadService.uploadVideo(videoFile, {
+          // Mostrar progreso de upload al usuario
+          setCapturing(false); // Terminar análisis
+          setUploading(true);  // Iniciar upload
+          
+          try {
+            console.log('🔍 DEBUG - Llamando a directBlobUploadService.uploadVideo...');
+            
+            // Upload síncrono - el usuario ve el progreso
+            const uploadResult = await directBlobUploadService.uploadVideo(videoFile, {
             petName: 'Mascota',
             userId: 'current_user', // Usar ID consistente para el perfil
             tags: ['video', 'analisis'],
             forAnalysis: false // Usar compresión agresiva para almacenamiento
-          }).then(uploadResult => {
-            console.log('✅ Video comprimido subido en background:', uploadResult.mediaUrl);
+            });
+            
+            console.log('✅ Video comprimido subido exitosamente:', uploadResult.mediaUrl);
+            console.log('🔍 DEBUG - Upload result completo:', {
+              mediaUrl: uploadResult.mediaUrl,
+              id: uploadResult.id,
+              success: uploadResult.success,
+              cloudinary: uploadResult.cloudinary
+            });
+            
             capturedMedia.uploadedUrl = uploadResult.mediaUrl;
             capturedMedia.videoId = uploadResult.id;
-          }).catch(uploadError => {
-            console.warn('⚠️ Upload en background falló:', uploadError.message);
-          });
+            
+            console.log('🔍 DEBUG - capturedMedia actualizado:', {
+              uploadedUrl: capturedMedia.uploadedUrl,
+              videoId: capturedMedia.videoId
+            });
+            
+            setUploading(false);
+            console.log('✅ Upload completado, procediendo con navegación...');
+            
+          } catch (uploadError) {
+            console.error('❌ Error en upload síncrono:', uploadError.message);
+            console.error('❌ Error stack:', uploadError.stack);
+            console.error('❌ Error details:', {
+              name: uploadError.name,
+              message: uploadError.message,
+              cause: uploadError.cause
+            });
+            
+            setUploading(false);
+            
+            // Mostrar error al usuario
+            setError(`Error subiendo video: ${uploadError.message}. Inténtalo de nuevo.`);
+            return; // No navegar si falla el upload
+          }
+        } else {
+          console.warn('⚠️ No hay videoFile para subir - esto no debería pasar');
         }
         
         // Navegar directamente al home con los subtítulos secuenciales
@@ -332,8 +497,10 @@ const Camera = () => {
             data: capturedMedia.uploadedUrl || capturedMedia.data
           };
 
-          navigate('/', { 
-            state: { 
+          console.log('🧹 LIMPIEZA FINAL: Preparando navegación con datos mínimos...');
+          
+          // Crear objeto de navegación con datos mínimos para reducir memoria
+          const navigationState = {
               // Campos para subtítulos secuenciales
               subtitles: result.subtitles,
               totalDuration: result.totalDuration,
@@ -342,7 +509,12 @@ const Camera = () => {
               translation: result.subtitles[0]?.traduccion_tecnica || 'Análisis de video',
               output_tecnico: result.subtitles[0]?.traduccion_tecnica,
               output_emocional: result.subtitles[0]?.traduccion_emocional,
-              media: preservedMedia,
+            // Media con blob comprimido para Home.jsx
+            media: {
+              type: capturedMedia.type,
+              data: capturedMedia.data, // Blob URL del video comprimido
+              blob: capturedMedia.blob  // Blob comprimido para upload
+            },
               confidence: result.subtitles[0]?.confidence || 85,
               emotion: 'secuencial',
               behavior: 'análisis por momentos',
@@ -355,8 +527,19 @@ const Camera = () => {
               videoId: capturedMedia.videoId,
               // Flag para indicar que no necesita upload adicional
               skipUpload: true
-            }
+          };
+          
+          console.log('🧹 Navegando con estado limpio...');
+          console.log('🔍 DEBUG - navigationState final:', {
+            skipUpload: navigationState.skipUpload,
+            uploadedUrl: navigationState.uploadedUrl,
+            videoId: navigationState.videoId,
+            subtitlesCount: navigationState.subtitles?.length,
+            hasMedia: !!navigationState.media,
+            mediaType: navigationState.media?.type
           });
+          
+          navigate('/', { state: navigationState });
           return;
         }
       } else {
@@ -492,31 +675,63 @@ const Camera = () => {
             </div>
           )}
           
-          {/* Loading overlay */}
+          {/* Loading overlay - Análisis */}
           {capturing && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
-              <div className="text-white text-center">
+              <div className="text-white text-center px-6">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-                <p className="mb-2">
-                  {capturedMedia.type === 'video' 
-                    ? 'Analizando video...' 
-                    : 'Analizando con el traductor perro-humano...'
+                <p className="mb-2 text-lg font-semibold">
+                  {capturedMedia?.originalFile 
+                    ? 'Alistando tu video para la traducción perruna...'
+                    : capturedMedia.type === 'video' 
+                      ? 'Decodificando el mensaje de tu mejor amigo...' 
+                      : 'Decodificando el mensaje de tu mejor amigo...'
                   }
                 </p>
                 {capturedMedia.type === 'video' && (
                   <div className="text-sm text-gray-300">
-                    <p>Upload en background - análisis rápido</p>
-                    <p className="text-xs mt-1">
-                      Videos largos (5 min) pueden tardar 2-3 minutos
-                    </p>
+                    {capturedMedia?.originalFile ? (
+                      <p className="text-xs">Optimizando el formato para el motor de traducción.</p>
+                    ) : (
+                      <>
+                        <p>🧠 Mapeando tonos y vocalizaciones caninas.</p>
+                        <p className="mt-1">🎙️ ¡Preparando el doblaje a voz humana!</p>
+                        <p className="text-xs mt-2 text-gray-400">
+                          Videos largos (&gt;1 min) toman 2-3 minutos. ¡Vale la pena la espera!
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
             </div>
           )}
+
+          {/* Loading overlay - Upload */}
+          {uploading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+              <div className="text-white text-center px-6">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                <p className="mb-2 text-lg font-semibold text-green-400">
+                  ¡Publicación casi lista! 🚀
+                </p>
+                <div className="text-sm text-gray-300">
+                  <p>☁️ Asegurando tu video en la Nube BlaBlaPet.</p>
+                  <p className="text-xs mt-1">
+                    Tu video está listo para el feed mundial de mascotas.
+                  </p>
+                  <div className="mt-3 flex justify-center space-x-1">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Error overlay */}
-          {error && !capturing && (
+          {error && !capturing && !uploading && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
               <div className="text-white text-center p-6">
                 <div className="text-red-500 text-4xl mb-4">⚠️</div>

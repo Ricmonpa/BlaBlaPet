@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import BottomNavigation from '../components/BottomNavigation';
 import SharedFeed from '../components/SharedFeed';
 import videoShareService from '../services/videoShareService.js';
-import { compressVideo, needsCompression } from '../utils/videoCompression.js';
+import SmartVideoCompressor from '../utils/smartVideoCompressor.js';
 import directBlobUploadService from '../services/directBlobUploadService.js';
 
 const convertBlobToFile = async (blobData, mediaType, originalBlob = null) => {
@@ -71,22 +71,50 @@ const convertBlobToFile = async (blobData, mediaType, originalBlob = null) => {
       throw new Error('Archivo vacío después de procesamiento');
     }
 
-    // Si el archivo es muy grande, usar compresión real
-    if (mediaType === 'video' && file.size > 50 * 1024 * 1024) { // 50MB
-      console.log('⚠️ Archivo muy grande para Cloudinary, aplicando compresión...');
+    // Aplicar compresión inteligente automática SOLO EN DESKTOP
+    if (mediaType === 'video') {
+      // DETECTAR MOBILE
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
       
-      // Usar el servicio de compresión real
-      try {
-        const { compressVideo } = await import('../utils/videoCompression.js');
-        const compressedFile = await compressVideo(file, {
-          quality: 0.6, // Calidad media
-          maxWidth: 1280,
-          maxHeight: 720
+      console.log('🔍 DEBUG - convertBlobToFile video processing:', {
+        isMobile,
+        userAgent: navigator.userAgent,
+        fileSize: file.size,
+        fileName: file.name
+      });
+      
+      if (isMobile) {
+        console.log('📱 MOBILE DETECTADO - SKIP compresión (prevenir crash)');
+        console.log('📱 Video será procesado directamente sin comprimir en cliente');
+        console.log('🔍 DEBUG - Mobile file details:', {
+          size: file.size,
+          type: file.type,
+          name: file.name
         });
         
-        console.log('✅ Video comprimido:', {
+        // Mobile: retornar sin comprimir - Cloudinary se encargará
+        return {
+          file,
+          url: URL.createObjectURL(file),
+          fileName: file.name,
+          size: file.size,
+          isVideo: true,
+          mobileUpload: true // Flag para identificar
+        };
+      }
+      
+      // DESKTOP: aplicar compresión como siempre
+      console.log('💻 DESKTOP - Aplicando compresión inteligente...');
+      
+      try {
+        const compressionResult = await SmartVideoCompressor.compressWithFallback(file);
+        const compressedFile = compressionResult.file;
+        
+        console.log('✅ Compresión inteligente completada:', {
+          perfilFinal: compressionResult.finalProfile,
           original: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-          compressed: (compressedFile.size / 1024 / 1024).toFixed(2) + ' MB'
+          compressed: (compressedFile.size / 1024 / 1024).toFixed(2) + ' MB',
+          intentos: compressionResult.attempts.length
         });
         
         return {
@@ -94,10 +122,11 @@ const convertBlobToFile = async (blobData, mediaType, originalBlob = null) => {
           url: URL.createObjectURL(compressedFile),
           fileName: compressedFile.name,
           size: compressedFile.size,
-          isVideo: true
+          isVideo: true,
+          compressionInfo: compressionResult
         };
       } catch (compressionError) {
-        console.warn('⚠️ Error en compresión, usando archivo original:', compressionError.message);
+        console.warn('⚠️ Error en compresión inteligente, usando archivo original:', compressionError.message);
       }
     }
 
@@ -184,54 +213,32 @@ const Home = () => {
       const handleVideoSave = async () => {
         try {
           console.log('🚀 DEBUG - Iniciando handleVideoSave');
-          console.log('🔍 DEBUG - location.state.media:', location.state.media);
+          console.log('🔍 DEBUG - location.state completo:', JSON.stringify(location.state, null, 2));
           console.log('🔍 DEBUG - skipUpload flag:', location.state.skipUpload);
+          console.log('🔍 DEBUG - uploadedUrl:', location.state.uploadedUrl);
+          console.log('🔍 DEBUG - isSequentialSubtitles:', location.state.isSequentialSubtitles);
+          console.log('🔍 DEBUG - media type:', location.state.media?.type);
+          console.log('🔍 DEBUG - media data type:', typeof location.state.media?.data);
+          console.log('🔍 DEBUG - userAgent:', navigator.userAgent);
+          console.log('🔍 DEBUG - isMobile detectado:', /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
           
-          // SIEMPRE subir a Cloudinary en producción - eliminar lógica de skipUpload
-          console.log('📤 Subiendo video a Cloudinary (sin skipUpload)...');
-          
-          // Convertir blob URL a archivo real para upload a Cloudinary
-          console.log('🎬 Convirtiendo blob a archivo para upload directo...');
-          const videoFile = await convertBlobToFile(
-            location.state.media?.data, 
-            location.state.media?.type || 'video',
-            location.state.media?.blob  // Pasar el blob original si está disponible
-          );
-          console.log('✅ DEBUG - convertBlobToFile completado:', videoFile);
-          
-          // Validar que el archivo sea válido antes de subir
-          if (!videoFile.file) {
-            throw new Error('No se puede procesar el video. El archivo está expirado o corrupto. Por favor, graba un nuevo video.');
-          }
-          
-          // Subir el archivo a Cloudinary y obtener URL permanente
-          console.log('☁️ Subiendo archivo a Cloudinary...');
-          const uploadResult = await directBlobUploadService.uploadVideo(videoFile.file, {
-            petName: 'Tu Mascota',
-            userId: 'current_user',
-            tags: ['nuevo', 'análisis'],
-            isPublic: true
-          });
-          console.log('✅ Upload a Cloudinary completado:', uploadResult);
-
-          // Solo guardar si la subida a Cloudinary fue exitosa
-          console.log('🔍 DEBUG - Condiciones para guardar video:');
-          console.log('  - uploadResult:', uploadResult);
-          console.log('  - uploadResult.cloudinary:', uploadResult.cloudinary);
-          console.log('  - hasCloudinaryData:', uploadResult.cloudinary && uploadResult.cloudinary.public_id);
-          console.log('  - videoFile.isVideo:', videoFile.isVideo);
-          console.log('  - Condición completa:', uploadResult.cloudinary && uploadResult.cloudinary.public_id && videoFile.isVideo);
-          
-          if (uploadResult.cloudinary && uploadResult.cloudinary.public_id && videoFile.isVideo) {
-            // Crear objeto de video para la base de datos
+          // RESPETAR skipUpload flag para evitar doble upload
+          if (location.state.skipUpload && location.state.uploadedUrl) {
+            console.log('⏭️ SKIP UPLOAD: Video ya fue subido en background, usando URL existente');
+            console.log('🔍 DEBUG - uploadedUrl disponible:', !!location.state.uploadedUrl);
+            console.log('🔍 DEBUG - uploadedUrl valor:', location.state.uploadedUrl);
+            
+            // Usar el video que ya fue subido en Camera.jsx
+            console.log('✅ Usando URL del upload en background:', location.state.uploadedUrl);
+              
+            // Crear objeto de video usando la URL ya subida
             const newVideo = {
               petName: 'Tu Mascota',
               translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
               emotionalDubbing: location.state.output_emocional || location.state.translation,
-              // Guardar el VIDEO COMPLETO con URL de Cloudinary
-              mediaUrl: uploadResult.cloudinary.secure_url || uploadResult.cloudinary.url, // URL de Cloudinary
+              mediaUrl: location.state.uploadedUrl, // URL del upload en background
               mediaType: location.state.media?.type || 'video',
-              userId: 'current_user', // Por ahora usar un ID fijo
+              userId: 'current_user',
               tags: ['nuevo', 'análisis'],
               duration: location.state.totalDuration || 30,
               resolution: '400x600',
@@ -240,24 +247,137 @@ const Home = () => {
               isSequentialSubtitles: location.state.isSequentialSubtitles || false,
               subtitles: location.state.subtitles || null,
               totalDuration: location.state.totalDuration || 30,
-              // Metadatos del archivo real
-              fileSize: uploadResult.size || videoFile.size,
-              fileName: videoFile.fileName,
-              // Información adicional para videos
-              isVideo: videoFile.isVideo,
-              originalSize: videoFile.originalSize,
-              thumbnail: videoFile.thumbnail,
-              // Información de Cloudinary
-              cloudinary: uploadResult.cloudinary,
-              // Mantener blob URL original para reproducción inmediata (ya no es blob URL)
-              originalVideoUrl: location.state.media?.data instanceof Blob ? URL.createObjectURL(location.state.media.data) : location.state.media?.data
+              // Información adicional
+              isVideo: true,
+              timestamp: Date.now(),
+              confidence: location.state.confidence || 85,
+              emotion: location.state.emotion || 'secuencial',
+              behavior: location.state.behavior || 'análisis por momentos',
+              context: location.state.context || 'video con subtítulos secuenciales',
+              source: location.state.source || 'sequential_subtitles',
+              analysisType: location.state.analysisType || 'sequential'
             };
-
-            // Guardar en la base de datos usando videoShareService
-            console.log('💾 Guardando video en base de datos con URL de Cloudinary:', uploadResult.cloudinary.secure_url || uploadResult.cloudinary.url);
+            
+            console.log('📝 Creando video con subtítulos secuenciales:', {
+              petName: newVideo.petName,
+              isSequentialSubtitles: newVideo.isSequentialSubtitles,
+              subtitlesCount: newVideo.subtitles?.length || 0,
+              totalDuration: newVideo.totalDuration
+            });
+            
+            // Guardar video y generar URL única
             const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
-            console.log('✅ Video guardado en la base de datos:', videoUrl);
-            console.log('🔍 Video object guardado:', newVideo);
+            console.log('✅ Video guardado en base de datos con subtítulos secuenciales');
+            console.log('🔗 URL del video generada:', `${window.location.origin}${videoUrl}`);
+            
+            // Disparar evento personalizado para actualizar el feed
+            console.log('🔄 Disparando evento de actualización del feed...');
+            const feedUpdateEvent = new CustomEvent('feedUpdate', {
+              detail: { 
+                newVideo: newVideo,
+                videoUrl: videoUrl,
+                cloudinaryUrl: location.state.uploadedUrl,
+                timestamp: Date.now()
+              }
+            });
+            window.dispatchEvent(feedUpdateEvent);
+            console.log('✅ Evento de actualización del feed disparado');
+            
+            // Limpiar estado INMEDIATAMENTE para evitar reutilización
+            console.log('🧹 Limpiando location.state inmediatamente...');
+            window.history.replaceState({}, document.title);
+            console.log('✅ Estado limpiado - video guardado correctamente');
+            
+            return true; // Indicar éxito
+          } else if (location.state.skipUpload && !location.state.uploadedUrl) {
+            console.error('❌ ERROR CRÍTICO: skipUpload=true pero uploadedUrl=undefined');
+            console.error('❌ Esto indica un error en el flujo de Camera.jsx - el video debería haber sido subido en background');
+            console.error('❌ FALLBACK: Procediendo con upload normal para salvar los subtítulos');
+            
+            // FALLBACK: Si tenemos subtítulos pero falló el upload, intentar upload normal
+            if (location.state.subtitles && location.state.subtitles.length > 0) {
+              console.log('🔄 FALLBACK: Tenemos subtítulos válidos, intentando upload normal...');
+              // Cambiar skipUpload a false para permitir upload normal
+              location.state.skipUpload = false;
+            } else {
+              throw new Error('Video no fue subido correctamente en background. Reintenta la grabación.');
+            }
+          }
+          
+          // Upload normal (SOLO cuando skipUpload=false)
+          console.log('📤 Subiendo video a Cloudinary (upload normal)...');
+          console.log('🔍 DEBUG - Iniciando convertBlobToFile...');
+          
+          // LIMPIEZA PREVIA: Verificar si hay recursos que limpiar
+          if (location.state.media?.data && location.state.media.data.startsWith('blob:')) {
+            console.log('🧹 Home.jsx: Detectada blob URL, limpiando antes de procesar...');
+          }
+          
+          // Convertir blob URL a archivo real para upload a Cloudinary
+          console.log('🎬 Convirtiendo blob a archivo para upload directo...');
+          const videoFile = await convertBlobToFile(
+            location.state.media?.data, 
+            location.state.media?.type || 'video',
+            location.state.media?.blob  // Pasar el blob original si está disponible
+          );
+          console.log('✅ DEBUG - convertBlobToFile completado:', {
+            fileName: videoFile.fileName,
+            size: videoFile.size,
+            isVideo: videoFile.isVideo,
+            mobileUpload: videoFile.mobileUpload
+          });
+          
+          // Upload directo a Cloudinary
+          console.log('☁️ Iniciando upload directo a Cloudinary...');
+          const uploadResult = await directBlobUploadService.uploadVideo(videoFile.file, {
+            petName: 'Tu Mascota',
+            userId: 'current_user',
+            tags: ['video', 'análisis'],
+            forAnalysis: false // Usar compresión agresiva para almacenamiento
+          });
+          
+          console.log('✅ Upload directo a Cloudinary exitoso:', uploadResult);
+          console.log('✅ Video subido a Cloudinary exitosamente:', uploadResult.url);
+          
+          if (uploadResult && uploadResult.url) {
+            // Crear objeto de video para guardar
+            const newVideo = {
+              petName: 'Tu Mascota',
+              translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
+              emotionalDubbing: location.state.output_emocional || location.state.translation,
+              mediaUrl: uploadResult.url,
+              mediaType: location.state.media?.type || 'video',
+              userId: 'current_user',
+              tags: ['nuevo', 'análisis'],
+              duration: location.state.totalDuration || 30,
+              resolution: '400x600',
+              format: 'mp4',
+              // Incluir propiedades de subtítulos secuenciales
+              isSequentialSubtitles: location.state.isSequentialSubtitles || false,
+              subtitles: location.state.subtitles || null,
+              totalDuration: location.state.totalDuration || 30,
+              // Información adicional
+              isVideo: true,
+              timestamp: Date.now(),
+              confidence: location.state.confidence || 85,
+              emotion: location.state.emotion || 'secuencial',
+              behavior: location.state.behavior || 'análisis por momentos',
+              context: location.state.context || 'video con subtítulos secuenciales',
+              source: location.state.source || 'sequential_subtitles',
+              analysisType: location.state.analysisType || 'sequential'
+            };
+            
+            console.log('📝 Creando video con subtítulos secuenciales:', {
+              petName: newVideo.petName,
+              isSequentialSubtitles: newVideo.isSequentialSubtitles,
+              subtitlesCount: newVideo.subtitles?.length || 0,
+              totalDuration: newVideo.totalDuration
+            });
+            
+            // Guardar video y generar URL única
+            const videoUrl = await videoShareService.storeVideoAndGenerateUrl(newVideo);
+            console.log('✅ Video guardado en base de datos con subtítulos secuenciales');
+            console.log('🔗 URL del video generada:', `${window.location.origin}${videoUrl}`);
             
             // Disparar evento personalizado para actualizar el feed
             console.log('🔄 Disparando evento de actualización del feed...');
@@ -271,6 +391,32 @@ const Home = () => {
             });
             window.dispatchEvent(feedUpdateEvent);
             console.log('✅ Evento de actualización del feed disparado');
+            
+            // Limpiar estado INMEDIATAMENTE para evitar reutilización
+            console.log('🧹 Limpiando location.state inmediatamente...');
+            window.history.replaceState({}, document.title);
+            console.log('✅ Estado limpiado - video guardado correctamente');
+            
+            // LIMPIEZA POST-UPLOAD: Liberar recursos de memoria
+            console.log('🧹 Home.jsx: Limpiando recursos post-upload...');
+            
+            // Limpiar blob URLs si existen
+            if (location.state.media?.data && location.state.media.data.startsWith('blob:')) {
+              URL.revokeObjectURL(location.state.media.data);
+              console.log('🧹 Blob URL liberada en Home.jsx');
+            }
+            
+            // Limpiar videoFile URL si existe
+            if (videoFile.url && videoFile.url.startsWith('blob:')) {
+              URL.revokeObjectURL(videoFile.url);
+              console.log('🧹 Video file URL liberada');
+            }
+            
+            // Forzar garbage collection si está disponible
+            if (window.gc) {
+              window.gc();
+              console.log('🧹 Garbage collection forzado en Home.jsx');
+            }
             
             return true; // Indicar éxito
           } else {

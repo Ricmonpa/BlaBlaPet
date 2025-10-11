@@ -6,31 +6,49 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
   const [showTechnical, setShowTechnical] = useState(true);
   const [showEmotional, setShowEmotional] = useState(true);
 
-  // Debug logs (solo una vez) - REDUCIDO
+  // Debug logs detallados para investigar timestamps
   useEffect(() => {
-    // Solo loggear una vez al montar
     console.log('🎬 SequentialSubtitlesOverlay montado:', {
       subtitles: subtitles?.length,
       videoRef: !!videoRef?.current,
       totalDuration
     });
-  }, []); // Solo una vez al montar
+    
+    // 🔍 DEBUGGING PROFUNDO: Ver TODOS los subtítulos recibidos
+    if (subtitles && subtitles.length > 0) {
+      console.log('🔍 DEBUGGING OVERLAY - Total subtítulos recibidos:', subtitles.length);
+      subtitles.forEach((subtitle, index) => {
+        console.log(`🔍 OVERLAY Subtítulo ${index + 1}/${subtitles.length}:`, {
+          id: subtitle.id,
+          timestamp: subtitle.timestamp,
+          hasTimestamp: subtitle.timestamp !== undefined,
+          timestampType: typeof subtitle.timestamp,
+          traduccion_emocional: subtitle.traduccion_emocional?.substring(0, 30) + '...'
+        });
+      });
+    }
+  }, [subtitles]); // Loggear cuando cambien los subtítulos
 
-  // Parsear timestamp a segundos
-  const parseTimestamp = (timestamp) => {
-    const match = timestamp.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-    if (match) {
-      const startMinutes = parseInt(match[1]);
-      const startSeconds = parseInt(match[2]);
-      const endMinutes = parseInt(match[3]);
-      const endSeconds = parseInt(match[4]);
-      
-      return {
-        start: startMinutes * 60 + startSeconds,
-        end: endMinutes * 60 + endSeconds
-      };
+  // Parsear timestamp a segundos (formato MM:SS - MM:SS)
+  const parseTimestamp = (subtitle) => {
+    // FORMATO: timestamp como string "MM:SS - MM:SS"
+    if (subtitle && subtitle.timestamp && typeof subtitle.timestamp === 'string') {
+      const match = subtitle.timestamp.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+      if (match) {
+        const startMinutes = parseInt(match[1]);
+        const startSeconds = parseInt(match[2]);
+        const endMinutes = parseInt(match[3]);
+        const endSeconds = parseInt(match[4]);
+        
+        return {
+          start: startMinutes * 60 + startSeconds,
+          end: endMinutes * 60 + endSeconds
+        };
+      }
     }
     
+    // Si no es el formato esperado, devolver fallback
+    console.warn('⚠️ Formato de timestamp no soportado en overlay:', subtitle);
     return { start: 0, end: 5 };
   };
 
@@ -39,14 +57,14 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     if (subtitles && subtitles.length > 0) {
       // Buscar subtítulo exacto primero
       let current = subtitles.find(subtitle => {
-        const timeRange = parseTimestamp(subtitle.timestamp);
+        const timeRange = parseTimestamp(subtitle);
         return currentTime >= timeRange.start && currentTime <= timeRange.end;
       });
       
       // Si no hay coincidencia exacta, buscar el más cercano
       if (!current) {
         current = subtitles.find(subtitle => {
-          const timeRange = parseTimestamp(subtitle.timestamp);
+          const timeRange = parseTimestamp(subtitle);
           return currentTime >= timeRange.start;
         });
       }
@@ -57,7 +75,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       }
       
       // Solo loggear cuando cambie el subtítulo
-      if (current && (!currentSubtitle || current.id !== currentSubtitle.id)) {
+      if (current && (!currentSubtitle || current.timestamp !== currentSubtitle.timestamp)) {
         console.log('🎬 Subtítulo actual:', {
           timestamp: current.timestamp,
           tecnica: current.traduccion_tecnica,
@@ -74,37 +92,68 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       
       setCurrentSubtitle(current || null);
     }
-  }, [currentTime, subtitles, currentSubtitle?.id]);
+  }, [currentTime, subtitles, currentSubtitle?.timestamp]);
 
   // Escuchar cambios de tiempo del video
   useEffect(() => {
     const video = videoRef?.current;
     if (!video) {
+      console.log('⚠️ Video ref no disponible aún en overlay');
       return;
     }
 
-    const handleTimeUpdate = () => {
-      const time = video.currentTime;
-      setCurrentTime(time);
+    // Esperar a que el video esté listo antes de configurar listeners
+    const setupVideoListeners = () => {
+      console.log('✅ Video ref disponible, configurando event listeners');
+
+      const handleTimeUpdate = () => {
+        const time = video.currentTime;
+        setCurrentTime(time);
+      };
+
+      const handleLoadedData = () => {
+        console.log('✅ Video cargado en overlay, tiempo inicial:', video.currentTime);
+        setCurrentTime(video.currentTime);
+      };
+
+      const handleCanPlay = () => {
+        console.log('✅ Video puede reproducirse, estableciendo tiempo inicial:', video.currentTime);
+        setCurrentTime(video.currentTime);
+      };
+
+      video.addEventListener('timeupdate', handleTimeUpdate);
+      video.addEventListener('loadeddata', handleLoadedData);
+      video.addEventListener('canplay', handleCanPlay);
+      
+      // Si el video ya está cargado, establecer el tiempo inicial
+      if (video.readyState >= 2) {
+        console.log('✅ Video ya listo, estableciendo tiempo inicial:', video.currentTime);
+        setCurrentTime(video.currentTime);
+      }
+
+      return () => {
+        video.removeEventListener('timeupdate', handleTimeUpdate);
+        video.removeEventListener('loadeddata', handleLoadedData);
+        video.removeEventListener('canplay', handleCanPlay);
+      };
     };
 
-    const handleLoadedData = () => {
-      setCurrentTime(video.currentTime);
-    };
-
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('loadeddata', handleLoadedData);
-    
-    // Si el video ya está cargado, establecer el tiempo inicial
+    // Si el video ya está listo, configurar inmediatamente
     if (video.readyState >= 2) {
-      setCurrentTime(video.currentTime);
+      return setupVideoListeners();
     }
 
-    return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('loadeddata', handleLoadedData);
+    // Si no está listo, esperar al evento loadeddata
+    const handleInitialLoad = () => {
+      setupVideoListeners();
     };
-  }, [videoRef]); // Solo videoRef, no videoRef?.current
+
+    video.addEventListener('loadeddata', handleInitialLoad, { once: true });
+
+    return () => {
+      video.removeEventListener('loadeddata', handleInitialLoad);
+    };
+  }, [videoRef?.current]); // ✅ CAMBIO CRÍTICO: Detectar cuando .current cambia
 
   // Mostrar el overlay solo si hay subtítulos disponibles Y hay video ref
   if (!subtitles || subtitles.length === 0 || !videoRef?.current) return null;

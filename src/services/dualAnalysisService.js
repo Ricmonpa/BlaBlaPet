@@ -35,13 +35,13 @@ class DualAnalysisService {
 
 1. **output_tecnico:** Una descripción objetiva y detallada del comportamiento canino. Tu análisis debe ser preciso y basado en la psicología animal. Debe incluir el nombre de los comportamientos (ej. "reverencia de juego"), el contexto y lo que significan.
 
-2. **output_emocional:** Una traducción emocional y amigable del comportamiento, como si el perro estuviera hablando directamente al dueño. El tono debe ser entusiasta, cariñoso y juguetón, similar a un personaje de una película de animación. Usa un lenguaje simple y directo.
+2. **output_emocional:** Una traducción emocional del comportamiento del perro.
 
 Para lograrlo, sigue este proceso:
 
 a. **Observación y Registro:** Examina el video del perro e identifica todas las señales corporales, posturas, vocalizaciones y acciones.
 b. **Análisis e Interpretación Técnica:** Interpreta cada señal y comportamiento. Asocia cada acción con su significado técnico en el lenguaje canino.
-c. **Traducción Emocional:** Convierte esa interpretación técnica en una "voz" de perro. Piensa en lo que un perro alegre y juguetón diría a su dueño para expresar esas mismas emociones.
+c. **Traducción Emocional:** Convierte esa interpretación técnica en una "voz" de perro.
 d. **Generación de la Respuesta Final:** Entrega las dos salidas de manera clara y separada.
 
 Ejemplo de formato de salida:
@@ -124,9 +124,15 @@ Responde en formato JSON:
 
       console.log('📤 Enviando solicitud a Gemini para análisis dual...');
       
-      // Configurar timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 480000); // 480 segundos (8 minutos) para videos largos
+    // Configurar timeout adaptativo para videos largos - Mobile vs Desktop
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const timeoutMs = isMobile ? 300000 : 1200000; // 5 min mobile, 20 min desktop
+    const timeoutMinutes = Math.round(timeoutMs / 60000);
+    
+    console.log(`⏱️ Timeout configurado: ${timeoutMinutes} minutos (${isMobile ? 'Mobile' : 'Desktop'})`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const result = await this.model.generateContent({
         contents: [{ role: "user", parts: content }],

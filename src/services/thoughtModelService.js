@@ -45,7 +45,7 @@ Para lograrlo, sigue este proceso de pensamiento:
 
 2. **Análisis e Interpretación:** Basándote en tu registro, interpreta el significado de cada señal en el contexto del comportamiento canino. No te limites a describir lo que ves, explica el porqué. Por ejemplo, una "reverencia de juego" no es solo una postura, es una invitación a la interacción. **Correlaciona las señales auditivas con el comportamiento visual simultáneo.**
 
-3. **Traducción a Lenguaje Humano:** Una vez que comprendas la intención del perro, traduce esa energía y esas señales a palabras humanas. No se trata de una traducción literal, sino de una interpretación que captura la emoción y el mensaje del perro. Usa un lenguaje que sea natural y comprensible para el dueño.
+3. **Traducción a Lenguaje Humano:** Una vez que comprendas la intención del perro, traduce esa energía y esas señales a palabras humanas.
 
 4. **Generación de la Respuesta Final:** Combina la descripción detallada, el análisis y la traducción en una respuesta coherente y fluida, como si fueras un experto en comunicación canina. Tu tono debe ser **tranquilo, asertivo y claro**.
 
@@ -70,7 +70,7 @@ Responde en formato JSON con la siguiente estructura:
 {
   "observacion_detallada": "Descripción paso a paso de lo observado",
   "analisis_interpretacion": "Explicación del significado de cada señal",
-  "traduccion_humana": "Lo que el perro está 'diciendo' en palabras humanas",
+            "traduccion_humana": "Lo que el perro está 'diciendo' en lenguaje humano",
   "respuesta_final": "Síntesis completa del análisis",
   "confianza": 85,
   "emocion_detectada": "estado emocional principal",
@@ -88,9 +88,15 @@ Responde en formato JSON con la siguiente estructura:
 
       console.log('📤 Enviando solicitud a Gemini...');
       
-      // Configurar timeout adaptativo para videos largos
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 480000); // 480 segundos (8 minutos) para videos largos
+    // Configurar timeout adaptativo para videos largos - Mobile vs Desktop
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const timeoutMs = isMobile ? 300000 : 1200000; // 5 min mobile, 20 min desktop
+    const timeoutMinutes = Math.round(timeoutMs / 60000);
+    
+    console.log(`⏱️ Timeout configurado: ${timeoutMinutes} minutos (${isMobile ? 'Mobile' : 'Desktop'})`);
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const result = await this.model.generateContent({
         contents: [{ role: "user", parts: content }],

@@ -45,12 +45,47 @@ class SequentialSubtitlesService {
       }
     }
 
-    // ELIMINADO: El prompt anterior era una mentira gigante que pedía análisis completo basado en un thumbnail
-    // Ahora SOLO usamos análisis multi-frame real
-    console.log('🚫 PROMPT FALSO ELIMINADO - Solo análisis multi-frame real permitido');
+    // PROMPT CORREGIDO: Análisis completo de video con audio
+    console.log('✅ Usando prompt corregido para análisis completo de video');
+    
+    // Definir el prompt específico para subtítulos secuenciales con TTS
+    const prompt = `Eres un analista de comportamiento canino experto. Tu tarea es analizar este video COMPLETO del perro (que incluye audio) y generar una transcripción emocional secuencial para nuestro servicio de Texto a Voz (TTS).
+
+El video puede tener una duración inexacta, posiblemente superior a 5 minutos. Debes cubrir el 100% de la duración.
+
+**IMPORTANTE - RESTRICCIÓN CRÍTICA:**
+- NO leas, traduzcas, o interpretes NINGÚN texto que aparezca en el video (subtítulos, títulos, marcas de agua, texto superpuesto, etc.)
+- IGNORA completamente cualquier texto visible en el video
+- Tu análisis debe basarse ÚNICAMENTE en el comportamiento visual y auditivo del perro
+- NO uses información de ningún texto visible para generar tus traducciones
+
+**REQUERIMIENTOS DE ANÁLISIS:**
+1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas: (**ladridos, aullidos, gruñidos, lloriqueos, quejidos, jadeos, suspiros, vociferaciones**) con el comportamiento visual.
+2. **Transiciones:** Los bloques de subtítulos deben reflejar cambios CLAVE en el estado emocional o la actividad del perro.
+3. **Duración:** Genera bloques de subtítulos con una duración **mínima de 3 segundos** y **máxima de 15 segundos**. La cantidad total de bloques debe cubrir la duración total del video.
+
+**FORMATO DE SALIDA (SOLO JSON):**
+
+- **ATENCIÓN:** El valor de 'traduccion_emocional' será enviado directamente a un servicio de voz. Debe ser una frase natural, con la puntuación y exclamaciones necesarias para transmitir la emoción.
+- Los 'timestamp' deben usar el formato de texto legible **MM:SS - MM:SS** (Minutos:Segundos).
+
+{
+  "subtitles": [
+    {
+      "timestamp": "00:00 - 00:07",
+      "traduccion_tecnica": "Descripción técnica del comportamiento observado",
+      "traduccion_emocional": "Traducción emocional del estado del perro"
+    },
+    {
+      "timestamp": "00:07 - 00:15",
+      "traduccion_tecnica": "Descripción técnica del comportamiento observado", 
+      "traduccion_emocional": "Traducción emocional del estado del perro"
+    }
+  ]
+}`;
 
     try {
-      // Usar thoughtModelService pero con el prompt específico para subtítulos secuenciales
+      // Usar thoughtModelService con el prompt específico para subtítulos secuenciales
       const result = await this.generateSequentialSubtitlesWithThoughtModel(mediaData, mediaType, prompt);
       
       if (result && result.subtitles) {
@@ -126,15 +161,84 @@ class SequentialSubtitlesService {
           audioIncluded: 'SÍ - Video completo con audio'
         });
         
-        // Convertir video completo a base64 para enviar a Gemini
-        const videoBase64 = await this.blobToBase64(videoBlob);
+        // DETECTAR MOBILE y comprimir para Gemini si es necesario
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        let finalVideoBlob = videoBlob;
+        
+        console.log('🔍 DEBUG - sequentialSubtitlesService: Detección mobile:', {
+          isMobile,
+          userAgent: navigator.userAgent,
+          videoSize: (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+          needsCompression: isMobile && videoBlob.size > 3 * 1024 * 1024
+        });
+        
+        if (isMobile && videoBlob.size > 3 * 1024 * 1024) { // Si es > 3MB en mobile
+          console.log('📱 MOBILE: Video muy grande para Gemini, comprimiendo para análisis...');
+          console.log('📱 Tamaño original:', (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB');
+          
+          // Si el video es MUY grande (>50MB), skip compresión para evitar crash
+          if (videoBlob.size > 50 * 1024 * 1024) {
+            console.log('⚠️ MOBILE: Video MUY GRANDE (>50MB), SKIP compresión para evitar crash');
+            console.log('⚠️ Usando video original (puede ser lento pero no crashea)');
+            finalVideoBlob = videoBlob;
+          } else {
+            try {
+              // Importar SmartVideoCompressor dinámicamente
+              const { default: SmartVideoCompressor } = await import('../utils/smartVideoCompressor.js');
+              
+              // Crear File temporal para compresión
+              const tempFile = new File([videoBlob], 'temp_video.webm', { type: videoBlob.type });
+              
+              console.log('📱 MOBILE: Usando compresión LIGERA para evitar crash...');
+              
+              // COMPRESIÓN LIGERA para mobile - evitar crash por compresión agresiva
+              const compressionResult = await SmartVideoCompressor.compressWithProfile(tempFile, {
+                maxWidth: 480,  // Reducido de 720
+                maxHeight: 854, // Reducido de 1280
+                targetBitrate: 400, // Reducido de 800
+                audioBitrate: 96,   // Reducido de 128
+                audioSampleRate: 44100,
+                audioChannels: 2,
+                fps: 20,        // Reducido de 24
+                maxSizeMB: 15   // Más permisivo
+              });
+              finalVideoBlob = compressionResult;
+            
+            console.log('✅ Video comprimido para Gemini:', {
+              original: (videoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+              compressed: (finalVideoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+              reduction: ((1 - finalVideoBlob.size / videoBlob.size) * 100).toFixed(1) + '%'
+            });
+            console.log('🔍 DEBUG - sequentialSubtitlesService: Compresión exitosa');
+            } catch (compressionError) {
+              console.warn('⚠️ Error comprimiendo para Gemini, usando original:', compressionError.message);
+              finalVideoBlob = videoBlob;
+            }
+          }
+        } else if (!isMobile) {
+          console.log('💻 DESKTOP: Usando video original para Gemini');
+          console.log('🔍 DEBUG - sequentialSubtitlesService: Desktop - sin compresión');
+        } else {
+          console.log('📱 MOBILE: Video pequeño, usando original para Gemini');
+          console.log('🔍 DEBUG - sequentialSubtitlesService: Mobile - video pequeño, sin compresión');
+        }
+        
+        console.log('🔍 DEBUG - sequentialSubtitlesService: Preparando video final para Gemini:', {
+          finalSize: (finalVideoBlob.size / 1024 / 1024).toFixed(2) + ' MB',
+          type: finalVideoBlob.type
+        });
+        
+        // Convertir video (comprimido o original) a base64 para enviar a Gemini
+        console.log('🔍 DEBUG - sequentialSubtitlesService: Convirtiendo a base64...');
+        const videoBase64 = await this.blobToBase64(finalVideoBlob);
+        console.log('🔍 DEBUG - sequentialSubtitlesService: Base64 convertido, enviando a Gemini...');
         
         return {
           isMultiFrame: false, // Cambiado a false para indicar que enviamos video completo
           multiFrameData: null, // No usamos frames
           inlineData: {
             data: videoBase64,
-            mimeType: videoBlob.type // Mantener el tipo original del video
+            mimeType: finalVideoBlob.type // Usar tipo del video final (comprimido o original)
           }
         };
       }
@@ -167,18 +271,14 @@ class SequentialSubtitlesService {
     if (!subtitles || subtitles.length === 0) return 0;
     
     const lastSubtitle = subtitles[subtitles.length - 1];
-    const timestamp = lastSubtitle.timestamp;
+    const timeRange = this.parseTimestamp(lastSubtitle);
     
-    // Extraer el tiempo final del timestamp (formato: "00:00 - 00:05")
-    const timeMatch = timestamp.match(/(\d{2}):(\d{2})$/);
-    if (timeMatch) {
-      const minutes = parseInt(timeMatch[1]);
-      const seconds = parseInt(timeMatch[2]);
-      return minutes * 60 + seconds;
+    if (timeRange) {
+      return timeRange.end;
     }
     
-    // NO HAY FALLBACK FALSO - Si no se puede calcular, devolver 0
-    console.warn('⚠️ No se pudo calcular duración real de subtítulos');
+    // Si no es el formato esperado, devolver 0
+    console.warn('⚠️ No se pudo calcular duración - formato de timestamp no soportado');
     return 0;
   }
 
@@ -187,7 +287,7 @@ class SequentialSubtitlesService {
     if (!subtitles || subtitles.length === 0) return null;
     
     for (const subtitle of subtitles) {
-      const timeRange = this.parseTimestamp(subtitle.timestamp);
+      const timeRange = this.parseTimestamp(subtitle);
       if (timeRange && currentTime >= timeRange.start && currentTime <= timeRange.end) {
         return subtitle;
       }
@@ -196,24 +296,26 @@ class SequentialSubtitlesService {
     return null;
   }
 
-  // Parsear timestamp a segundos
-  parseTimestamp(timestamp) {
-    // Formato: "00:00 - 00:05"
-    const match = timestamp.match(/(\d{2}):(\d{2})\s*-\s*(\d{2}):(\d{2})/);
-    if (match) {
-      const startMinutes = parseInt(match[1]);
-      const startSeconds = parseInt(match[2]);
-      const endMinutes = parseInt(match[3]);
-      const endSeconds = parseInt(match[4]);
-      
-      return {
-        start: startMinutes * 60 + startSeconds,
-        end: endMinutes * 60 + endSeconds
-      };
+  // Parsear timestamp a segundos (formato MM:SS - MM:SS)
+  parseTimestamp(subtitle) {
+    // FORMATO: timestamp como string "MM:SS - MM:SS"
+    if (subtitle && subtitle.timestamp && typeof subtitle.timestamp === 'string') {
+      const match = subtitle.timestamp.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+      if (match) {
+        const startMinutes = parseInt(match[1]);
+        const startSeconds = parseInt(match[2]);
+        const endMinutes = parseInt(match[3]);
+        const endSeconds = parseInt(match[4]);
+        
+        return {
+          start: startMinutes * 60 + startSeconds,
+          end: endMinutes * 60 + endSeconds
+        };
+      }
     }
     
-    // NO HAY FALLBACK FALSO - Si no se puede parsear, devolver null
-    console.warn('⚠️ No se pudo parsear timestamp:', timestamp);
+    // Si no es el formato esperado, devolver null
+    console.warn('⚠️ Formato de timestamp no soportado:', subtitle);
     return null;
   }
 
@@ -466,27 +568,38 @@ class SequentialSubtitlesService {
   async processVideoWithAudio(videoData) {
     console.log(`🎬 Procesando video completo con audio para análisis completo`);
     
-    // Prompt optimizado para análisis de video completo con audio
-    const videoPrompt = `Eres un analista de lenguaje corporal canino experto. Analiza este video COMPLETO (con audio) del perro y genera subtítulos secuenciales basados en momentos clave del comportamiento.
+    // Prompt optimizado para análisis de video completo con audio y TTS
+    const videoPrompt = `Eres un analista de comportamiento canino experto. Tu tarea es analizar este video COMPLETO del perro (que incluye audio) y generar una transcripción emocional secuencial para nuestro servicio de Texto a Voz (TTS).
 
-IMPORTANTE: Este es un VIDEO COMPLETO con audio, no una imagen estática. Debes analizar:
-1. Comportamiento visual a lo largo del tiempo
-2. TODAS las vocalizaciones del perro (ladridos, gruñidos, gemidos, jadeos)
-3. Correlación entre señales visuales y auditivas
-4. Cambios en el comportamiento a lo largo del video
+El video puede tener una duración inexacta, posiblemente superior a 5 minutos. Debes cubrir el 100% de la duración.
 
-Genera subtítulos para momentos clave del video. Responde SOLO en formato JSON:
+**IMPORTANTE - RESTRICCIÓN CRÍTICA:**
+- NO leas, traduzcas, o interpretes NINGÚN texto que aparezca en el video (subtítulos, títulos, marcas de agua, texto superpuesto, etc.)
+- IGNORA completamente cualquier texto visible en el video
+- Tu análisis debe basarse ÚNICAMENTE en el comportamiento visual y auditivo del perro
+- NO uses información de ningún texto visible para generar tus traducciones
+
+**REQUERIMIENTOS DE ANÁLISIS:**
+1. **Vocalizaciones:** Analiza y correlaciona TODAS las señales auditivas: (**ladridos, aullidos, gruñidos, lloriqueos, quejidos, jadeos, suspiros, vociferaciones**) con el comportamiento visual.
+2. **Transiciones:** Los bloques de subtítulos deben reflejar cambios CLAVE en el estado emocional o la actividad del perro.
+3. **Duración:** Genera bloques de subtítulos con una duración **mínima de 3 segundos** y **máxima de 15 segundos**. La cantidad total de bloques debe cubrir la duración total del video.
+
+**FORMATO DE SALIDA (SOLO JSON):**
+
+- **ATENCIÓN:** El valor de 'traduccion_emocional' será enviado directamente a un servicio de voz. Debe ser una frase natural, con la puntuación y exclamaciones necesarias para transmitir la emoción.
+- Los 'timestamp' deben usar el formato de texto legible **MM:SS - MM:SS** (Minutos:Segundos).
+
 {
   "subtitles": [
     {
-      "timestamp": "00:00 - 00:05",
-      "traduccion_tecnica": "Análisis técnico del comportamiento en este momento",
-      "traduccion_emocional": "Lo que el perro estaría 'diciendo' en palabras humanas"
+      "timestamp": "00:00 - 00:07",
+      "traduccion_tecnica": "Descripción técnica del comportamiento observado",
+      "traduccion_emocional": "Traducción emocional del estado del perro"
     },
     {
-      "timestamp": "00:05 - 00:10", 
-      "traduccion_tecnica": "Análisis técnico del comportamiento en este momento",
-  "traduccion_emocional": "Lo que el perro estaría 'diciendo' en palabras humanas"
+      "timestamp": "00:07 - 00:15",
+      "traduccion_tecnica": "Descripción técnica del comportamiento observado", 
+      "traduccion_emocional": "Traducción emocional del estado del perro"
     }
   ]
 }`;
@@ -499,17 +612,35 @@ Genera subtítulos para momentos clave del video. Responde SOLO en formato JSON:
       const response = await result.response;
       const text = response.text();
       
+      // 🔍 DEBUGGING: Capturar respuesta RAW de Gemini
+      console.log('🔍 RAW Gemini response:', text);
+      console.log('🔍 Response length:', text.length);
+      console.log('🔍 First 500 chars:', text.substring(0, 500));
+      console.log('🔍 Last 500 chars:', text.substring(Math.max(0, text.length - 500)));
+      
       // Parsear respuesta
     let videoAnalysis;
       try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-        videoAnalysis = JSON.parse(jsonMatch[0]);
+          console.log('🔍 JSON extraído:', jsonMatch[0]);
+          console.log('🔍 JSON length:', jsonMatch[0].length);
+          videoAnalysis = JSON.parse(jsonMatch[0]);
+          
+          // 🔍 DEBUGGING PROFUNDO: Ver estructura completa del JSON parseado
+          console.log('🔍 DEBUGGING - videoAnalysis completo:', videoAnalysis);
+          console.log('🔍 DEBUGGING - videoAnalysis.subtitles:', videoAnalysis.subtitles);
+          console.log('🔍 DEBUGGING - Primer subtítulo completo:', videoAnalysis.subtitles?.[0]);
+          console.log('🔍 DEBUGGING - Segundo subtítulo completo:', videoAnalysis.subtitles?.[1]);
+          console.log('🔍 DEBUGGING - Último subtítulo completo:', videoAnalysis.subtitles?.[videoAnalysis.subtitles?.length - 1]);
         } else {
+          console.error('❌ No se encontró JSON válido en la respuesta');
+          console.error('❌ Texto completo:', text);
           throw new Error('No JSON found');
         }
       } catch (parseError) {
       console.error(`❌ Error parseando análisis de video:`, parseError);
+      console.error(`❌ JSON problemático:`, jsonMatch ? jsonMatch[0] : 'No JSON found');
       return {
         subtitles: [],
         totalDuration: 0,
@@ -521,6 +652,20 @@ Genera subtítulos para momentos clave del video. Responde SOLO en formato JSON:
 
     // Procesar subtítulos
     if (videoAnalysis && videoAnalysis.subtitles && Array.isArray(videoAnalysis.subtitles)) {
+      // 🔍 DEBUGGING PROFUNDO: Ver cada subtítulo ANTES de mapear
+      console.log('🔍 DEBUGGING PROFUNDO - Total subtítulos recibidos:', videoAnalysis.subtitles.length);
+      videoAnalysis.subtitles.forEach((subtitle, index) => {
+        console.log(`🔍 Subtítulo ${index + 1}:`, {
+          timestamp: subtitle.timestamp,
+          hasTimestamp: subtitle.timestamp !== undefined,
+          timestampType: typeof subtitle.timestamp,
+          traduccion_tecnica: subtitle.traduccion_tecnica?.substring(0, 50) + '...',
+          traduccion_emocional: subtitle.traduccion_emocional?.substring(0, 50) + '...',
+          allKeys: Object.keys(subtitle),
+          fullSubtitle: subtitle
+        });
+      });
+      
       const subtitles = videoAnalysis.subtitles.map((subtitle, index) => ({
         id: `subtitle_${index + 1}`,
         timestamp: subtitle.timestamp,
@@ -530,6 +675,17 @@ Genera subtítulos para momentos clave del video. Responde SOLO en formato JSON:
         source: 'gemini_video_analysis',
         frameIndex: index
       }));
+      
+      // 🔍 DEBUGGING PROFUNDO: Ver cada subtítulo DESPUÉS de mapear
+      console.log('🔍 DEBUGGING PROFUNDO - Subtítulos mapeados:');
+      subtitles.forEach((subtitle, index) => {
+        console.log(`🔍 Subtítulo mapeado ${index + 1}:`, {
+          id: subtitle.id,
+          timestamp: subtitle.timestamp,
+          hasTimestamp: subtitle.timestamp !== undefined,
+          timestampType: typeof subtitle.timestamp
+        });
+      });
       
       console.log(`✅ Video completo procesado: ${subtitles.length} subtítulos generados`);
       
