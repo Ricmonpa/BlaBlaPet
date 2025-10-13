@@ -676,14 +676,12 @@ const Camera = () => {
           </button>
           <div className="text-center">
             <h1 className="text-white font-bold">Vista previa</h1>
-            {/* Contador de rate limit */}
-            <div className={`text-xs mt-1 ${
-              rateLimitStats.remaining <= 5 ? 'text-yellow-400' : 
-              rateLimitStats.remaining <= 2 ? 'text-red-400' : 
-              'text-white/70'
-            }`}>
-              📊 {rateLimitStats.remaining}/{rateLimitStats.limit} videos restantes hoy
-            </div>
+            {/* Contador de rate limit - Solo cuando llega al límite */}
+            {rateLimitStats.remaining <= 0 && (
+              <div className="text-xs mt-1 text-red-400">
+                📊 0/{rateLimitStats.limit} videos restantes hoy
+              </div>
+            )}
           </div>
           <button 
             onClick={sendToTranslator}
