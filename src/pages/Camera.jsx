@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import translatorService from '../services/translatorService';
 import directBlobUploadService from '../services/directBlobUploadService';
 import BottomNavigation from '../components/BottomNavigation';
+import { rateLimiter } from '../utils/rateLimiter';
 
 const Camera = () => {
   const navigate = useNavigate();
@@ -24,6 +25,13 @@ const Camera = () => {
   const [stream, setStream] = useState(null);
   const [isLoadingCamera, setIsLoadingCamera] = useState(true);
   const videoRef = useRef(null);
+  const [rateLimitStats, setRateLimitStats] = useState({ used: 0, remaining: 25, limit: 25 });
+
+  // Actualizar estadísticas del rate limit
+  const updateRateLimitStats = useCallback(() => {
+    const stats = rateLimiter.getStats();
+    setRateLimitStats(stats);
+  }, []);
 
   // Función para obtener el stream de la cámara
   const getCameraStream = useCallback(async (facingMode) => {
@@ -95,7 +103,12 @@ const Camera = () => {
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []); // Solo ejecutar una vez al montar
+  }, []);
+
+  // Cargar estadísticas del rate limit al montar
+  useEffect(() => {
+    updateRateLimitStats();
+  }, [updateRateLimitStats]); // Solo ejecutar una vez al montar
 
   // Configuración de video (mantener para compatibilidad)
   const videoConstraints = {
@@ -348,6 +361,20 @@ const Camera = () => {
     if (!capturedMedia) return;
     
     try {
+      // ✅ RATE LIMIT CHECK - Verificar si puede procesar video
+      const { allowed, remaining } = rateLimiter.canUpload();
+      
+      if (!allowed) {
+        setError({
+          message: '⏸️ Límite diario alcanzado',
+          details: `Has usado tus ${rateLimitStats.limit} videos de hoy. Vuelve mañana para más traducciones. 🐕`,
+          type: 'rate_limit'
+        });
+        return;
+      }
+      
+      console.log(`📊 Rate limit check: ${remaining} videos restantes hoy`);
+      
       // Limpiar errores previos
       setError(null);
       
@@ -539,6 +566,11 @@ const Camera = () => {
             mediaType: navigationState.media?.type
           });
           
+          // ✅ Registrar uso exitoso del video
+          rateLimiter.recordUpload();
+          updateRateLimitStats();
+          console.log(`✅ Video procesado exitosamente. Quedan ${remaining - 1} videos hoy`);
+          
           navigate('/', { state: navigationState });
           return;
         }
@@ -553,6 +585,11 @@ const Camera = () => {
       
       // Verificar si el resultado es válido
       if (result && (result.success !== false) && (result.translation || result.output_emocional)) {
+        // ✅ Registrar uso exitoso del video
+        rateLimiter.recordUpload();
+        updateRateLimitStats();
+        console.log(`✅ Video procesado exitosamente. Quedan ${remaining - 1} videos hoy`);
+        
         // Navegar de vuelta al home con la traducción
         navigate('/', { 
           state: { 
@@ -637,13 +674,25 @@ const Camera = () => {
           >
             ←
           </button>
-          <h1 className="text-white font-bold">Vista previa</h1>
+          <div className="text-center">
+            <h1 className="text-white font-bold">Vista previa</h1>
+            {/* Contador de rate limit */}
+            <div className={`text-xs mt-1 ${
+              rateLimitStats.remaining <= 5 ? 'text-yellow-400' : 
+              rateLimitStats.remaining <= 2 ? 'text-red-400' : 
+              'text-white/70'
+            }`}>
+              📊 {rateLimitStats.remaining}/{rateLimitStats.limit} videos restantes hoy
+            </div>
+          </div>
           <button 
             onClick={sendToTranslator}
-            disabled={capturing}
-            className={`font-bold ${capturing ? 'text-gray-400' : 'text-orange-500'}`}
+            disabled={capturing || rateLimitStats.remaining <= 0}
+            className={`font-bold ${
+              capturing || rateLimitStats.remaining <= 0 ? 'text-gray-400' : 'text-orange-500'
+            }`}
           >
-            {capturing ? 'Procesando...' : 'Enviar'}
+            {rateLimitStats.remaining <= 0 ? 'Límite alcanzado' : (capturing ? 'Procesando...' : 'Enviar')}
           </button>
         </div>
 
