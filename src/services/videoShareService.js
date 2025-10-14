@@ -11,13 +11,14 @@ class VideoShareService {
     const isProduction = typeof window !== 'undefined' && 
       (window.location.hostname.includes('vercel.app') || 
        window.location.hostname.includes('blabla-pet-web') ||
+       window.location.hostname.includes('blablapet.com') ||
        window.location.hostname.includes('.vercel.app') ||
        window.location.hostname.includes('.netlify.app') ||
        window.location.hostname.includes('.github.io') ||
        window.location.hostname.includes('herokuapp.com'));
     
     this.baseUrl = isProduction 
-      ? 'https://blabla-pet-web.vercel.app'
+      ? (typeof window !== 'undefined' ? window.location.origin : 'https://blablapet.com')
       : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173');
     
     // Usar variable de entorno si está disponible

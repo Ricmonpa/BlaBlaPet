@@ -10,6 +10,7 @@ class VideoApiService {
     const isProduction = typeof window !== 'undefined' && 
       (window.location.hostname.includes('vercel.app') || 
        window.location.hostname.includes('blabla-pet-web') ||
+       window.location.hostname.includes('blablapet.com') ||
        window.location.hostname.includes('.vercel.app') ||
        window.location.hostname.includes('.netlify.app') ||
        window.location.hostname.includes('.github.io') ||
@@ -17,8 +18,8 @@ class VideoApiService {
     
     // En desarrollo usar JSON Server, en producción usar Cloudinary + API
     if (isProduction) {
-      // Producción: Cloudinary + API endpoints
-      this.baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://blabla-pet-ai.vercel.app';
+      // Producción: Cloudinary + API endpoints - Usar origen dinámico
+      this.baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://blablapet.com';
       this.videosEndpoint = `${this.baseUrl}/api/videos`;
       this.usersEndpoint = `${this.baseUrl}/api/users`;
       this.sharesEndpoint = `${this.baseUrl}/api/shares`;
