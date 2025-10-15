@@ -337,15 +337,15 @@ const Home = () => {
           });
           
           console.log('✅ Upload directo a Cloudinary exitoso:', uploadResult);
-          console.log('✅ Video subido a Cloudinary exitosamente:', uploadResult.url);
+          console.log('✅ Video subido a Cloudinary exitosamente:', uploadResult.secure_url || uploadResult.url);
           
-          if (uploadResult && uploadResult.url) {
+          if (uploadResult && (uploadResult.secure_url || uploadResult.url)) {
             // Crear objeto de video para guardar
             const newVideo = {
               petName: localStorage.getItem('userName') || 'Anónimo',
               translation: location.state.translation || location.state.output_tecnico || 'Análisis de comportamiento',
               emotionalDubbing: location.state.output_emocional || location.state.translation,
-              mediaUrl: uploadResult.url,
+              mediaUrl: uploadResult.secure_url || uploadResult.url,
               mediaType: location.state.media?.type || 'video',
               userId: localStorage.getItem('userName') || 'current_user',
               tags: ['nuevo', 'análisis'],
@@ -385,7 +385,7 @@ const Home = () => {
               detail: { 
                 newVideo: newVideo,
                 videoUrl: videoUrl,
-                cloudinaryUrl: uploadResult.url,
+                cloudinaryUrl: uploadResult.secure_url || uploadResult.url,
                 timestamp: Date.now()
               }
             });

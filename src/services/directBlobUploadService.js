@@ -103,8 +103,8 @@ class DirectBlobUploadService {
       
       return {
         success: true,
-        url: result.url,
-        downloadUrl: result.url,
+        url: result.secure_url,
+        downloadUrl: result.secure_url,
         pathname: result.publicId,
         size: file.size,
         type: file.type,
@@ -202,10 +202,10 @@ class DirectBlobUploadService {
         console.log('🗜️ Video fue comprimido para cumplir límites de tamaño');
       }
       
-      // Retornar estructura correcta para Camera.jsx
+      // Retornar estructura correcta para Camera.jsx - SIEMPRE usar HTTPS
       return {
         success: true,
-        mediaUrl: uploadResult.url || uploadResult.cloudinary?.secure_url,
+        mediaUrl: uploadResult.cloudinary?.secure_url || uploadResult.secure_url,
         id: uploadResult.cloudinary?.public_id,
         cloudinary: uploadResult.cloudinary,
         metadata: videoData
