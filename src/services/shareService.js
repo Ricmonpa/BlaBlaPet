@@ -56,7 +56,8 @@ class ShareService {
    */
   async generateTikTokShareUrl(post) {
     // Generar URL única del video
-    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoPath = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = `${window.location.origin}${videoPath}`;
     
     const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas\n\nVer video: ${videoUrl}`;
     const encodedText = encodeURIComponent(text);
@@ -77,7 +78,8 @@ class ShareService {
    */
   async generateInstagramShareUrl(post) {
     // Generar URL única del video
-    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoPath = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = `${window.location.origin}${videoPath}`;
     
     const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas\n\nVer video: ${videoUrl}`;
     const encodedText = encodeURIComponent(text);
@@ -98,7 +100,8 @@ class ShareService {
    */
   async generateFacebookShareUrl(post) {
     // Generar URL única del video
-    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoPath = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = `${window.location.origin}${videoPath}`;
     
     const text = `¡Mira lo que dice mi perro! 🐕 "${post.translation || post.emotionalDubbing}" #YoPett #Perros #Mascotas`;
     const encodedText = encodeURIComponent(text);
@@ -119,7 +122,8 @@ class ShareService {
    */
   async generateWhatsAppShareUrl(post) {
     // Generar URL única del video
-    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoPath = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = `${window.location.origin}${videoPath}`;
     
     // Generar texto optimizado para WhatsApp
     const shareText = videoShareService.generateShareText(post);
@@ -257,7 +261,8 @@ class ShareService {
    */
   async shareToWhatsApp(post) {
     // Generar URL única del video
-    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoPath = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = `${window.location.origin}${videoPath}`;
     
     // Generar texto optimizado para WhatsApp
     const shareText = videoShareService.generateShareText(post);
@@ -284,7 +289,8 @@ class ShareService {
    */
   async shareWithNativeAPI(post) {
     // Generar URL única del video
-    const videoUrl = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoPath = await videoShareService.storeVideoAndGenerateUrl(post);
+    const videoUrl = `${window.location.origin}${videoPath}`;
     
     const shareData = {
       title: `¡Mira lo que dice ${post.petName || 'mi perro'}! 🐕`,
