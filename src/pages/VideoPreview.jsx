@@ -15,33 +15,43 @@ const VideoPreview = () => {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    // Obtener datos del video
-    const videoData = videoShareService.getVideoById(videoId);
-    
-    if (!videoData) {
-      setError('Video no encontrado');
-      setLoading(false);
-      return;
-    }
+    // Obtener datos del video (ASYNC)
+    const loadVideo = async () => {
+      try {
+        const videoData = await videoShareService.getVideoById(videoId);
+        
+        if (!videoData) {
+          setError('Video no encontrado');
+          setLoading(false);
+          return;
+        }
 
-    console.log('🎬 Video data:', {
-      id: videoData.id,
-      isSequentialSubtitles: videoData.isSequentialSubtitles,
-      subtitles: videoData.subtitles?.length,
-      mediaType: videoData.mediaType
-    });
+        console.log('🎬 Video data:', {
+          id: videoData.id,
+          isSequentialSubtitles: videoData.isSequentialSubtitles,
+          subtitles: videoData.subtitles?.length,
+          mediaType: videoData.mediaType
+        });
 
-    setVideo(videoData);
-    setLoading(false);
+        setVideo(videoData);
+        setLoading(false);
 
-    // Generar metadatos Open Graph para WhatsApp
-    videoShareService.generateOpenGraphMeta(videoData).then(metaData => {
-      updateMetaTags(metaData);
-    });
+        // Generar metadatos Open Graph para WhatsApp
+        videoShareService.generateOpenGraphMeta(videoData).then(metaData => {
+          updateMetaTags(metaData);
+        });
 
-    // Incrementar contador de compartidos
-    videoShareService.incrementShareCount(videoId);
+        // Incrementar contador de compartidos
+        videoShareService.incrementShareCount(videoId);
 
+      } catch (error) {
+        console.error('Error cargando video:', error);
+        setError('Error cargando video');
+        setLoading(false);
+      }
+    };
+
+    loadVideo();
   }, [videoId]);
 
   // Event listeners para el video
