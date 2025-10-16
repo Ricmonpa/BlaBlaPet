@@ -74,9 +74,9 @@ class DogVoiceService {
   speak(text, options = {}) {
     if (!this.isEnabled || !text) return;
 
-    // DEBOUNCE: Evitar llamadas múltiples en 200ms (reducido)
+    // DEBOUNCE: Evitar llamadas múltiples en 100ms (más permisivo para feed)
     const now = Date.now();
-    if (now - this.lastSpeakTime < 200) {
+    if (now - this.lastSpeakTime < 100) {
       console.log('🚫 Llamada muy rápida, ignorando');
       return;
     }
@@ -87,9 +87,9 @@ class DogVoiceService {
       return;
     }
 
-    // VALIDACIÓN DE TEXTO: Evitar textos duplicados (más permisivo)
+    // VALIDACIÓN DE TEXTO: Permitir textos similares en feed (menos estricto)
     if (text === this.lastSpokenText) {
-      console.log('🚫 Texto duplicado, ignorando');
+      console.log('🚫 Texto exactamente duplicado, ignorando');
       return;
     }
 

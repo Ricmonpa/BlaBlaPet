@@ -94,7 +94,7 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
     }
   }, [currentTime, subtitles, currentSubtitle?.timestamp]);
 
-  // Escuchar cambios de tiempo del video
+  // Escuchar cambios de tiempo del video - MEJORADO para timing
   useEffect(() => {
     const video = videoRef?.current;
     if (!video) {
@@ -138,22 +138,34 @@ const SequentialSubtitlesOverlay = ({ subtitles, videoRef, totalDuration }) => {
       };
     };
 
-    // Si el video ya está listo, configurar inmediatamente
-    if (video.readyState >= 2) {
-      return setupVideoListeners();
-    }
+    // TIMING MEJORADO: Esperar múltiples eventos para mayor robustez
+    const setupWithRetry = () => {
+      // Intentar configurar inmediatamente si está listo
+      if (video.readyState >= 2) {
+        console.log('✅ Video ya listo, configurando listeners inmediatamente');
+        return setupVideoListeners();
+      }
 
-    // Si no está listo, esperar al evento loadeddata
-    const handleInitialLoad = () => {
-      setupVideoListeners();
+      // Si no está listo, esperar a múltiples eventos
+      const handleInitialLoad = () => {
+        console.log('✅ Evento de carga detectado, configurando listeners');
+        setupVideoListeners();
+      };
+
+      // Escuchar múltiples eventos para mayor compatibilidad
+      video.addEventListener('loadeddata', handleInitialLoad, { once: true });
+      video.addEventListener('canplay', handleInitialLoad, { once: true });
+      video.addEventListener('canplaythrough', handleInitialLoad, { once: true });
+
+      return () => {
+        video.removeEventListener('loadeddata', handleInitialLoad);
+        video.removeEventListener('canplay', handleInitialLoad);
+        video.removeEventListener('canplaythrough', handleInitialLoad);
+      };
     };
 
-    video.addEventListener('loadeddata', handleInitialLoad, { once: true });
-
-    return () => {
-      video.removeEventListener('loadeddata', handleInitialLoad);
-    };
-  }, [videoRef?.current]); // ✅ CAMBIO CRÍTICO: Detectar cuando .current cambia
+    return setupWithRetry();
+  }, [videoRef?.current]); // Detectar cuando .current cambia
 
   // Mostrar el overlay solo si hay subtítulos disponibles Y hay video ref
   if (!subtitles || subtitles.length === 0 || !videoRef?.current) return null;
