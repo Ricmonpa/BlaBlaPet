@@ -268,7 +268,7 @@ async storeVideoAndGenerateUrl(post) {
   generateShareText(video) {
     const petName = video.petName || 'mi mascota';
     const translation = video.translation || video.emotionalDubbing || 'análisis de comportamiento';
-    const videoUrl = `${this.baseUrl}/api/video-preview/${video.id}`;
+    const videoUrl = `${this.baseUrl}/video/${video.id}`;
     
     return `¡Mira lo que dice ${petName}! 🐕\n\n"${translation}"\n\n#YoPett #Perros #Mascotas\n\nVer video completo:\n${videoUrl}`;
   }
