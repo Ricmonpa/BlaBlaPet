@@ -281,16 +281,30 @@ class SmartVideoCompressor {
       // Iniciar grabación
       mediaRecorder.start(100);
 
-      // Procesar video frame por frame
+      // Procesar video frame por frame con timeout robusto
       video.currentTime = 0;
       await video.play();
 
       let frameCount = 0;
       const maxFrames = Math.ceil(duration * Math.min(profile.fps, 30));
+      let lastProgressLog = 0;
+      let processingTimeout = null;
+      let isProcessing = true;
+
+      // Timeout de seguridad: 3x la duración del video + 60s buffer
+      const safeTimeout = Math.max((duration * 3 + 60) * 1000, 180000); // Mínimo 3 minutos
+      console.log(`🎬 Procesando ${maxFrames} frames con timeout de ${(safeTimeout/1000).toFixed(0)}s`);
 
       const captureFrame = () => {
+        if (!isProcessing) {
+          console.log('🛑 Proceso cancelado');
+          return;
+        }
+
         if (video.ended || video.paused || frameCount >= maxFrames) {
           console.log(`🎬 Captura completada: ${frameCount} frames de ${maxFrames} esperados`);
+          isProcessing = false;
+          clearTimeout(processingTimeout);
           mediaRecorder.stop();
           return;
         }
@@ -299,28 +313,85 @@ class SmartVideoCompressor {
           ctx.drawImage(video, 0, 0, width, height);
           frameCount++;
           
+          // Log de progreso cada 10%
+          const progress = Math.floor((frameCount / maxFrames) * 100);
+          if (progress >= lastProgressLog + 10) {
+            console.log(`🔄 Progreso compresión: ${progress}% (${frameCount}/${maxFrames} frames)`);
+            lastProgressLog = progress;
+          }
+          
           // Control de framerate
           setTimeout(() => requestAnimationFrame(captureFrame), 1000 / Math.min(profile.fps, 30));
         } catch (error) {
           console.warn('⚠️ Error capturando frame:', error);
+          isProcessing = false;
+          clearTimeout(processingTimeout);
           mediaRecorder.stop();
         }
       };
 
+      // Timeout de seguridad
+      processingTimeout = setTimeout(() => {
+        if (isProcessing) {
+          console.warn(`⏱️ Timeout alcanzado después de ${(safeTimeout/1000).toFixed(0)}s - finalizando con ${frameCount} frames`);
+          isProcessing = false;
+          mediaRecorder.stop();
+        }
+      }, safeTimeout);
+
       setTimeout(captureFrame, 100);
 
-      // Esperar finalización
-      const compressedBlob = await new Promise((resolve) => {
+      // Esperar finalización con timeout
+      const compressedBlob = await new Promise((resolve, reject) => {
+        const finalizationTimeout = setTimeout(() => {
+          console.warn('⏱️ Timeout esperando finalización del MediaRecorder');
+          if (chunks.length > 0) {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            resolve(blob);
+          } else {
+            reject(new Error('No se generaron chunks de video'));
+          }
+        }, 30000); // 30s para finalizar
+
         mediaRecorder.onstop = () => {
+          clearTimeout(finalizationTimeout);
           const blob = new Blob(chunks, { type: 'video/webm' });
+          console.log(`✅ MediaRecorder finalizado: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
           resolve(blob);
         };
       });
 
-      // Limpiar recursos
+      // Limpiar recursos agresivamente
+      console.log('🧹 Limpiando recursos de compresión...');
+      
+      // Detener todos los tracks
+      if (audioTrack) {
+        audioTrack.stop();
+        console.log('🧹 Audio track detenido');
+      }
+      if (videoTrack) {
+        videoTrack.stop();
+        console.log('🧹 Video track detenido');
+      }
+      
+      // Limpiar streams
+      stream.getTracks().forEach(track => track.stop());
+      canvasStream.getTracks().forEach(track => track.stop());
+      
+      // Limpiar elementos DOM
       URL.revokeObjectURL(video.src);
+      video.pause();
+      video.src = '';
+      video.load();
       video.remove();
+      
+      // Limpiar canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.width = 0;
+      canvas.height = 0;
       canvas.remove();
+      
+      console.log('🧹 Recursos liberados');
 
       // Crear archivo comprimido
       const fileExtension = '.webm';
@@ -384,7 +455,13 @@ class SmartVideoCompressor {
       try {
         console.log(`🔄 Intento ${i + 1}/${profilesToTry.length}: ${profile.description}`);
         
-        const compressedFile = await this.compressWithProfile(videoFile, profile);
+        // Timeout por intento: 5 minutos
+        const compressionPromise = this.compressWithProfile(videoFile, profile);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout de compresión')), 300000)
+        );
+        
+        const compressedFile = await Promise.race([compressionPromise, timeoutPromise]);
         const sizeMB = (compressedFile.size / 1024 / 1024).toFixed(2);
         
         attempts.push({
@@ -408,38 +485,25 @@ class SmartVideoCompressor {
         }
 
       } catch (error) {
-        console.error(`❌ Error con perfil ${profile.name}:`, error);
+        console.error(`❌ Error con perfil ${profile.name}:`, error.message);
         attempts.push({
           profile: profile.name,
           success: false,
           error: error.message,
           sizeMB: 0
         });
+        
+        // Si es timeout, intentar con perfil más agresivo
+        if (error.message.includes('Timeout')) {
+          console.log('⏱️ Timeout detectado, intentando perfil más agresivo...');
+          continue;
+        }
       }
     }
 
-    // Si todos los intentos fallaron, devolver el último exitoso o el original
-    const lastSuccessful = attempts.find(a => a.success);
-    if (lastSuccessful) {
-      console.log(`⚠️ Usando último perfil exitoso: ${lastSuccessful.profile}`);
-      const lastProfile = profilesToTry.find(p => p.name === lastSuccessful.profile);
-      const finalFile = await this.compressWithProfile(videoFile, lastProfile);
-      
-      return {
-        file: finalFile,
-        attempts,
-        finalProfile: lastSuccessful.profile,
-        analysis
-      };
-    } else {
-      console.log('❌ Todos los intentos fallaron, devolviendo archivo original');
-      return {
-        file: videoFile,
-        attempts,
-        finalProfile: 'failed',
-        analysis
-      };
-    }
+    // Si todos los intentos fallaron, lanzar error
+    console.error('❌ Todos los intentos de compresión fallaron');
+    throw new Error('No se pudo comprimir el video. Intenta con un video más corto o de menor calidad.');
   }
 
   /**

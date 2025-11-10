@@ -289,8 +289,9 @@ const Camera = () => {
       setShowPreview(true);  // ← MOSTRAR PREVIEW AL INSTANTE
       console.log('📹 Preview mostrado inmediatamente con video original');
       
-      if (file.size > 15 * 1024 * 1024) { // > 15MB
-        console.log('📦 Video muy grande, comprimiendo automáticamente...');
+      // SIEMPRE comprimir videos de galería para evitar problemas de memoria y upload
+      if (file.size > 10 * 1024 * 1024) { // > 10MB
+        console.log('📦 Video grande, comprimiendo automáticamente...');
         console.log('📦 Tamaño original:', videoSizeMB + ' MB');
         
         try {
@@ -301,7 +302,8 @@ const Camera = () => {
           // Importar SmartVideoCompressor dinámicamente
           const { default: SmartVideoCompressor } = await import('../utils/smartVideoCompressor.js');
           
-          // Comprimir video de galería
+          // Comprimir video de galería con timeout extendido
+          console.log('⏱️ Iniciando compresión con timeout extendido...');
           const compressionResult = await SmartVideoCompressor.compressWithFallback(file);
           const compressedFile = compressionResult.file;
           
@@ -309,7 +311,8 @@ const Camera = () => {
           console.log('✅ Video comprimido:', {
             original: videoSizeMB + ' MB',
             compressed: compressedSizeMB + ' MB',
-            reduction: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '%'
+            reduction: ((1 - compressedFile.size / file.size) * 100).toFixed(1) + '%',
+            profile: compressionResult.finalProfile
           });
           
           // Actualizar preview con video comprimido
@@ -328,9 +331,23 @@ const Camera = () => {
           
         } catch (compressionError) {
           console.error('❌ Error comprimiendo video:', compressionError);
+          console.error('Stack:', compressionError.stack);
           setCapturing(false);
-          // Preview ya tiene video original, no hacer nada más
-          console.log('⚠️ Manteniendo video original en preview');
+          
+          // Si la compresión falla, mostrar error al usuario
+          setError({
+            message: '⚠️ Error procesando video',
+            details: 'El video es muy grande o complejo. Intenta con un video más corto o de menor calidad.',
+            type: 'compression_error'
+          });
+          
+          // Limpiar preview
+          URL.revokeObjectURL(tempVideoUrl);
+          setShowPreview(false);
+          setCapturedMedia(null);
+          
+          // Reiniciar cámara
+          getCameraStream(facingMode);
         }
       } else {
         // Video pequeño, ya está en preview
@@ -738,7 +755,11 @@ const Camera = () => {
                 {capturedMedia.type === 'video' && (
                   <div className="text-sm text-gray-300">
                     {capturedMedia?.originalFile ? (
-                      <p className="text-xs">Optimizando el formato para el motor de traducción.</p>
+                      <>
+                        <p className="text-xs mb-2">Optimizando el formato para el motor de traducción.</p>
+                        <p className="text-xs text-yellow-300">⏱️ Videos largos pueden tomar 2-5 minutos</p>
+                        <p className="text-xs text-gray-400 mt-1">No cierres esta ventana</p>
+                      </>
                     ) : (
                       <>
                         <p>🧠 Mapeando tonos y vocalizaciones caninas.</p>
