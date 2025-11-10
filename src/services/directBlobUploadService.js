@@ -142,15 +142,26 @@ class DirectBlobUploadService {
       });
 
       // COMPRESIÓN INTELIGENTE AUTOMÁTICA
-      console.log('🎯 Aplicando compresión inteligente automática...');
-      const compressionResult = await SmartVideoCompressor.compressWithFallback(videoFile);
-      processedFile = compressionResult.file;
+      // ✅ SKIP si el video ya está comprimido (< 2MB y es webm)
+      const isAlreadyCompressed = videoFile.size < 2 * 1024 * 1024 && videoFile.type.includes('webm');
       
-      console.log('📊 Resultado de compresión:', {
-        perfilFinal: compressionResult.finalProfile,
-        intentos: compressionResult.attempts.length,
-        tamañoFinal: (processedFile.size / 1024 / 1024).toFixed(2) + ' MB'
-      });
+      if (isAlreadyCompressed) {
+        console.log('✅ Video ya está comprimido, usando archivo original:', {
+          size: (videoFile.size / 1024 / 1024).toFixed(2) + ' MB',
+          type: videoFile.type
+        });
+        processedFile = videoFile;
+      } else {
+        console.log('🎯 Aplicando compresión inteligente automática...');
+        const compressionResult = await SmartVideoCompressor.compressWithFallback(videoFile);
+        processedFile = compressionResult.file;
+        
+        console.log('📊 Resultado de compresión:', {
+          perfilFinal: compressionResult.finalProfile,
+          intentos: compressionResult.attempts.length,
+          tamañoFinal: (processedFile.size / 1024 / 1024).toFixed(2) + ' MB'
+        });
+      }
 
       // Intentar subir el archivo (comprimido o original) a Cloudinary
       let uploadResult;
