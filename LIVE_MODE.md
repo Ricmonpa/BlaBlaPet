@@ -68,11 +68,12 @@ Cómo leerlo:
 - El modo es half-duplex: si hablas mientras el perro "habla", no se te escucha.
 - iOS Safari no se probó.
 
-## Propuesta pendiente de aprobación: frames extra en vocalización
-La doc limita el video a **1 FPS máximo**, así que no conviene mandar ráfagas. Opciones compatibles con ese límite:
-1. **Frame alineado al evento:** en `activityStart`, mandar en ese momento un frame fresco y reiniciar el reloj de 1 FPS. Es barato y muestra el instante del ladrido, no uno de hasta 1 s antes.
-2. Ese frame a 768 px y los demás a 384 px, para compensar tokens.
-3. Un "strip": un collage de 2–3 frames de los últimos 600 ms en una sola imagen. Captura lenguaje corporal rápido sin pasarse de 1 FPS.
+## Frames en vocalización
+La doc limita el video a **1 FPS máximo**. Implementado: **frame alineado al evento**. En `activityStart` se manda un frame fresco (`frameSender.sendNow()`) y el reloj de 1 FPS se reinicia desde ahí, con un hueco mínimo de 500 ms respecto al frame anterior (`VIDEO.minEventGapMs`). Así el modelo ve el instante del ladrido y no uno de hasta 1 s antes.
+
+Ideas no implementadas:
+- Mandar ese frame a 768 px y los demás a 384 px.
+- Un "strip": collage de 2–3 frames de los últimos 600 ms en una sola imagen.
 
 ## Fase 2 (lentes)
 - Implementar `createGlassesMediaSource()` con el mismo contrato que `createPhoneMediaSource`. Lo demás no cambia.

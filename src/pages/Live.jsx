@@ -114,6 +114,7 @@ export default function Live() {
         onLevel: (rms) => setLevel(rms),
         onActivityStart: () => {
           r.client.activityStart();
+          r.frames?.sendNow(); // frame del instante del ladrido, no de hasta 1 s antes
           r.latency.markOnset();
           setListening(true);
         },

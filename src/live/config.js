@@ -49,4 +49,7 @@ export const VIDEO = {
   fps: 1, // doc: máximo 1 FPS
   maxSide: 512,
   jpegQuality: 0.6,
+  // Frame extra al iniciar una vocalización: nunca a menos de 500 ms del anterior,
+  // así el promedio se queda en ~1 FPS.
+  minEventGapMs: 500,
 };
