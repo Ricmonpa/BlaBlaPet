@@ -1,6 +1,5 @@
 // AudioWorklet: micrófono → PCM16 16 kHz en chunks fijos + RMS por chunk.
 // Ligero a propósito (Moto G50): resampleo lineal y nada más.
-/* global sampleRate, registerProcessor, AudioWorkletProcessor */
 
 const TARGET_RATE = 16000;
 

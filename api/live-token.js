@@ -1,3 +1,4 @@
+/* global process */
 import { GoogleGenAI } from '@google/genai';
 import { LIVE_MODEL, buildLockedLiveConfig } from '../src/live/config.js';
 

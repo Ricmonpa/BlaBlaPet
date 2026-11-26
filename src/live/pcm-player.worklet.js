@@ -1,7 +1,6 @@
 // AudioWorklet: reproduce chunks PCM16 (24 kHz de Gemini) con una cola simple.
 // Mensajes: { type: 'push', pcm: Int16Array, rate } | { type: 'flush' }
 // Emite: { type: 'start' } al empezar a sonar, { type: 'drained' } al vaciarse.
-/* global sampleRate, registerProcessor, AudioWorkletProcessor */
 
 class PcmPlayerProcessor extends AudioWorkletProcessor {
   constructor() {
