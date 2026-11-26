@@ -28,13 +28,8 @@ class DirectBlobUploadService {
       formData.append('upload_preset', 'yo-pett-videos');
       formData.append('folder', 'yo-pett-videos');
       
-      // Agregar autenticación para upload directo
-      const apiKey = import.meta.env.VITE_CLOUDINARY_API_KEY;
-      const apiSecret = import.meta.env.VITE_CLOUDINARY_API_SECRET;
-      
-      if (apiKey) formData.append('api_key', apiKey);
-      if (apiSecret) formData.append('api_secret', apiSecret);
-      
+      // Upload unsigned con preset: NO se manda api_key/api_secret desde el navegador.
+
       // Agregar metadata como context
       if (metadata.subtitles) {
         formData.append('context', JSON.stringify({
