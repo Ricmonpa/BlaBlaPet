@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createProxyModel } from './geminiProxy.js';
 
 /**
  * Servicio de Análisis Dual para BlaBlaPet
@@ -6,14 +6,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  */
 class DualAnalysisService {
   constructor() {
-    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!this.apiKey) {
-      console.warn('⚠️ VITE_GEMINI_API_KEY no encontrada');
-      return;
-    }
-    
-    this.genAI = new GoogleGenerativeAI(this.apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // La API key vive en el server (/api/gemini); aquí solo hay un proxy.
+    this.model = createProxyModel("gemini-1.5-flash");
   }
 
   /**
@@ -26,8 +20,8 @@ class DualAnalysisService {
     try {
       console.log('🎭 Iniciando análisis dual (técnico + emocional)...');
       
-      if (!this.apiKey) {
-        throw new Error('API Key de Gemini no configurada');
+      if (!this.model) {
+        throw new Error('Servicio de Gemini no configurado');
       }
 
       // Preparar el prompt exacto proporcionado por el usuario
@@ -333,7 +327,7 @@ Responde en formato JSON:
    * @returns {boolean}
    */
   isAvailable() {
-    return !!this.apiKey && !!this.genAI;
+    return !!this.model;
   }
 }
 

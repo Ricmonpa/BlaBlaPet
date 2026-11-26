@@ -31,9 +31,8 @@ const GeminiTestPage = () => {
                 <h3 className="font-semibold text-[#1ca9b1] mb-2">🔑 Configuración</h3>
                 <ol className="list-decimal list-inside space-y-1 text-sm">
                   <li>Obtén tu API key de Google AI Studio</li>
-                  <li>Crea archivo <code className="bg-gray-100 px-1 rounded">.env</code></li>
-                  <li>Agrega: <code className="bg-gray-100 px-1 rounded">VITE_GEMINI_API_KEY=tu_key</code></li>
-                  <li>Reinicia el servidor de desarrollo</li>
+                  <li>En Vercel → Environment Variables agrega <code className="bg-gray-100 px-1 rounded">GEMINI_API_KEY</code> (sin prefijo VITE_, solo server)</li>
+                  <li>En local usa <code className="bg-gray-100 px-1 rounded">vercel dev</code> para que exista <code className="bg-gray-100 px-1 rounded">/api/gemini</code></li>
                 </ol>
               </div>
 
