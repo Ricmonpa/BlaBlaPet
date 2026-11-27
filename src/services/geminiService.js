@@ -1,11 +1,10 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createProxyModel } from './geminiProxy.js';
 import thoughtModelService from './thoughtModelService.js';
 
 class GeminiService {
   constructor() {
-    // Inicializar Gemini con API key
-    this.genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    // La API key vive en el server (/api/gemini); aquí solo hay un proxy.
+    this.model = createProxyModel("gemini-2.0-flash");
     
     // Usar el modelo de pensamiento actual
     this.thoughtModelService = thoughtModelService;
